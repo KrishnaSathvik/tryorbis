@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { saveValidationReport, addToBacklog } from "@/lib/storage";
 import { ValidationReport } from "@/lib/types";
 import { toast } from "sonner";
-import { Bookmark, Lightbulb, ThumbsUp, ThumbsDown, Target, AlertTriangle } from "lucide-react";
+import { Bookmark, Lightbulb, ThumbsUp, ThumbsDown, Target, AlertTriangle, ArrowLeft } from "lucide-react";
 
 const researchSteps = [
   "Analyzing demand signals...",
@@ -92,16 +92,16 @@ export default function ValidateIdea() {
 
   if (phase === 'input') {
     return (
-      <div className="max-w-2xl mx-auto space-y-8">
+      <div className="max-w-2xl mx-auto space-y-6 px-4 sm:px-0">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Validate an Idea</h1>
-          <p className="text-muted-foreground mt-1">Test if your idea is worth building.</p>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Validate an Idea</h1>
+          <p className="text-muted-foreground mt-1 text-sm sm:text-base">Test if your idea is worth building.</p>
         </div>
         <Card>
-          <CardContent className="p-6 space-y-4">
+          <CardContent className="p-4 sm:p-6 space-y-4">
             <Textarea
               placeholder="AI tool that tracks subscriptions automatically and suggests ways to save money..."
-              className="min-h-[120px] text-base"
+              className="min-h-[100px] sm:min-h-[120px] text-sm sm:text-base"
               value={ideaText}
               onChange={e => setIdeaText(e.target.value)}
             />
@@ -114,11 +114,11 @@ export default function ValidateIdea() {
 
   if (phase === 'researching') {
     return (
-      <div className="max-w-lg mx-auto mt-20">
+      <div className="max-w-lg mx-auto mt-10 sm:mt-20 px-4 sm:px-0">
         <Card>
-          <CardContent className="p-8">
-            <h2 className="text-xl font-semibold mb-2">Validating...</h2>
-            <p className="text-sm text-muted-foreground mb-4">Researching demand, competition, and feasibility.</p>
+          <CardContent className="p-5 sm:p-8">
+            <h2 className="text-lg sm:text-xl font-semibold mb-2">Validating...</h2>
+            <p className="text-xs sm:text-sm text-muted-foreground mb-4">Researching demand, competition, and feasibility.</p>
             <ResearchTrace steps={researchSteps} currentStep={currentStep} isComplete={false} />
           </CardContent>
         </Card>
@@ -128,25 +128,34 @@ export default function ValidateIdea() {
 
   // Results
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Validation Report</h1>
-          <p className="text-muted-foreground mt-1 max-w-lg truncate">{report?.ideaText}</p>
+    <div className="max-w-4xl mx-auto space-y-5 sm:space-y-8 px-4 sm:px-0 pb-8">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-3xl font-bold tracking-tight">Validation Report</h1>
+          <p className="text-muted-foreground mt-1 text-sm sm:text-base line-clamp-2 sm:truncate">{report?.ideaText}</p>
         </div>
-        <Button variant="outline" onClick={() => { setPhase('input'); setReport(null); setIdeaText(""); }}>New Validation</Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="self-start sm:self-auto shrink-0"
+          onClick={() => { setPhase('input'); setReport(null); setIdeaText(""); }}
+        >
+          <ArrowLeft className="h-4 w-4 mr-1" />
+          New
+        </Button>
       </div>
 
       {/* Verdict + Scores */}
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
         <Card className="md:col-span-1 border">
-          <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-3">
-            <p className="text-sm text-muted-foreground font-medium uppercase tracking-wider">Verdict</p>
+          <CardContent className="p-4 sm:p-6 flex flex-row md:flex-col items-center justify-center gap-3 md:text-center">
+            <p className="text-xs sm:text-sm text-muted-foreground font-medium uppercase tracking-wider">Verdict</p>
             <VerdictBadge verdict={report!.verdict} size="lg" />
           </CardContent>
         </Card>
         <Card className="md:col-span-2 border">
-          <CardContent className="p-6 space-y-3">
+          <CardContent className="p-4 sm:p-6 space-y-3">
             <ScoreBar label="Demand" value={report!.scores.demand} />
             <ScoreBar label="Pain" value={report!.scores.pain} />
             <ScoreBar label="Competition" value={report!.scores.competition} />
@@ -156,59 +165,59 @@ export default function ValidateIdea() {
       </div>
 
       {/* Strategy Layer */}
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
         <Card className="border">
-          <CardContent className="p-5 space-y-3">
+          <CardContent className="p-4 sm:p-5 space-y-3">
             <div className="flex items-center gap-2">
-              <ThumbsUp className="h-4 w-4 text-green-600" />
+              <ThumbsUp className="h-4 w-4 text-green-600 shrink-0" />
               <h3 className="font-semibold text-sm">Pros</h3>
             </div>
-            <ul className="space-y-1.5">
-              {report!.pros.map((p, i) => <li key={i} className="text-sm text-muted-foreground">• {p}</li>)}
+            <ul className="space-y-2">
+              {report!.pros.map((p, i) => <li key={i} className="text-xs sm:text-sm text-muted-foreground leading-relaxed">• {p}</li>)}
             </ul>
           </CardContent>
         </Card>
         <Card className="border">
-          <CardContent className="p-5 space-y-3">
+          <CardContent className="p-4 sm:p-5 space-y-3">
             <div className="flex items-center gap-2">
-              <ThumbsDown className="h-4 w-4 text-red-600" />
+              <ThumbsDown className="h-4 w-4 text-red-600 shrink-0" />
               <h3 className="font-semibold text-sm">Cons</h3>
             </div>
-            <ul className="space-y-1.5">
-              {report!.cons.map((c, i) => <li key={i} className="text-sm text-muted-foreground">• {c}</li>)}
+            <ul className="space-y-2">
+              {report!.cons.map((c, i) => <li key={i} className="text-xs sm:text-sm text-muted-foreground leading-relaxed">• {c}</li>)}
             </ul>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
         <Card className="border">
-          <CardContent className="p-5 space-y-3">
+          <CardContent className="p-4 sm:p-5 space-y-3">
             <div className="flex items-center gap-2">
-              <Target className="h-4 w-4 text-primary" />
+              <Target className="h-4 w-4 text-primary shrink-0" />
               <h3 className="font-semibold text-sm">Gap Opportunities</h3>
             </div>
-            <ul className="space-y-1.5">
-              {report!.gapOpportunities.map((g, i) => <li key={i} className="text-sm text-muted-foreground">• {g}</li>)}
+            <ul className="space-y-2">
+              {report!.gapOpportunities.map((g, i) => <li key={i} className="text-xs sm:text-sm text-muted-foreground leading-relaxed">• {g}</li>)}
             </ul>
           </CardContent>
         </Card>
         <Card className="border">
-          <CardContent className="p-5 space-y-3">
+          <CardContent className="p-4 sm:p-5 space-y-3">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-yellow-600" />
+              <AlertTriangle className="h-4 w-4 text-yellow-600 shrink-0" />
               <h3 className="font-semibold text-sm">Kill Test</h3>
             </div>
-            <p className="text-sm text-muted-foreground">{report!.killTest}</p>
+            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">{report!.killTest}</p>
           </CardContent>
         </Card>
       </div>
 
       {report!.mvpWedge && (
         <Card className="border">
-          <CardContent className="p-5 space-y-2">
+          <CardContent className="p-4 sm:p-5 space-y-2">
             <h3 className="font-semibold text-sm">Suggested MVP Wedge</h3>
-            <p className="text-sm text-muted-foreground">{report!.mvpWedge}</p>
+            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">{report!.mvpWedge}</p>
           </CardContent>
         </Card>
       )}
@@ -217,10 +226,10 @@ export default function ValidateIdea() {
       {report!.competitors.length > 0 && (
         <div>
           <h3 className="font-semibold text-sm mb-3">Competitors</h3>
-          <div className="grid md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             {report!.competitors.map((c, i) => (
               <Card key={i} className="border">
-                <CardContent className="p-4 space-y-1">
+                <CardContent className="p-3 sm:p-4 space-y-1">
                   <p className="font-medium text-sm">{c.name}</p>
                   <p className="text-xs text-muted-foreground">Weakness: {c.weakness}</p>
                   {c.pricing && <p className="text-xs text-muted-foreground">Pricing: {c.pricing}</p>}
@@ -246,12 +255,12 @@ export default function ValidateIdea() {
       )}
 
       {/* Actions */}
-      <div className="flex gap-3">
-        <Button variant="outline" onClick={handleAddToBacklog}>
+      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+        <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={handleAddToBacklog}>
           <Bookmark className="h-4 w-4 mr-1" /> Add to Backlog
         </Button>
         {report!.verdict !== 'Build' && (
-          <Button variant="outline" onClick={() => navigate('/generate')}>
+          <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => navigate('/generate')}>
             <Lightbulb className="h-4 w-4 mr-1" /> Explore Adjacent Ideas
           </Button>
         )}
