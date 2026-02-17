@@ -150,6 +150,44 @@ Deno.serve(async (req) => {
       funnelData,
     };
 
+    // ─── Phase 5: Trending Now (last 24h) ───
+    const now = new Date();
+    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+
+    const recentRuns = runs.filter(r => r.created_at && r.created_at >= oneDayAgo);
+    const recentReports = reports.filter(r => r.created_at && r.created_at >= oneDayAgo);
+
+    const trendingCategories: Record<string, number> = {};
+    const trendingPersonas: Record<string, number> = {};
+    let recentIdeasCount = 0;
+
+    for (const run of recentRuns) {
+      if (run.category) {
+        const key = run.category.trim().toLowerCase().replace(/\s+/g, " ");
+        trendingCategories[key] = (trendingCategories[key] || 0) + 1;
+      }
+      if (run.persona) {
+        const key = run.persona.trim().toLowerCase().replace(/\s+/g, " ");
+        trendingPersonas[key] = (trendingPersonas[key] || 0) + 1;
+      }
+      const suggestions = Array.isArray(run.idea_suggestions) ? run.idea_suggestions : [];
+      recentIdeasCount += suggestions.length;
+    }
+
+    const trendingNow = {
+      categories: Object.entries(trendingCategories)
+        .map(([name, count]) => ({ name: titleCase(name), count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5),
+      personas: Object.entries(trendingPersonas)
+        .map(([name, count]) => ({ name: titleCase(name), count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5),
+      recentIdeas: recentIdeasCount,
+      recentValidations: recentReports.length,
+      recentRuns: recentRuns.length,
+    };
+
     // ─── Helpers ───
     const titleCase = (s: string) => s.replace(/\b\w/g, c => c.toUpperCase());
 
@@ -172,6 +210,7 @@ Deno.serve(async (req) => {
       leaderboard,
       trendData,
       founderSuccess,
+      trendingNow,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
