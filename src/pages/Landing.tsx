@@ -234,12 +234,19 @@ export default function Landing() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border/50 py-8 text-center text-xs text-muted-foreground space-y-1">
-        <div className="flex items-center gap-2 justify-center">
-          <img src={orbisLogo} alt="Orbis" className="h-5 w-5 dark-invert" />
-          <p className="font-medium text-foreground/60">Orbis</p>
+      <footer className="border-t border-border/50 py-10">
+        <div className="max-w-5xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <img src={orbisLogo} alt="Orbis" className="h-6 w-6 dark-invert" />
+            <span className="font-bold font-nunito text-gradient-primary">Orbis</span>
+            <span className="text-xs text-muted-foreground ml-1">From problem discovery to product validation.</span>
+          </div>
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <a href="mailto:hello@tryorbis.com" className="hover:text-foreground transition-colors">Contact</a>
+            <span>•</span>
+            <span>© {new Date().getFullYear()} Orbis. All rights reserved.</span>
+          </div>
         </div>
-        <p>From problem discovery to product validation.</p>
       </footer>
     </div>
   );

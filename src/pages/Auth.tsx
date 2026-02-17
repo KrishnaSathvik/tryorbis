@@ -3,32 +3,71 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import orbisLogo from "@/assets/orbis-logo.png";
+import { Eye, EyeOff, Zap } from "lucide-react";
 
 export default function Auth() {
-  const { signUp } = useAuth();
+  const { signUp, signIn, signInAsGuest, user } = useAuth();
   const navigate = useNavigate();
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Sign Up state
+  const [signUpName, setSignUpName] = useState("");
+  const [signUpEmail, setSignUpEmail] = useState("");
+  const [signUpPassword, setSignUpPassword] = useState("");
+  const [showSignUpPw, setShowSignUpPw] = useState(false);
+
+  // Sign In state
+  const [signInEmail, setSignInEmail] = useState("");
+  const [signInPassword, setSignInPassword] = useState("");
+  const [showSignInPw, setShowSignInPw] = useState(false);
+
+  // Guest state
+  const [guestName, setGuestName] = useState("");
+
+  // Redirect if already logged in
+  if (user) { navigate("/dashboard", { replace: true }); return null; }
+
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) {
-      toast.error("Please enter your name");
-      return;
-    }
+    if (!signUpName.trim()) { toast.error("Please enter your name"); return; }
+    if (!signUpEmail.trim()) { toast.error("Please enter your email"); return; }
+    if (signUpPassword.length < 6) { toast.error("Password must be at least 6 characters"); return; }
     setLoading(true);
     try {
-      await signUp(name.trim(), email.trim() || undefined);
+      await signUp(signUpEmail.trim(), signUpPassword, signUpName.trim());
+      toast.success("Account created! Welcome to Orbis.");
       navigate("/dashboard");
     } catch (err: any) {
       toast.error(err.message || "Something went wrong");
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
+  };
+
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!signInEmail.trim() || !signInPassword) { toast.error("Please fill in all fields"); return; }
+    setLoading(true);
+    try {
+      await signIn(signInEmail.trim(), signInPassword);
+      navigate("/dashboard");
+    } catch (err: any) {
+      toast.error(err.message || "Invalid credentials");
+    } finally { setLoading(false); }
+  };
+
+  const handleGuest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await signInAsGuest(guestName.trim());
+      toast.success("Welcome! You have 5 free credits as a guest.");
+      navigate("/dashboard");
+    } catch (err: any) {
+      toast.error(err.message || "Something went wrong");
+    } finally { setLoading(false); }
   };
 
   return (
@@ -38,41 +77,86 @@ export default function Auth() {
           <div className="text-center space-y-2">
             <img src={orbisLogo} alt="Orbis" className="h-14 w-14 mx-auto dark-invert" />
             <h1 className="text-2xl font-bold tracking-tight font-nunito">
-              Join <span className="text-gradient-primary">Orbis</span>
+              Welcome to <span className="text-gradient-primary">Orbis</span>
             </h1>
             <p className="text-sm text-muted-foreground">
-              Pick a name and start discovering product ideas instantly.
+              AI-powered product research & validation
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Your Name *</label>
-              <Input
-                value={name}
-                onChange={e => setName(e.target.value)}
-                placeholder="e.g. Alex"
-                className="rounded-xl"
-                autoFocus
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">
-                Email <span className="text-muted-foreground font-normal">(optional)</span>
-              </label>
-              <Input
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="alex@example.com"
-                className="rounded-xl"
-              />
-              <p className="text-xs text-muted-foreground">Only used if you want to recover your account later.</p>
-            </div>
-            <Button type="submit" className="w-full rounded-full bg-foreground text-background hover:bg-foreground/90" disabled={loading}>
-              {loading ? "Creating account..." : "Start Exploring →"}
-            </Button>
-          </form>
+          <Tabs defaultValue="signup" className="w-full">
+            <TabsList className="grid w-full grid-cols-3 rounded-xl">
+              <TabsTrigger value="signup" className="rounded-lg text-xs">Sign Up</TabsTrigger>
+              <TabsTrigger value="signin" className="rounded-lg text-xs">Log In</TabsTrigger>
+              <TabsTrigger value="guest" className="rounded-lg text-xs">Guest</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="signup" className="mt-4">
+              <form onSubmit={handleSignUp} className="space-y-3">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">Name</label>
+                  <Input value={signUpName} onChange={e => setSignUpName(e.target.value)} placeholder="Your name" className="rounded-xl" autoFocus />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">Email</label>
+                  <Input type="email" value={signUpEmail} onChange={e => setSignUpEmail(e.target.value)} placeholder="you@example.com" className="rounded-xl" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">Password</label>
+                  <div className="relative">
+                    <Input type={showSignUpPw ? "text" : "password"} value={signUpPassword} onChange={e => setSignUpPassword(e.target.value)} placeholder="Min 6 characters" className="rounded-xl pr-10" />
+                    <button type="button" onClick={() => setShowSignUpPw(!showSignUpPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      {showSignUpPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground bg-primary/5 rounded-xl p-3">
+                  <Zap className="h-3.5 w-3.5 text-primary shrink-0" />
+                  <span>You'll get <strong className="text-foreground">20 free credits</strong> to explore Orbis</span>
+                </div>
+                <Button type="submit" className="w-full rounded-full bg-foreground text-background hover:bg-foreground/90" disabled={loading}>
+                  {loading ? "Creating account..." : "Create Account →"}
+                </Button>
+              </form>
+            </TabsContent>
+
+            <TabsContent value="signin" className="mt-4">
+              <form onSubmit={handleSignIn} className="space-y-3">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">Email</label>
+                  <Input type="email" value={signInEmail} onChange={e => setSignInEmail(e.target.value)} placeholder="you@example.com" className="rounded-xl" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">Password</label>
+                  <div className="relative">
+                    <Input type={showSignInPw ? "text" : "password"} value={signInPassword} onChange={e => setSignInPassword(e.target.value)} placeholder="Your password" className="rounded-xl pr-10" />
+                    <button type="button" onClick={() => setShowSignInPw(!showSignInPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      {showSignInPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+                <Button type="submit" className="w-full rounded-full bg-foreground text-background hover:bg-foreground/90" disabled={loading}>
+                  {loading ? "Signing in..." : "Log In →"}
+                </Button>
+              </form>
+            </TabsContent>
+
+            <TabsContent value="guest" className="mt-4">
+              <form onSubmit={handleGuest} className="space-y-3">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">Nickname <span className="text-muted-foreground font-normal">(optional)</span></label>
+                  <Input value={guestName} onChange={e => setGuestName(e.target.value)} placeholder="e.g. Explorer" className="rounded-xl" />
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground bg-warning/10 rounded-xl p-3">
+                  <Zap className="h-3.5 w-3.5 text-warning shrink-0" />
+                  <span>Guest accounts get <strong className="text-foreground">5 credits</strong>. Sign up later to upgrade & keep your data.</span>
+                </div>
+                <Button type="submit" variant="outline" className="w-full rounded-full" disabled={loading}>
+                  {loading ? "Starting..." : "Try as Guest →"}
+                </Button>
+              </form>
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
     </div>
