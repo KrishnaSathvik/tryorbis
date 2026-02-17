@@ -150,6 +150,15 @@ Deno.serve(async (req) => {
       funnelData,
     };
 
+    // ─── Helpers ───
+    const titleCase = (s: string) => s.replace(/\b\w/g, c => c.toUpperCase());
+
+    const toSorted = (counts: Record<string, number>, limit: number) =>
+      Object.entries(counts)
+        .map(([name, count]) => ({ name: titleCase(name), count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, limit);
+
     // ─── Phase 5: Trending Now (last 24h) ───
     const now = new Date();
     const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
@@ -187,16 +196,6 @@ Deno.serve(async (req) => {
       recentValidations: recentReports.length,
       recentRuns: recentRuns.length,
     };
-
-    // ─── Helpers ───
-    const titleCase = (s: string) => s.replace(/\b\w/g, c => c.toUpperCase());
-
-    const toSorted = (counts: Record<string, number>, limit: number) =>
-      Object.entries(counts)
-        .map(([name, count]) => ({ name: titleCase(name), count }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, limit);
-
     return new Response(JSON.stringify({
       totalUsers,
       totalIdeas,
