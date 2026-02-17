@@ -1,4 +1,4 @@
-import { LayoutDashboard, Lightbulb, ClipboardCheck, Archive, FileText, LogOut } from "lucide-react";
+import { LayoutDashboard, Lightbulb, ClipboardCheck, Archive, FileText, LogOut, BarChart3 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -20,6 +20,7 @@ const navItems = [
   { title: "Validate Idea", url: "/validate", icon: ClipboardCheck },
   { title: "My Ideas", url: "/ideas", icon: Archive },
   { title: "History", url: "/history", icon: FileText },
+  { title: "Analytics", url: "/analytics", icon: BarChart3 },
 ];
 
 export function AppSidebar() {

@@ -11,7 +11,7 @@ import { FollowUpChat } from "@/components/FollowUpChat";
 import { supabase } from "@/integrations/supabase/client";
 import { saveValidationReportDb, addToBacklogDb } from "@/lib/db";
 import { toast } from "sonner";
-import { Bookmark, Lightbulb, ThumbsUp, ThumbsDown, Target, AlertTriangle, Send, Search } from "lucide-react";
+import { Bookmark, Lightbulb, ThumbsUp, ThumbsDown, Target, AlertTriangle, Send, Search, Globe } from "lucide-react";
 
 const researchSteps = ["Deep-diving demand signals & market data...", "Scanning competitors, pricing & reviews...", "Analyzing pain severity & workarounds...", "AI strategist scoring & verdict...", "Cross-checking verdict consistency...", "Finalizing validation report..."];
 
@@ -24,6 +24,7 @@ interface Report {
   mvpWedge: string; killTest: string;
   competitors: { name: string; weakness: string; pricing?: string }[];
   evidenceLinks: string[];
+  marketSizing?: { tam: string; sam: string; som: string; methodology?: string };
 }
 
 export default function ValidateIdea() {
@@ -88,6 +89,7 @@ export default function ValidateIdea() {
         verdict: data.verdict || 'Skip', pros: data.pros || [], cons: data.cons || [],
         gapOpportunities: data.gapOpportunities || [], mvpWedge: data.mvpWedge || '', killTest: data.killTest || '',
         competitors: data.competitors || [], evidenceLinks: data.evidenceLinks || [],
+        marketSizing: data.marketSizing || undefined,
       };
       try { await saveValidationReportDb(r); } catch (e) { console.error("Failed to save to DB:", e); }
       setReport(r); setPhase('results');
@@ -225,6 +227,32 @@ export default function ValidateIdea() {
         </CardContent></Card>
       )}
 
+      {report!.marketSizing && (
+        <div>
+          <h2 className="text-lg font-semibold font-nunito mb-4 flex items-center gap-2"><Globe className="h-5 w-5 text-primary" /> Market Sizing</h2>
+          <div className="grid sm:grid-cols-3 gap-4">
+            {[
+              { label: 'TAM', sublabel: 'Total Addressable Market', value: report!.marketSizing.tam },
+              { label: 'SAM', sublabel: 'Serviceable Addressable Market', value: report!.marketSizing.sam },
+              { label: 'SOM', sublabel: 'Serviceable Obtainable Market', value: report!.marketSizing.som },
+            ].map(m => (
+              <Card key={m.label} className="rounded-2xl border-border/50">
+                <CardContent className="p-5 space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">{m.label}</span>
+                    <span className="text-[10px] text-muted-foreground">{m.sublabel}</span>
+                  </div>
+                  <p className="text-sm text-foreground leading-relaxed">{m.value}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          {report!.marketSizing.methodology && (
+            <p className="text-xs text-muted-foreground mt-3 leading-relaxed italic">{report!.marketSizing.methodology}</p>
+          )}
+        </div>
+      )}
+
       {report!.competitors.length > 0 && (
         <div>
           <h2 className="text-lg font-semibold font-nunito mb-4">Competitors</h2>
@@ -245,8 +273,17 @@ export default function ValidateIdea() {
       {report!.evidenceLinks.length > 0 && (
         <div>
           <h2 className="text-lg font-semibold font-nunito mb-4">Sources</h2>
-          <div className="flex flex-wrap gap-2">
-            {report!.evidenceLinks.map((link, i) => (<a key={i} href={link} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline">Source {i + 1}</a>))}
+          <div className="space-y-1.5">
+            {report!.evidenceLinks.map((link, i) => {
+              let displayUrl = link;
+              try { const u = new URL(link); displayUrl = u.hostname.replace('www.', '') + (u.pathname !== '/' ? u.pathname : ''); if (displayUrl.length > 70) displayUrl = displayUrl.slice(0, 67) + '...'; } catch {}
+              return (
+                <div key={i} className="flex items-center gap-2">
+                  <img src={`https://www.google.com/s2/favicons?domain=${new URL(link).hostname}&sz=16`} alt="" className="h-4 w-4 rounded-sm shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                  <a href={link} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline truncate">{displayUrl}</a>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

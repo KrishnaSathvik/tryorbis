@@ -195,8 +195,17 @@ export default function GenerateIdeas() {
                   <div className="px-4 pb-4 space-y-2 border-t border-border/50 pt-3">
                     {cluster.complaints?.map((c: string, i: number) => (<p key={i} className="text-xs text-muted-foreground italic">"{c}"</p>))}
                     {cluster.evidenceLinks?.length > 0 && (
-                      <div className="flex gap-2 flex-wrap mt-2">
-                        {cluster.evidenceLinks.map((link: string, i: number) => (<a key={i} href={link} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline">Source {i + 1}</a>))}
+                      <div className="space-y-1 mt-2">
+                        {cluster.evidenceLinks.map((link: string, i: number) => {
+                          let displayUrl = link;
+                          try { const u = new URL(link); displayUrl = u.hostname.replace('www.', '') + (u.pathname !== '/' ? u.pathname : ''); if (displayUrl.length > 60) displayUrl = displayUrl.slice(0, 57) + '...'; } catch {}
+                          return (
+                            <div key={i} className="flex items-center gap-1.5">
+                              <img src={`https://www.google.com/s2/favicons?domain=${new URL(link).hostname}&sz=16`} alt="" className="h-3.5 w-3.5 rounded-sm shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                              <a href={link} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline truncate">{displayUrl}</a>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
