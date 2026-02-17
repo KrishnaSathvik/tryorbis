@@ -184,9 +184,40 @@ export default function Backlog() {
                     </div>
                   </div>
 
+                  {/* Add note */}
+                  {addingNoteFor === item.id ? (
+                    <div className="mt-3 pt-3 border-t space-y-2">
+                      <Textarea
+                        placeholder="Paste or type your thoughts here..."
+                        value={noteInputs[item.id] || ""}
+                        onChange={e => setNoteInputs(prev => ({ ...prev, [item.id]: e.target.value }))}
+                        onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleAddNote(item.id); }}
+                        className="text-sm min-h-[80px] resize-y"
+                        autoFocus
+                      />
+                      <div className="flex items-center justify-between">
+                        <p className="text-[10px] text-muted-foreground">⌘ + Enter to save</p>
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setAddingNoteFor(null)}>Cancel</Button>
+                          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleAddNote(item.id)} disabled={!noteInputs[item.id]?.trim()}>
+                            <MessageSquarePlus className="h-3 w-3 mr-1" /> Save Note
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      className="flex items-center gap-1.5 mt-3 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      onClick={() => setAddingNoteFor(item.id)}
+                    >
+                      <Plus className="h-3 w-3" />
+                      <span>Add a note</span>
+                    </button>
+                  )}
+
                   {/* Notes section */}
                   {notes.length > 0 && (
-                    <div className="mt-4 space-y-2">
+                    <div className="mt-3 space-y-2">
                       {notes.map((note: string, i: number) => {
                         const isEditingThis = editingNote?.itemId === item.id && editingNote?.index === i;
                         return (
@@ -224,37 +255,6 @@ export default function Backlog() {
                         );
                       })}
                     </div>
-                  )}
-
-                  {/* Add note */}
-                  {addingNoteFor === item.id ? (
-                    <div className="mt-3 pt-3 border-t space-y-2">
-                      <Textarea
-                        placeholder="Paste or type your thoughts here..."
-                        value={noteInputs[item.id] || ""}
-                        onChange={e => setNoteInputs(prev => ({ ...prev, [item.id]: e.target.value }))}
-                        onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleAddNote(item.id); }}
-                        className="text-sm min-h-[80px] resize-y"
-                        autoFocus
-                      />
-                      <div className="flex items-center justify-between">
-                        <p className="text-[10px] text-muted-foreground">⌘ + Enter to save</p>
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setAddingNoteFor(null)}>Cancel</Button>
-                          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleAddNote(item.id)} disabled={!noteInputs[item.id]?.trim()}>
-                            <MessageSquarePlus className="h-3 w-3 mr-1" /> Save Note
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      className="flex items-center gap-1.5 mt-3 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                      onClick={() => setAddingNoteFor(item.id)}
-                    >
-                      <Plus className="h-3 w-3" />
-                      <span>Add a note</span>
-                    </button>
                   )}
                 </CardContent>
               </Card>
