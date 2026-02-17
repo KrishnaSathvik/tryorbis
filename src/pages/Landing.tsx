@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { getCommunityStats } from "@/lib/db";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   Lightbulb, ClipboardCheck, TrendingUp, Users, Zap, BarChart3, Trophy, ArrowRight,
@@ -19,34 +18,26 @@ export default function Landing() {
   usePageTitle();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [stats, setStats] = useState<{ runs: any[]; reports: any[]; totalUsers: number } | null>(null);
+  const [stats, setStats] = useState<any>(null);
 
-  const refreshStats = useCallback(() => {
-    getCommunityStats().then(setStats);
+  const refreshStats = useCallback(async () => {
+    try {
+      const res = await supabase.functions.invoke("community-stats");
+      if (res.data) setStats(res.data);
+    } catch (e) {
+      console.error("Failed to fetch community stats:", e);
+    }
   }, []);
 
   useEffect(() => {
     refreshStats();
-
-    // Subscribe to realtime changes for live updates
-    const channel = supabase
-      .channel('community-trends')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'generator_runs' }, () => refreshStats())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'validation_reports' }, () => refreshStats())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => refreshStats())
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
   }, [refreshStats]);
+
+  const hasData = (stats?.totalRuns ?? 0) > 0 || (stats?.totalValidations ?? 0) > 0;
 
   const handleCta = () => navigate(user ? "/dashboard" : "/auth");
 
-  const totalIdeas = stats?.runs.reduce((s, r) => {
-    const suggestions = Array.isArray(r.idea_suggestions) ? r.idea_suggestions : [];
-    return s + suggestions.length;
-  }, 0) ?? 0;
-
-  const hasData = (stats?.runs.length ?? 0) > 0 || (stats?.reports.length ?? 0) > 0;
+  const totalIdeas = stats?.totalIdeas ?? 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -216,8 +207,8 @@ export default function Landing() {
               {[
                 { label: "Users", value: stats.totalUsers, icon: Users },
                 { label: "Ideas Generated", value: totalIdeas, icon: Zap },
-                { label: "Validations", value: stats.reports.length, icon: BarChart3 },
-                { label: "Research Runs", value: stats.runs.length, icon: Trophy },
+                { label: "Validations", value: stats.totalValidations, icon: BarChart3 },
+                { label: "Research Runs", value: stats.totalRuns, icon: Trophy },
               ].map((s) => (
                 <Card key={s.label} className="group rounded-2xl bg-secondary border-0 hover:-translate-y-0.5 hover:shadow-lg transition-all duration-300">
                   <CardContent className="p-5 sm:p-6 flex flex-col items-center gap-3 text-center">
