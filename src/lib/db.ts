@@ -164,6 +164,19 @@ export async function renameBacklogItemDb(id: string, newName: string) {
   if (error) throw error;
 }
 
+export async function updateNoteInBacklogDb(id: string, noteIndex: number, newText: string) {
+  const { data: item } = await supabase
+    .from("backlog_items")
+    .select("notes")
+    .eq("id", id)
+    .single();
+  if (!item) return;
+  const notes = Array.isArray(item.notes) ? [...item.notes] : [];
+  if (noteIndex < 0 || noteIndex >= notes.length) return;
+  notes[noteIndex] = newText;
+  await supabase.from("backlog_items").update({ notes }).eq("id", id);
+}
+
 // ─── Stats ───
 
 export async function getPublicStats() {
