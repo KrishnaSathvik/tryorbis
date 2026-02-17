@@ -16,7 +16,7 @@ const navItems = [
   { title: "Generate Ideas", url: "/generate", icon: Lightbulb },
   { title: "Validate Idea", url: "/validate", icon: ClipboardCheck },
   { title: "My Ideas", url: "/ideas", icon: Archive },
-  { title: "Reports", url: "/reports", icon: FileText },
+  { title: "History", url: "/history", icon: FileText },
   { title: "Trends", url: "/trends", icon: TrendingUp },
 ];
 
