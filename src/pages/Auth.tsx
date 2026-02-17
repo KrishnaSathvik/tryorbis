@@ -40,7 +40,7 @@ export default function Auth() {
               <Rocket className="h-7 w-7 text-primary" />
             </div>
             <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-              Join Idea<span className="text-primary">Forge</span>
+              Join <span className="text-primary">Curo</span>
             </h1>
             <p className="text-sm text-muted-foreground">
               Pick a name and start discovering product ideas instantly.

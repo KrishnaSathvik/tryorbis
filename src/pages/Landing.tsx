@@ -94,7 +94,7 @@ export default function Landing() {
       <header className="border-b border-border">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
           <h1 className="text-xl font-bold tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-            Idea<span className="text-primary">Forge</span>
+            Curo
           </h1>
           <Button onClick={handleCta} size="sm">
             {user ? "Go to Dashboard" : "Get Started"}
@@ -107,7 +107,7 @@ export default function Landing() {
           From Problem Discovery<br />to Product Validation
         </h2>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-          IdeaForge mines real complaints, clusters pain points, and validates your product ideas with AI-powered research. Stop guessing — start building what people actually need.
+          Curo mines real complaints, clusters pain points, and validates your product ideas with AI-powered research. Stop guessing — start building what people actually need.
         </p>
         <div className="flex gap-3 justify-center">
           <Button size="lg" onClick={handleCta} className="gap-2">
@@ -268,7 +268,7 @@ export default function Landing() {
 
       {/* Footer */}
       <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground">
-        IdeaForge — From problem discovery to product validation.
+        Curo — From problem discovery to product validation.
       </footer>
     </div>
   );
