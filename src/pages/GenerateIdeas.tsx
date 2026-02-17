@@ -77,8 +77,7 @@ export default function GenerateIdeas() {
 
       if (data.ready && data.params) {
         setGeneratingParams(data.params);
-        // Auto-trigger after a brief pause
-        setTimeout(() => triggerGenerate(data.params), 1200);
+        // Don't auto-trigger — let user confirm or continue chatting
       }
     } catch (err: any) {
       setIsTyping(false);
@@ -182,9 +181,14 @@ export default function GenerateIdeas() {
           )}
           <div ref={chatEndRef} />
         </div>
-        <div className="border-t pt-3 pb-2">
+        <div className="border-t pt-3 pb-2 space-y-2">
+          {generatingParams && (
+            <Button className="w-full" onClick={() => triggerGenerate(generatingParams)}>
+              🚀 Start Research — {generatingParams.persona} × {generatingParams.category}
+            </Button>
+          )}
           <div className="flex gap-2">
-            <Input ref={inputRef} value={inputValue} onChange={e => setInputValue(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleUserInput()} placeholder="e.g. I want to build a SQL prompt buddy for devs..." className="flex-1" autoFocus disabled={isTyping} />
+            <Input ref={inputRef} value={inputValue} onChange={e => setInputValue(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleUserInput()} placeholder={generatingParams ? "Add more context or hit Start Research..." : "e.g. I want to build a SQL prompt buddy for devs..."} className="flex-1" autoFocus disabled={isTyping} />
             <Button size="icon" onClick={handleUserInput} disabled={!inputValue.trim() || isTyping}>
               <Send className="h-4 w-4" />
             </Button>
