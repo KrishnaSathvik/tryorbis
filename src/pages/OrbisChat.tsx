@@ -222,14 +222,6 @@ export default function OrbisChat() {
         <div className="px-1 py-4">
           {messages.length === 0 && !isStreaming ? (
             <div className="flex flex-col items-center justify-center min-h-[55vh] space-y-8 animate-fade-in">
-              <div className="relative">
-                <div className="h-20 w-20 rounded-3xl bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center shadow-lg shadow-primary/5">
-                  <Sparkles className="h-9 w-9 text-primary" />
-                </div>
-                <div className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-emerald-500/90 flex items-center justify-center border-2 border-background">
-                  <span className="text-[10px] text-white">✓</span>
-                </div>
-              </div>
               <div className="text-center space-y-2">
                 <h2 className="text-xl font-bold font-nunito tracking-tight">What's on your mind?</h2>
                 <p className="text-sm text-muted-foreground/80 max-w-sm leading-relaxed">
