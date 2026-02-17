@@ -95,6 +95,27 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Problem / Solution / Who */}
+      <section className="max-w-5xl mx-auto px-6 py-20">
+        <div className="grid md:grid-cols-3 gap-8">
+          <div className="space-y-3">
+            <p className="text-xs font-bold tracking-widest uppercase text-destructive">The Problem</p>
+            <h4 className="text-xl font-bold font-nunito">Most startups fail because they build something nobody wants.</h4>
+            <p className="text-sm text-muted-foreground leading-relaxed">Founders waste months building products based on assumptions, gut feelings, or biased surveys — only to discover there's no real demand.</p>
+          </div>
+          <div className="space-y-3">
+            <p className="text-xs font-bold tracking-widest uppercase text-primary">The Solution</p>
+            <h4 className="text-xl font-bold font-nunito">Orbis finds real pain points and validates ideas with AI research.</h4>
+            <p className="text-sm text-muted-foreground leading-relaxed">It mines actual complaints from forums and reviews, clusters them into patterns, generates product ideas with demand scores, and delivers a clear Build / Pivot / Skip verdict.</p>
+          </div>
+          <div className="space-y-3">
+            <p className="text-xs font-bold tracking-widest uppercase text-muted-foreground">Who It's For</p>
+            <h4 className="text-xl font-bold font-nunito">Solo founders, indie hackers, and early-stage teams.</h4>
+            <p className="text-sm text-muted-foreground leading-relaxed">Anyone who wants to validate a product idea before writing a single line of code — without spending weeks on manual market research.</p>
+          </div>
+        </div>
+      </section>
+
       {/* Features */}
       <section id="features" className="max-w-5xl mx-auto px-6 py-20 space-y-12">
         <div className="text-center space-y-3">
