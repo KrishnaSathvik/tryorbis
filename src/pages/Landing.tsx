@@ -13,6 +13,7 @@ import { LandingCharts } from "@/components/landing/LandingCharts";
 import { LandingLeaderboard } from "@/components/landing/LandingLeaderboard";
 import { LandingTrends } from "@/components/landing/LandingTrends";
 import { LandingSuccessTracking } from "@/components/landing/LandingSuccessTracking";
+import { LandingTicker } from "@/components/landing/LandingTicker";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import orbisLogo from "@/assets/orbis-logo.png";
 
@@ -225,9 +226,10 @@ export default function Landing() {
                 </Card>
               ))}
             </div>
+            {stats.trendingNow && <LandingTicker trendingNow={stats.trendingNow} />}
             {hasData && (
               <div className="space-y-6">
-              <LandingCharts stats={stats} />
+                <LandingCharts stats={stats} />
                 {stats.trendData && <LandingTrends trendData={stats.trendData} />}
                 {stats.founderSuccess && <LandingSuccessTracking founderSuccess={stats.founderSuccess} />}
                 <LandingLeaderboard stats={stats} />
