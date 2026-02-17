@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { getCommunityStats } from "@/lib/db";
@@ -18,7 +19,23 @@ export default function Landing() {
   const { user } = useAuth();
   const [stats, setStats] = useState<{ runs: any[]; reports: any[]; totalUsers: number } | null>(null);
 
-  useEffect(() => { getCommunityStats().then(setStats); }, []);
+  const refreshStats = useCallback(() => {
+    getCommunityStats().then(setStats);
+  }, []);
+
+  useEffect(() => {
+    refreshStats();
+
+    // Subscribe to realtime changes for live updates
+    const channel = supabase
+      .channel('community-trends')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'generator_runs' }, () => refreshStats())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'validation_reports' }, () => refreshStats())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => refreshStats())
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [refreshStats]);
 
   const handleCta = () => navigate(user ? "/dashboard" : "/auth");
 
