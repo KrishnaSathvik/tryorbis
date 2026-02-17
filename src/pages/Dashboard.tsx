@@ -4,14 +4,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { getMyGeneratorRuns, getMyValidationReports, getMyBacklog } from "@/lib/db";
 import { useEffect, useState } from "react";
-import { VerdictBadge } from "@/components/VerdictBadge";
+
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const { profile } = useAuth();
   const [stats, setStats] = useState({ ideasGenerated: 0, ideasValidated: 0, ideasInBacklog: 0 });
-  const [recentRuns, setRecentRuns] = useState<any[]>([]);
-  const [recentReports, setRecentReports] = useState<any[]>([]);
 
   useEffect(() => {
     Promise.all([getMyGeneratorRuns(), getMyValidationReports(), getMyBacklog()]).then(
@@ -21,8 +19,6 @@ export default function Dashboard() {
           ideasValidated: reports.length,
           ideasInBacklog: backlog.length,
         });
-        setRecentRuns(runs.slice(0, 3));
-        setRecentReports(reports.slice(0, 3));
       }
     );
   }, []);
@@ -79,45 +75,6 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {(recentRuns.length > 0 || recentReports.length > 0) && (
-        <div>
-          <h2 className="text-lg font-semibold mb-4">Recent Activity</h2>
-          <div className="space-y-2">
-            {recentRuns.map((run: any) => (
-              <Card key={run.id} className="border">
-                <CardContent className="p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Lightbulb className="h-4 w-4 text-primary" />
-                    <div>
-                      <p className="text-sm font-medium">Generated ideas for {run.persona} × {run.category}</p>
-                      <p className="text-xs text-muted-foreground">{new Date(run.created_at).toLocaleDateString()}</p>
-                    </div>
-                  </div>
-                  <span className="text-xs text-muted-foreground">{Array.isArray(run.idea_suggestions) ? (run.idea_suggestions as any[]).length : 0} ideas</span>
-                </CardContent>
-              </Card>
-            ))}
-            {recentReports.map((report: any) => (
-              <Card key={report.id} className="border">
-                <CardContent className="p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <ClipboardCheck className="h-4 w-4 text-primary" />
-                    <div>
-                      <p className="text-sm font-medium">Validated: {(report.idea_text || "").slice(0, 60)}...</p>
-                      <p className="text-xs text-muted-foreground">{new Date(report.created_at).toLocaleDateString()}</p>
-                    </div>
-                  </div>
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                    report.verdict === 'Build' ? 'bg-green-100 text-green-700' :
-                    report.verdict === 'Pivot' ? 'bg-yellow-100 text-yellow-700' :
-                    'bg-red-100 text-red-700'
-                  }`}>{report.verdict}</span>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
