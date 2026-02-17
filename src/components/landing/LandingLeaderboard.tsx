@@ -15,19 +15,24 @@ export function LandingLeaderboard({ stats }: Props) {
         source: "Generated",
       }));
     });
-    const validated = stats.reports.map((r: any) => ({
-      name: (r.idea_text || "").slice(0, 60),
-      score: r.scores
-        ? Math.round(
-            ((r.scores as any).demand +
-              (r.scores as any).pain +
-              (r.scores as any).mvpFeasibility) /
-              3
-          )
-        : 0,
-      source: "Validated",
-      verdict: r.verdict,
-    }));
+    const validated = stats.reports.map((r: any) => {
+      // Extract the short name before any colon/dash description
+      const raw = (r.idea_text || "").trim();
+      const shortName = raw.includes(":") ? raw.split(":")[0].trim() : raw.slice(0, 60);
+      return {
+        name: shortName,
+        score: r.scores
+          ? Math.round(
+              ((r.scores as any).demand +
+                (r.scores as any).pain +
+                (r.scores as any).mvpFeasibility) /
+                3
+            )
+          : 0,
+        source: "Validated",
+        verdict: r.verdict,
+      };
+    });
 
     // Deduplicate by normalized name, keeping the highest score
     const seen = new Map<string, typeof ideas[0]>();
