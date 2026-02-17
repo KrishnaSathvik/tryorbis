@@ -28,8 +28,10 @@ export function useCredits() {
       .eq("user_id", user.id);
     if (error) return false;
     setCredits(prev => (prev !== null ? prev - 1 : null));
+    // Immediately refetch to ensure UI is in sync
+    setTimeout(() => fetchCredits(), 100);
     return true;
-  }, [user, credits]);
+  }, [user, credits, fetchCredits]);
 
   const refreshCredits = useCallback(() => fetchCredits(), [fetchCredits]);
 
