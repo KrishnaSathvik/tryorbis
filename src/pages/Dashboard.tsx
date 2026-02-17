@@ -1,9 +1,10 @@
 import { useNavigate } from "react-router-dom";
-import { Lightbulb, ClipboardCheck, TrendingUp, CheckCircle, Archive } from "lucide-react";
+import { Lightbulb, ClipboardCheck, TrendingUp, CheckCircle, Archive, Flame } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
-import { getMyGeneratorRuns, getMyValidationReports, getMyBacklog } from "@/lib/db";
+import { getMyGeneratorRuns, getMyValidationReports, getMyBacklog, getAllValidationReports } from "@/lib/db";
 import { useEffect, useState } from "react";
+import { VerdictBadge } from "@/components/VerdictBadge";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -11,10 +12,11 @@ export default function Dashboard() {
   const [stats, setStats] = useState({ ideasGenerated: 0, ideasValidated: 0, ideasInBacklog: 0 });
   const [recentRuns, setRecentRuns] = useState<any[]>([]);
   const [recentReports, setRecentReports] = useState<any[]>([]);
+  const [trendingIdeas, setTrendingIdeas] = useState<any[]>([]);
 
   useEffect(() => {
-    Promise.all([getMyGeneratorRuns(), getMyValidationReports(), getMyBacklog()]).then(
-      ([runs, reports, backlog]) => {
+    Promise.all([getMyGeneratorRuns(), getMyValidationReports(), getMyBacklog(), getAllValidationReports()]).then(
+      ([runs, reports, backlog, allReports]) => {
         setStats({
           ideasGenerated: runs.reduce((s, r) => s + (Array.isArray(r.idea_suggestions) ? (r.idea_suggestions as any[]).length : 0), 0),
           ideasValidated: reports.length,
@@ -22,6 +24,15 @@ export default function Dashboard() {
         });
         setRecentRuns(runs.slice(0, 3));
         setRecentReports(reports.slice(0, 3));
+
+        // Compute trending: sort by average score descending, take top 5
+        const scored = allReports.map((r: any) => {
+          const s = r.scores as any || {};
+          const avg = Math.round(((s.demand || 0) + (s.pain || 0) + (s.mvpFeasibility || 0)) / 3);
+          return { ...r, avgScore: avg };
+        });
+        scored.sort((a: any, b: any) => b.avgScore - a.avgScore);
+        setTrendingIdeas(scored.slice(0, 5));
       }
     );
   }, []);
@@ -78,7 +89,41 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* Recent Activity */}
+      {/* Trending Ideas */}
+      {trendingIdeas.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <Flame className="h-5 w-5 text-orange-500" />
+            <h2 className="text-lg font-semibold">Trending Ideas</h2>
+            <span className="text-xs text-muted-foreground">Top validated ideas across all users</span>
+          </div>
+          <div className="space-y-3">
+            {trendingIdeas.map((idea: any, idx: number) => {
+              const scores = idea.scores as any || {};
+              return (
+                <Card key={idea.id} className="border cursor-pointer hover:border-primary/30 transition-colors" onClick={() => navigate(`/validate?idea=${encodeURIComponent(idea.idea_text)}`)}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-start gap-3 flex-1 min-w-0">
+                        <span className="text-lg font-bold text-muted-foreground/50 mt-0.5">#{idx + 1}</span>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium truncate">{idea.idea_text}</p>
+                          <div className="flex items-center gap-3 mt-2">
+                            <span className="text-xs font-medium text-primary">{idea.avgScore}/100</span>
+                            <VerdictBadge verdict={idea.verdict} size="sm" />
+                          </div>
+                        </div>
+                      </div>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">{new Date(idea.created_at).toLocaleDateString()}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {(recentRuns.length > 0 || recentReports.length > 0) && (
         <div>
           <h2 className="text-lg font-semibold mb-4">Recent Activity</h2>
