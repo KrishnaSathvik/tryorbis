@@ -14,14 +14,43 @@
 - **Full Validation Reports** — Competitor analysis, pros & cons, evidence links, and a Build / Pivot / Skip verdict.
 - **Orbis AI Advisor** — Brainstorm ideas, discuss strategy, refine your pitch — all in a dedicated AI chat.
 - **Backlog Management** — Save and track your best ideas with status tracking.
-- **Community Trends** — Live stats showing what the community is researching.
+- **Analytics Dashboard** — Personal stats on ideas generated, validated, and saved.
+- **Community Trends** — Live aggregate stats showing what the community is researching.
+- **Guest Mode** — Try the app instantly without signing up (with limited credits).
+- **Dark / Light Theme** — Full theme support with system preference detection.
 
 ## Tech Stack
 
-- **Frontend:** React · TypeScript · Vite · Tailwind CSS · shadcn/ui
-- **Backend:** Lovable Cloud (database, auth, edge functions)
-- **AI:** Perplexity API for research, Lovable AI for chat
-- **Charts:** Recharts
+- **Frontend:** React 18 · TypeScript · Vite · Tailwind CSS · shadcn/ui · Recharts
+- **Backend:** Lovable Cloud (database, auth, edge functions, secrets)
+- **AI:** Perplexity API for research · Lovable AI for Orbis Chat
+- **Routing:** React Router v6
+
+## Pages
+
+| Route | Page | Description |
+|-------|------|-------------|
+| `/` | Landing | Public marketing page with live community stats |
+| `/auth` | Auth | Sign up / sign in |
+| `/dashboard` | Dashboard | Welcome screen with quick stats and CTA cards |
+| `/chat` | Orbis AI | Conversational AI advisor for strategy and brainstorming |
+| `/generate` | Generate Ideas | AI-powered problem discovery and idea generation |
+| `/validate` | Validate Idea | Full validation report with verdict |
+| `/ideas` | My Ideas | Backlog of saved ideas with status tracking |
+| `/history` | History | Past validation reports |
+| `/analytics` | Analytics | Personal usage analytics |
+
+## Edge Functions
+
+| Function | Purpose |
+|----------|---------|
+| `perplexity-generate` | AI research for idea generation |
+| `perplexity-validate` | AI research for idea validation |
+| `chat-generate` | Follow-up chat on generation results |
+| `chat-validate` | Follow-up chat on validation results |
+| `chat-followup` | General follow-up conversations |
+| `orbis-chat` | Orbis AI advisor chat |
+| `community-stats` | Aggregated community statistics (public) |
 
 ## Getting Started
 
@@ -38,18 +67,21 @@ Open [http://localhost:8080](http://localhost:8080) to view the app.
 
 ```
 src/
-├── components/     # Reusable UI components
-├── contexts/       # Auth context
-├── hooks/          # Custom hooks (credits, page title, etc.)
-├── lib/            # Database helpers, types, utilities
-├── pages/          # Route pages
-└── integrations/   # Backend client
+├── components/        # Reusable UI components (sidebar, badges, charts, etc.)
+│   ├── icons/         # Custom AI brand icons
+│   ├── landing/       # Landing page sections (charts, leaderboard)
+│   └── ui/            # shadcn/ui primitives
+├── contexts/          # Auth context (session, profile, guest mode)
+├── hooks/             # Custom hooks (credits, page title, mobile detection)
+├── lib/               # Database helpers, types, utilities
+├── pages/             # Route pages
+└── integrations/      # Backend client config
 supabase/
-└── functions/      # Edge functions (AI endpoints)
+└── functions/         # Edge functions (AI endpoints, stats)
 public/
-├── manifest.json   # PWA manifest
-├── sitemap.xml     # SEO sitemap
-└── robots.txt      # Crawler rules
+├── manifest.json      # PWA manifest
+├── sitemap.xml        # SEO sitemap
+└── robots.txt         # Crawler rules
 ```
 
 ## License
