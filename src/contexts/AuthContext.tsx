@@ -57,15 +57,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     init();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      (_event, session) => {
         if (!mounted) return;
         const u = session?.user ?? null;
         setUser(u);
         if (u) {
-          await fetchProfile(u.id);
+          // Don't await in the callback — fetch profile in background
+          fetchProfile(u.id);
         } else {
           setProfile(null);
         }
+        setLoading(false);
       }
     );
 
