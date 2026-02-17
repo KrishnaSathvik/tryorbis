@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ import orbisLogo from "@/assets/orbis-logo.png";
 import { Eye, EyeOff, Zap } from "lucide-react";
 
 export default function Auth() {
+  usePageTitle("Sign In");
   const { signUp, signIn, signInAsGuest, user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);

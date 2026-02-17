@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,7 @@ interface Report {
 }
 
 export default function ValidateIdea() {
+  usePageTitle("Validate Idea");
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const chatEndRef = useRef<HTMLDivElement>(null);
