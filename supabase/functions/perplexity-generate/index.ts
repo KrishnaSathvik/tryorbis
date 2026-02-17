@@ -93,6 +93,24 @@ MARKET TIMING RESEARCH (new):
 - Check for new regulations, platform changes, or technology shifts affecting this space
 - Note any recent Product Hunt launches or YC companies in this category
 
+WORKAROUND DETECTION RESEARCH (Phase 2 — new):
+- Search for manual solutions people have built: spreadsheets, scripts, Zapier workflows, internal tools
+- Look for "we built our own", "I hacked together", "using a spreadsheet to track" mentions
+- Note the investment level: how much time/money are people spending on workarounds?
+- This proves the pain is real AND budget exists
+
+FEATURE GAP RESEARCH (Phase 2 — new):
+- For each competitor found, note which features they do well vs poorly
+- Look for "I wish [tool] had..." or "the one thing missing from [tool]" posts
+- Identify which features are commoditized (everyone has them) vs differentiation opportunities
+- Note features that users explicitly say would make them switch tools
+
+PLATFORM RISK RESEARCH (Phase 2 — new):
+- Check if major platforms (Stripe, AWS, Shopify, etc.) are building or have announced similar features
+- Look for API deprecation notices or rate-limit changes affecting this space
+- Check for new regulations that could restrict or enable this category
+- Note any platform dependency risks (e.g., relying on a single API that could change)
+
 Also research existing solutions in this space:
 - What tools already exist?
 - What are their most common complaints?
@@ -100,7 +118,7 @@ Also research existing solutions in this space:
 - What gaps do users mention?
 - How many competitors exist and what's their funding level?
 
-Return your findings as detailed, unstructured text. Include all quotes, sources, competitor names, pricing, WTP signals, and timing data. Do NOT structure as JSON yet — just give me the raw research.`;
+Return your findings as detailed, unstructured text. Include all quotes, sources, competitor names, pricing, WTP signals, timing data, workaround details, feature gaps, and platform risks. Do NOT structure as JSON yet — just give me the raw research.`;
 
     console.log('Pass 1: Starting deep research with sonar-pro...');
     const researchResponse = await fetch('https://api.perplexity.ai/chat/completions', {
@@ -112,7 +130,7 @@ Return your findings as detailed, unstructured text. Include all quotes, sources
       body: JSON.stringify({
         model: 'sonar-pro',
         messages: [
-          { role: 'system', content: 'You are a meticulous market research analyst. Find real, specific, verifiable complaints, willingness-to-pay signals, and market timing indicators. Always cite where you found information. Be thorough — quality and specificity matter more than speed.' },
+          { role: 'system', content: 'You are a meticulous market research analyst. Find real, specific, verifiable complaints, willingness-to-pay signals, market timing indicators, workaround evidence, feature gaps, and platform risks. Always cite where you found information. Be thorough — quality and specificity matter more than speed.' },
           { role: 'user', content: searchPrompt },
         ],
         temperature: 0.1,
@@ -145,7 +163,7 @@ ${rawResearch}
 CITATIONS/SOURCES:
 ${citations.map((c: string, i: number) => `[${i + 1}] ${c}`).join('\n')}
 
-YOUR TASK: Analyze this research and produce structured output with enhanced intelligence layers.
+YOUR TASK: Analyze this research and produce structured output with enhanced intelligence layers (Phase 1 + Phase 2).
 
 CLUSTERING RULES:
 - Group complaints into 4-6 distinct thematic clusters
@@ -191,7 +209,7 @@ Classify market timing:
 - "declining": Interest waning, consolidation happening
 Include timing signals from the research (trends, funding, regulations)
 
-ICP (IDEAL CUSTOMER PROFILE) EXTRACTION (NEW):
+ICP (IDEAL CUSTOMER PROFILE) EXTRACTION:
 Define the ideal first customer with specifics:
 - Business type (B2B/B2C/B2B2C)
 - Company size / revenue range
@@ -199,6 +217,26 @@ Define the ideal first customer with specifics:
 - Current tech stack indicators
 - Key buying triggers
 - Budget range
+
+WORKAROUND DETECTION (Phase 2 — NEW):
+Extract workaround evidence from the research:
+- Manual processes people built (spreadsheets, scripts, Zapier, internal tools)
+- Time/money investment in workarounds
+- Classify investment level per workaround: "low" (minutes/week), "medium" (hours/week), "high" (days/week or $$$)
+- Rate overall workaround severity: "strong" (many high-investment workarounds = validated pain), "moderate", "weak", "none"
+
+FEATURE GAP MAPPING (Phase 2 — NEW):
+Build a feature gap matrix from competitor analysis:
+- List 4-8 key features relevant to this space
+- For each: classify competitor coverage as "none", "weak", "strong", or "commodity"
+- Rate opportunity: "high" (no coverage or weak = big gap), "medium", "low" (commodity = no differentiation)
+- Identify the single best "top wedge" feature to enter the market with
+
+PLATFORM RISK SCORING (Phase 2 — NEW):
+Assess platform dependency risks:
+- Level: "low", "medium", "high", or "critical"
+- For each risk signal, classify type: "bundling", "api_limitation", "roadmap_overlap", "regulation", "dependency"
+- Examples: Stripe launching competing features = "bundling", API rate limits = "api_limitation"
 
 Return ONLY valid JSON:
 {
@@ -219,41 +257,65 @@ Return ONLY valid JSON:
       "name": "BrandName",
       "description": "What it does and why it's different from existing solutions",
       "mvpScope": "The absolute smallest version you could build in 2-4 weeks to test demand",
-      "monetization": "Specific pricing model with price points (e.g., 'Freemium: free tier + $19/mo pro')",
+      "monetization": "Specific pricing model with price points",
       "demandScore": 72
     }
   ],
   "wtpSignals": {
     "strength": "strong",
     "signals": [
-      {"quote": "I'd pay $50/mo for this easily", "source": "Reddit r/SaaS", "context": "User discussing churn prevention tools"},
-      {"quote": "Switched from X because it cost $200/mo", "source": "G2 Review", "context": "Small SaaS founder"}
+      {"quote": "I'd pay $50/mo for this easily", "source": "Reddit r/SaaS", "context": "User discussing the problem"}
     ],
     "priceRange": {"low": 19, "mid": 49, "high": 99, "currency": "USD/mo"},
-    "summary": "Strong willingness to pay $30-60/mo based on multiple direct mentions and existing tool pricing"
+    "summary": "Strong willingness to pay based on multiple direct mentions"
   },
   "competitionDensity": {
     "level": "fragmented",
     "competitorCount": 8,
     "totalFundingEstimate": "$45M",
-    "keyIncumbents": ["Competitor A ($20M raised)", "Competitor B (bootstrapped)"],
+    "keyIncumbents": ["Competitor A ($20M raised)"],
     "switchingCosts": "low",
-    "summary": "Fragmented market with 8 players, none dominant. Low switching costs create opportunity for better UX."
+    "summary": "Fragmented market with no dominant player."
   },
   "marketTiming": {
     "phase": "growing",
-    "signals": ["VC funding up 40% YoY in this space", "Google Trends showing steady growth", "2 YC companies in latest batch"],
-    "summary": "Growing market with increasing VC interest and rising search demand."
+    "signals": ["VC funding up 40% YoY"],
+    "summary": "Growing market with increasing interest."
   },
   "icp": {
     "businessType": "B2B SaaS",
     "companySize": "10-50 employees",
     "revenueRange": "$500K-$5M ARR",
     "industry": "SaaS / subscription businesses",
-    "techStack": ["Stripe", "Intercom", "HubSpot"],
-    "buyingTriggers": ["Churn rate exceeds 5%", "Manual processes taking 10+ hrs/week"],
+    "techStack": ["Stripe", "Intercom"],
+    "buyingTriggers": ["Churn rate exceeds 5%"],
     "budgetRange": "$30-100/mo",
-    "summary": "Early-stage B2B SaaS companies with $500K-$5M ARR struggling with churn, currently using spreadsheets or overpriced enterprise tools."
+    "summary": "Early-stage B2B SaaS companies."
+  },
+  "workaroundDetection": {
+    "severity": "strong",
+    "workarounds": [
+      {"description": "Teams building custom spreadsheets to track churn manually", "source": "Reddit r/SaaS", "investmentLevel": "high"},
+      {"description": "Using Zapier to cobble together alerts from Stripe webhooks", "source": "Indie Hackers", "investmentLevel": "medium"}
+    ],
+    "summary": "Strong workaround signals — multiple teams investing hours/week in manual processes."
+  },
+  "featureGapMap": {
+    "gaps": [
+      {"feature": "Exit surveys", "competitorCoverage": "weak", "opportunity": "high"},
+      {"feature": "Dunning management", "competitorCoverage": "strong", "opportunity": "low"},
+      {"feature": "Predictive churn scoring", "competitorCoverage": "none", "opportunity": "high"}
+    ],
+    "topWedge": "Predictive churn scoring — no competitor does this well, high demand signal",
+    "summary": "Key gaps in exit surveys and predictive scoring."
+  },
+  "platformRisk": {
+    "level": "medium",
+    "signals": [
+      {"signal": "Stripe launched Revenue Recovery in 2024", "riskType": "bundling"},
+      {"signal": "Heavy dependency on Stripe's billing API", "riskType": "dependency"}
+    ],
+    "summary": "Medium risk — Stripe entering adjacent features but core differentiation is defensible."
   }
 }`;
 
@@ -266,7 +328,7 @@ Return ONLY valid JSON:
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [
-          { role: 'user', parts: [{ text: 'You are a senior product strategist. Analyze research data and produce precise, honest, structured analysis. Never inflate scores or fabricate evidence. Be brutally honest about demand levels. Extract willingness-to-pay signals, competition density, market timing, and ideal customer profiles from the research data.\n\n' + analysisPrompt }] },
+          { role: 'user', parts: [{ text: 'You are a senior product strategist. Analyze research data and produce precise, honest, structured analysis. Never inflate scores or fabricate evidence. Be brutally honest about demand levels. Extract willingness-to-pay signals, competition density, market timing, ideal customer profiles, workaround evidence, feature gaps, and platform risks from the research data.\n\n' + analysisPrompt }] },
         ],
         generationConfig: { temperature: 0.2 },
       }),
@@ -308,7 +370,7 @@ Return ONLY valid JSON:
     // Inject citations into evidence
     parsed.evidenceLinks = citations;
 
-    console.log(`Complete: ${parsed.problemClusters?.length || 0} clusters, ${parsed.ideaSuggestions?.length || 0} ideas, WTP: ${parsed.wtpSignals?.strength || 'none'}, Competition: ${parsed.competitionDensity?.level || 'unknown'}, Timing: ${parsed.marketTiming?.phase || 'unknown'}`);
+    console.log(`Complete: ${parsed.problemClusters?.length || 0} clusters, ${parsed.ideaSuggestions?.length || 0} ideas, WTP: ${parsed.wtpSignals?.strength || 'none'}, Competition: ${parsed.competitionDensity?.level || 'unknown'}, Timing: ${parsed.marketTiming?.phase || 'unknown'}, Workarounds: ${parsed.workaroundDetection?.severity || 'none'}, Gaps: ${parsed.featureGapMap?.gaps?.length || 0}, PlatformRisk: ${parsed.platformRisk?.level || 'unknown'}`);
 
     return new Response(JSON.stringify(parsed), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

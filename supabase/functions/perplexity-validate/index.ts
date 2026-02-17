@@ -90,7 +90,7 @@ RESEARCH METHODOLOGY — investigate each area systematically:
    - What adjacent markets exist?
    - Are there growing trends supporting this idea?
 
-6. **WILLINGNESS-TO-PAY SIGNALS** (CRITICAL — new):
+6. **WILLINGNESS-TO-PAY SIGNALS** (CRITICAL):
    - Search for "what tools do you pay for" related to this problem
    - Find "I'd pay $X for..." or "too expensive at $X" statements
    - Look for pricing complaints about existing tools
@@ -98,14 +98,32 @@ RESEARCH METHODOLOGY — investigate each area systematically:
    - Search "alternatives to [popular tool] pricing"
    - Quote actual WTP statements with source
 
-7. **MARKET TIMING INDICATORS** (new):
+7. **MARKET TIMING INDICATORS**:
    - Google Trends trajectory for related search terms
    - Recent VC funding rounds in this space (Crunchbase)
    - New regulations or platform changes affecting this space
    - Recent Product Hunt / YC companies in this category
    - Technology enablers that are newly available
 
-Return your findings as detailed unstructured text with all data points, quotes, competitor names, pricing, WTP signals, timing data, URLs. Do NOT format as JSON — give me the raw research.`;
+8. **WORKAROUND DETECTION** (Phase 2 — new):
+   - Search for manual solutions: spreadsheets, scripts, Zapier, internal tools
+   - Look for "we built our own", "I hacked together", "using spreadsheets"
+   - Note time/money investment in these workarounds
+   - These prove pain is real AND budget exists
+
+9. **FEATURE GAP ANALYSIS** (Phase 2 — new):
+   - For each competitor: which features they do well vs poorly
+   - "I wish [tool] had..." or "the one thing missing" posts
+   - Which features are commoditized vs differentiation opportunities
+   - Features that would make users switch tools
+
+10. **PLATFORM RISK SIGNALS** (Phase 2 — new):
+    - Major platforms building or announcing similar features
+    - API deprecation notices or rate-limit changes
+    - New regulations that could restrict or enable this category
+    - Platform dependency risks (single API reliance)
+
+Return your findings as detailed unstructured text with all data points, quotes, competitor names, pricing, WTP signals, timing data, workarounds, feature gaps, platform risks, URLs. Do NOT format as JSON — give me the raw research.`;
 
     console.log('Pass 1: Deep market research with sonar-pro...');
     const researchResponse = await fetch('https://api.perplexity.ai/chat/completions', {
@@ -117,7 +135,7 @@ Return your findings as detailed unstructured text with all data points, quotes,
       body: JSON.stringify({
         model: 'sonar-pro',
         messages: [
-          { role: 'system', content: 'You are a meticulous market research analyst specializing in startup validation. Find real, verifiable data — not assumptions. Cite sources. Be thorough and specific with numbers, pricing, willingness-to-pay signals, and competitor details.' },
+          { role: 'system', content: 'You are a meticulous market research analyst specializing in startup validation. Find real, verifiable data — not assumptions. Cite sources. Be thorough and specific with numbers, pricing, willingness-to-pay signals, workaround evidence, feature gaps, platform risks, and competitor details.' },
           { role: 'user', content: researchPrompt },
         ],
         temperature: 0.1,
@@ -209,7 +227,7 @@ Classify market timing:
 - "saturated": Mature market, many players, innovation slowing
 - "declining": Interest waning, consolidation happening
 
-ICP (IDEAL CUSTOMER PROFILE) EXTRACTION (NEW):
+ICP (IDEAL CUSTOMER PROFILE) EXTRACTION:
 Define the ideal first customer:
 - Business type (B2B/B2C/B2B2C)
 - Company size / revenue range
@@ -217,6 +235,24 @@ Define the ideal first customer:
 - Current tech stack indicators
 - Key buying triggers
 - Budget range
+
+WORKAROUND DETECTION (Phase 2 — NEW):
+Extract workaround evidence:
+- Manual processes (spreadsheets, scripts, Zapier, internal tools)
+- Time/money investment level per workaround: "low", "medium", "high"
+- Overall severity: "strong" (many high-investment workarounds), "moderate", "weak", "none"
+
+FEATURE GAP MAPPING (Phase 2 — NEW):
+Build feature gap matrix:
+- 4-8 key features for this space
+- Competitor coverage: "none", "weak", "strong", "commodity"
+- Opportunity: "high", "medium", "low"
+- Identify single best "top wedge" feature to enter market
+
+PLATFORM RISK SCORING (Phase 2 — NEW):
+Assess platform dependency:
+- Level: "low", "medium", "high", "critical"
+- Signal types: "bundling", "api_limitation", "roadmap_overlap", "regulation", "dependency"
 
 Return ONLY valid JSON:
 {
@@ -227,57 +263,76 @@ Return ONLY valid JSON:
     "mvpFeasibility": 80
   },
   "scoreJustifications": {
-    "demand": "Why this score — cite specific evidence",
-    "pain": "Why this score — cite specific evidence",
-    "competition": "Why this score — list key competitors and their strengths",
-    "mvpFeasibility": "Why this score — what tech is needed"
+    "demand": "Why this score",
+    "pain": "Why this score",
+    "competition": "Why this score",
+    "mvpFeasibility": "Why this score"
   },
   "marketSizing": {
-    "tam": "Total Addressable Market estimate with context",
-    "sam": "Serviceable Addressable Market — your realistic segment",
-    "som": "Serviceable Obtainable Market — first 2-3 year capture",
-    "methodology": "Brief explanation of estimates"
+    "tam": "Total Addressable Market estimate",
+    "sam": "Serviceable Addressable Market",
+    "som": "Serviceable Obtainable Market",
+    "methodology": "Brief explanation"
   },
   "verdict": "Build",
-  "verdictReasoning": "2-3 sentences explaining why this verdict follows from the scores and evidence",
-  "pros": ["Specific evidence-backed pro 1", "Pro 2", "Pro 3"],
-  "cons": ["Specific evidence-backed con 1", "Con 2"],
-  "gapOpportunities": ["Specific gap competitors miss 1", "Gap 2"],
-  "mvpWedge": "The specific smallest version to build first",
-  "killTest": "The single most important thing to test before building",
+  "verdictReasoning": "2-3 sentences",
+  "pros": ["Pro 1", "Pro 2"],
+  "cons": ["Con 1", "Con 2"],
+  "gapOpportunities": ["Gap 1", "Gap 2"],
+  "mvpWedge": "Smallest version to build first",
+  "killTest": "Most important thing to test",
   "competitors": [
-    {"name": "Real Competitor", "weakness": "Their specific weakness", "pricing": "$X/mo"}
+    {"name": "Real Competitor", "weakness": "Specific weakness", "pricing": "$X/mo"}
   ],
   "wtpSignals": {
     "strength": "strong",
-    "signals": [
-      {"quote": "I'd pay $50/mo for this easily", "source": "Reddit r/SaaS", "context": "User discussing the problem space"}
-    ],
+    "signals": [{"quote": "I'd pay $50/mo", "source": "Reddit", "context": "Context"}],
     "priceRange": {"low": 19, "mid": 49, "high": 99, "currency": "USD/mo"},
-    "summary": "Strong willingness to pay $30-60/mo based on multiple direct mentions"
+    "summary": "Summary"
   },
   "competitionDensity": {
     "level": "fragmented",
     "competitorCount": 8,
     "totalFundingEstimate": "$45M",
-    "keyIncumbents": ["Competitor A ($20M raised)", "Competitor B (bootstrapped)"],
+    "keyIncumbents": ["Competitor A"],
     "switchingCosts": "low",
-    "summary": "Fragmented market with 8 players, none dominant."
+    "summary": "Summary"
   },
   "marketTiming": {
     "phase": "growing",
-    "signals": ["VC funding up 40% YoY", "Google Trends showing growth"],
-    "summary": "Growing market with increasing VC interest."
+    "signals": ["Signal 1"],
+    "summary": "Summary"
   },
   "icp": {
     "businessType": "B2B SaaS",
     "companySize": "10-50 employees",
     "revenueRange": "$500K-$5M ARR",
-    "industry": "SaaS / subscription businesses",
-    "techStack": ["Stripe", "Intercom"],
-    "buyingTriggers": ["Churn rate exceeds 5%", "Manual processes taking 10+ hrs/week"],
+    "industry": "SaaS",
+    "techStack": ["Stripe"],
+    "buyingTriggers": ["Trigger 1"],
     "budgetRange": "$30-100/mo",
-    "summary": "Early-stage B2B SaaS companies struggling with churn."
+    "summary": "Summary"
+  },
+  "workaroundDetection": {
+    "severity": "strong",
+    "workarounds": [
+      {"description": "Custom spreadsheets for tracking", "source": "Reddit", "investmentLevel": "high"}
+    ],
+    "summary": "Strong workaround signals"
+  },
+  "featureGapMap": {
+    "gaps": [
+      {"feature": "Exit surveys", "competitorCoverage": "weak", "opportunity": "high"}
+    ],
+    "topWedge": "Best entry feature",
+    "summary": "Key gaps identified"
+  },
+  "platformRisk": {
+    "level": "medium",
+    "signals": [
+      {"signal": "Platform launching similar features", "riskType": "bundling"}
+    ],
+    "summary": "Risk assessment"
   }
 }`;
 
@@ -290,7 +345,7 @@ Return ONLY valid JSON:
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [
-          { role: 'user', parts: [{ text: 'You are a brutally honest startup advisor. Your job is to save founders from wasting time on bad ideas AND to greenlight genuinely promising ones. Never be diplomatic at the expense of truth. Base every score and statement on the research evidence provided. Extract willingness-to-pay signals, competition density, market timing, and ICP from the data.\n\n' + analysisPrompt }] },
+          { role: 'user', parts: [{ text: 'You are a brutally honest startup advisor. Your job is to save founders from wasting time on bad ideas AND to greenlight genuinely promising ones. Never be diplomatic at the expense of truth. Base every score and statement on the research evidence provided. Extract willingness-to-pay signals, competition density, market timing, ICP, workaround evidence, feature gaps, and platform risks from the data.\n\n' + analysisPrompt }] },
         ],
         generationConfig: { temperature: 0.2 },
       }),
@@ -341,7 +396,7 @@ Return ONLY valid JSON:
     // Inject citations
     parsed.evidenceLinks = citations;
 
-    console.log(`Complete: Verdict=${parsed.verdict}, Demand=${scores.demand}, Pain=${scores.pain}, WTP=${parsed.wtpSignals?.strength || 'none'}, Timing=${parsed.marketTiming?.phase || 'unknown'}`);
+    console.log(`Complete: Verdict=${parsed.verdict}, Demand=${scores.demand}, Pain=${scores.pain}, WTP=${parsed.wtpSignals?.strength || 'none'}, Timing=${parsed.marketTiming?.phase || 'unknown'}, Workarounds=${parsed.workaroundDetection?.severity || 'none'}, Gaps=${parsed.featureGapMap?.gaps?.length || 0}, PlatformRisk=${parsed.platformRisk?.level || 'unknown'}`);
 
     return new Response(JSON.stringify(parsed), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

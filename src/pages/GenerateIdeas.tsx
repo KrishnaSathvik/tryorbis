@@ -8,14 +8,14 @@ import { ResearchTrace } from "@/components/ResearchTrace";
 import { ScoreBar } from "@/components/ScoreBar";
 import { AIHandoff } from "@/components/AIHandoff";
 import { FollowUpChat } from "@/components/FollowUpChat";
-import { WtpSection, CompetitionDensitySection, MarketTimingSection, IcpSection } from "@/components/IntelligenceSections";
+import { WtpSection, CompetitionDensitySection, MarketTimingSection, IcpSection, WorkaroundSection, FeatureGapSection, PlatformRiskSection } from "@/components/IntelligenceSections";
 import { useCredits } from "@/hooks/useCredits";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, Bookmark, ClipboardCheck, Copy, Send, User, FolderOpen, Monitor, Globe, Rocket, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { saveGeneratorRunDb, addToBacklogDb } from "@/lib/db";
 import { toast } from "sonner";
-import type { WtpSignals, CompetitionDensity, MarketTiming, ICP } from "@/lib/types";
+import type { WtpSignals, CompetitionDensity, MarketTiming, ICP, WorkaroundDetection, FeatureGapMap, PlatformRisk } from "@/lib/types";
 
 const researchSteps = [
   "Mining complaints from Reddit, forums & reviews...",
@@ -32,6 +32,7 @@ interface GeneratorResult {
   problemClusters: any[]; ideaSuggestions: any[];
   wtpSignals?: WtpSignals; competitionDensity?: CompetitionDensity;
   marketTiming?: MarketTiming; icp?: ICP;
+  workaroundDetection?: WorkaroundDetection; featureGapMap?: FeatureGapMap; platformRisk?: PlatformRisk;
 }
 
 export default function GenerateIdeas() {
@@ -103,6 +104,7 @@ export default function GenerateIdeas() {
         problemClusters: data.problemClusters || [], ideaSuggestions: data.ideaSuggestions || [],
         wtpSignals: data.wtpSignals || undefined, competitionDensity: data.competitionDensity || undefined,
         marketTiming: data.marketTiming || undefined, icp: data.icp || undefined,
+        workaroundDetection: data.workaroundDetection || undefined, featureGapMap: data.featureGapMap || undefined, platformRisk: data.platformRisk || undefined,
       };
       try { await saveGeneratorRunDb(run); } catch (e) { console.error("Failed to save:", e); }
       setResult(run); setPhase('results');
@@ -259,8 +261,8 @@ export default function GenerateIdeas() {
         </div>
       </div>
 
-      {/* ─── Phase 1 Intelligence Layers ─── */}
-      {result && (result.wtpSignals || result.competitionDensity || result.marketTiming || result.icp) && (
+      {/* ─── Phase 1 + Phase 2 Intelligence Layers ─── */}
+      {result && (result.wtpSignals || result.competitionDensity || result.marketTiming || result.icp || result.workaroundDetection || result.featureGapMap || result.platformRisk) && (
         <div>
           <h2 className="text-lg font-semibold font-nunito mb-4">Market Intelligence</h2>
           <div className="grid md:grid-cols-2 gap-4">
@@ -268,6 +270,9 @@ export default function GenerateIdeas() {
             {result.competitionDensity && <CompetitionDensitySection data={result.competitionDensity} />}
             {result.marketTiming && <MarketTimingSection data={result.marketTiming} />}
             {result.icp && <IcpSection data={result.icp} />}
+            {result.workaroundDetection && <WorkaroundSection data={result.workaroundDetection} />}
+            {result.featureGapMap && <FeatureGapSection data={result.featureGapMap} />}
+            {result.platformRisk && <PlatformRiskSection data={result.platformRisk} />}
           </div>
         </div>
       )}

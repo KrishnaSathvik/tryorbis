@@ -62,6 +62,45 @@ export interface ICP {
   summary: string;
 }
 
+// ─── Phase 2 Intelligence Layers ───
+
+export interface Workaround {
+  description: string;
+  source: string;
+  investmentLevel: 'low' | 'medium' | 'high';
+}
+
+export interface WorkaroundDetection {
+  workarounds: Workaround[];
+  severity: 'strong' | 'moderate' | 'weak' | 'none';
+  summary: string;
+}
+
+export interface FeatureGapEntry {
+  feature: string;
+  competitorCoverage: 'none' | 'weak' | 'strong' | 'commodity';
+  opportunity: 'high' | 'medium' | 'low';
+}
+
+export interface FeatureGapMap {
+  gaps: FeatureGapEntry[];
+  topWedge: string;
+  summary: string;
+}
+
+export type PlatformRiskLevel = 'low' | 'medium' | 'high' | 'critical';
+
+export interface PlatformRiskSignal {
+  signal: string;
+  riskType: 'bundling' | 'api_limitation' | 'roadmap_overlap' | 'regulation' | 'dependency';
+}
+
+export interface PlatformRisk {
+  level: PlatformRiskLevel;
+  signals: PlatformRiskSignal[];
+  summary: string;
+}
+
 // ─── Existing types ───
 
 export interface GeneratorRun {
