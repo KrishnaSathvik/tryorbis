@@ -152,6 +152,7 @@ export type Database = {
         Row: {
           created_at: string
           credits: number
+          device_fingerprint: string | null
           display_name: string
           email: string | null
           id: string
@@ -160,6 +161,7 @@ export type Database = {
         Insert: {
           created_at?: string
           credits?: number
+          device_fingerprint?: string | null
           display_name?: string
           email?: string | null
           id?: string
@@ -168,6 +170,7 @@ export type Database = {
         Update: {
           created_at?: string
           credits?: number
+          device_fingerprint?: string | null
           display_name?: string
           email?: string | null
           id?: string

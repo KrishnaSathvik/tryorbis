@@ -3,6 +3,7 @@ import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCredits } from "@/hooks/useCredits";
 import { useNavigate } from "react-router-dom";
+import { GuestUpgradeBanner } from "@/components/GuestUpgradeBanner";
 import orbisLogo from "@/assets/orbis-logo.png";
 import {
   Sidebar,
@@ -26,7 +27,7 @@ const navItems = [
 ];
 
 export function AppSidebar() {
-  const { profile, signOut } = useAuth();
+  const { profile, signOut, isGuest } = useAuth();
   const { credits } = useCredits();
   const navigate = useNavigate();
 
@@ -72,9 +73,11 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <div className="mt-auto p-4 border-t border-sidebar-border space-y-2">
+        <GuestUpgradeBanner />
         <div className="flex items-center gap-2 px-6 py-2">
           <Zap className="h-4 w-4 text-primary" />
           <span className="text-sm font-medium">{credits} credits</span>
+          {isGuest && <span className="text-[10px] bg-warning/10 text-warning px-2 py-0.5 rounded-full font-medium">Guest</span>}
         </div>
         <button
           onClick={handleSignOut}
