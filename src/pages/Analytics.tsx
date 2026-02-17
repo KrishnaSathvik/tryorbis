@@ -147,6 +147,7 @@ export default function Analytics() {
             ))}
           </div>
 
+          {/* Row 1: Verdict + Categories */}
           <div className="grid md:grid-cols-2 gap-6">
             {/* Verdict Distribution */}
             {verdictData.length > 0 && (
@@ -154,18 +155,9 @@ export default function Analytics() {
                 <CardContent className="p-6">
                   <h3 className="text-sm font-semibold font-nunito mb-1">Verdict Distribution</h3>
                   <p className="text-xs text-muted-foreground mb-4">Breakdown of your validation outcomes</p>
-                  <ResponsiveContainer width="100%" height={220}>
+                  <ResponsiveContainer width="100%" height={200}>
                     <PieChart>
-                      <Pie
-                        data={verdictData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={55}
-                        outerRadius={85}
-                        paddingAngle={3}
-                        dataKey="value"
-                        strokeWidth={0}
-                      >
+                      <Pie data={verdictData} cx="50%" cy="50%" innerRadius={50} outerRadius={78} paddingAngle={3} dataKey="value" strokeWidth={0}>
                         {verdictData.map((entry: any, i: number) => (
                           <Cell key={i} fill={VERDICT_COLORS[entry.name] || PALETTE[i % PALETTE.length]} />
                         ))}
@@ -185,33 +177,8 @@ export default function Analytics() {
                 </CardContent>
               </Card>
             )}
-          </div>
 
-          {/* Scores Comparison - Grouped Bar */}
-          {comparisonData.length > 1 && (
-            <Card className="rounded-2xl border border-border/40 bg-card shadow-sm">
-              <CardContent className="p-6">
-                <h3 className="text-sm font-semibold font-nunito mb-1">Idea Score Comparison</h3>
-                <p className="text-xs text-muted-foreground mb-4">Side-by-side scores for each validated idea</p>
-                <ResponsiveContainer width="100%" height={260}>
-                  <BarChart data={comparisonData} barCategoryGap="20%">
-                    <CartesianGrid vertical={false} {...gridStyle} />
-                    <XAxis dataKey="name" tick={axisStyle} axisLine={false} tickLine={false} />
-                    <YAxis domain={[0, 100]} tick={axisStyle} axisLine={false} tickLine={false} width={30} />
-                    <Tooltip content={<CustomTooltip />} cursor={{ fill: "hsl(30, 15%, 94%)", radius: 4 }} />
-                    <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, fontFamily: "Inter", paddingTop: 8 }} />
-                    <Bar dataKey="demand" name="Demand" fill={SCORE_COLORS.demand} radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="pain" name="Pain" fill={SCORE_COLORS.pain} radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="competition" name="Competition" fill={SCORE_COLORS.competition} radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="feasibility" name="Feasibility" fill={SCORE_COLORS.feasibility} radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          )}
-
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Category Breakdown */}
+            {/* Categories Explored */}
             {categoryData.length > 0 && (
               <Card className="rounded-2xl border border-border/40 bg-card shadow-sm">
                 <CardContent className="p-6">
@@ -237,6 +204,32 @@ export default function Analytics() {
                 </CardContent>
               </Card>
             )}
+          </div>
+
+          {/* Row 2: Score Comparison + Pipeline */}
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Scores Comparison */}
+            {comparisonData.length > 1 && (
+              <Card className="rounded-2xl border border-border/40 bg-card shadow-sm">
+                <CardContent className="p-6">
+                  <h3 className="text-sm font-semibold font-nunito mb-1">Idea Score Comparison</h3>
+                  <p className="text-xs text-muted-foreground mb-4">Side-by-side scores for each validated idea</p>
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart data={comparisonData} barCategoryGap="20%">
+                      <CartesianGrid vertical={false} {...gridStyle} />
+                      <XAxis dataKey="name" tick={axisStyle} axisLine={false} tickLine={false} />
+                      <YAxis domain={[0, 100]} tick={axisStyle} axisLine={false} tickLine={false} width={30} />
+                      <Tooltip content={<CustomTooltip />} cursor={{ fill: "hsl(30, 15%, 94%)", radius: 4 }} />
+                      <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, fontFamily: "Inter", paddingTop: 8 }} />
+                      <Bar dataKey="demand" name="Demand" fill={SCORE_COLORS.demand} radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="pain" name="Pain" fill={SCORE_COLORS.pain} radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="competition" name="Competition" fill={SCORE_COLORS.competition} radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="feasibility" name="Feasibility" fill={SCORE_COLORS.feasibility} radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Pipeline Status */}
             {statusData.length > 0 && (
@@ -246,16 +239,7 @@ export default function Analytics() {
                   <p className="text-xs text-muted-foreground mb-4">Status of your saved ideas</p>
                   <ResponsiveContainer width="100%" height={200}>
                     <PieChart>
-                      <Pie
-                        data={statusData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={50}
-                        outerRadius={80}
-                        paddingAngle={3}
-                        dataKey="value"
-                        strokeWidth={0}
-                      >
+                      <Pie data={statusData} cx="50%" cy="50%" innerRadius={50} outerRadius={78} paddingAngle={3} dataKey="value" strokeWidth={0}>
                         {statusData.map((_: any, i: number) => (
                           <Cell key={i} fill={PALETTE[i % PALETTE.length]} />
                         ))}
@@ -276,6 +260,8 @@ export default function Analytics() {
               </Card>
             )}
           </div>
+
+
 
           {/* Recent validations */}
           {reports.length > 0 && (
