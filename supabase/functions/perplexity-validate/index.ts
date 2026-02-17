@@ -148,6 +148,12 @@ Return ONLY valid JSON:
     "competition": "Why this score — list key competitors and their strengths",
     "mvpFeasibility": "Why this score — what tech is needed"
   },
+  "marketSizing": {
+    "tam": "Total Addressable Market — the entire revenue opportunity if 100% market share (e.g. '$4.2B — global restaurant management software market')",
+    "sam": "Serviceable Addressable Market — the segment you can realistically target (e.g. '$620M — US independent restaurants needing review management')",
+    "som": "Serviceable Obtainable Market — realistic first 2-3 year capture (e.g. '$12M — 5,000 independent restaurants at $200/mo')",
+    "methodology": "Brief explanation of how you arrived at these estimates, citing research data"
+  },
   "verdict": "Build",
   "verdictReasoning": "2-3 sentences explaining why this verdict follows from the scores and evidence",
   "pros": ["Specific evidence-backed pro 1", "Pro 2", "Pro 3"],

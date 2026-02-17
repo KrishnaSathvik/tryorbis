@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/AppLayout";
+import { OnboardingTour } from "@/components/OnboardingTour";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -12,6 +13,7 @@ import GenerateIdeas from "./pages/GenerateIdeas";
 import ValidateIdea from "./pages/ValidateIdea";
 import Backlog from "./pages/Backlog";
 import Reports from "./pages/Reports";
+import Analytics from "./pages/Analytics";
 
 import NotFound from "./pages/NotFound";
 
@@ -25,19 +27,22 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 const AppRoutes = () => (
-  <Routes>
-    <Route path="/" element={<Landing />} />
-    <Route path="/auth" element={<Auth />} />
-    <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-      <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/generate" element={<GenerateIdeas />} />
-      <Route path="/validate" element={<ValidateIdea />} />
-      <Route path="/ideas" element={<Backlog />} />
-      <Route path="/history" element={<Reports />} />
-      
-    </Route>
-    <Route path="*" element={<NotFound />} />
-  </Routes>
+  <>
+    <OnboardingTour />
+    <Routes>
+      <Route path="/" element={<Landing />} />
+      <Route path="/auth" element={<Auth />} />
+      <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/generate" element={<GenerateIdeas />} />
+        <Route path="/validate" element={<ValidateIdea />} />
+        <Route path="/ideas" element={<Backlog />} />
+        <Route path="/history" element={<Reports />} />
+        <Route path="/analytics" element={<Analytics />} />
+      </Route>
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  </>
 );
 
 const App = () => (
