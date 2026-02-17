@@ -12,7 +12,7 @@ import GenerateIdeas from "./pages/GenerateIdeas";
 import ValidateIdea from "./pages/ValidateIdea";
 import Backlog from "./pages/Backlog";
 import Reports from "./pages/Reports";
-import Trends from "./pages/Trends";
+
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,7 +34,7 @@ const AppRoutes = () => (
       <Route path="/validate" element={<ValidateIdea />} />
       <Route path="/ideas" element={<Backlog />} />
       <Route path="/history" element={<Reports />} />
-      <Route path="/trends" element={<Trends />} />
+      
     </Route>
     <Route path="*" element={<NotFound />} />
   </Routes>
