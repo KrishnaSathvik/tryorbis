@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { ResearchTrace } from "@/components/ResearchTrace";
 import { ScoreBar } from "@/components/ScoreBar";
 import { AIHandoff } from "@/components/AIHandoff";
+import { FollowUpChat } from "@/components/FollowUpChat";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, Bookmark, ClipboardCheck, Copy, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -299,6 +300,13 @@ export default function GenerateIdeas() {
           ))}
         </div>
       </div>
+
+      {result && (
+        <FollowUpChat
+          reportContext={`Generated ideas for ${result.persona} in ${result.category}:\n\nProblem Clusters:\n${result.problemClusters.map((c: any) => `- ${c.theme}: ${c.painSummary}`).join('\n')}\n\nIdeas:\n${result.ideaSuggestions.map((i: any) => `- ${i.name}: ${i.description} (Score: ${i.demandScore}/100, MVP: ${i.mvpScope})`).join('\n')}`}
+          onRevalidate={(ideaText) => navigate(`/validate?idea=${encodeURIComponent(ideaText)}`)}
+        />
+      )}
 
       {result && (
         <AIHandoff context={`I discovered these product opportunities for ${result.persona} in ${result.category}:\n\n${result.ideaSuggestions.map((i: any) => `- ${i.name}: ${i.description} (Score: ${i.demandScore}/100)`).join('\n')}\n\nHelp me build an MVP for the top opportunity.`} />
