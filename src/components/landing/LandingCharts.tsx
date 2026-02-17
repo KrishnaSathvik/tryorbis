@@ -1,15 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart as RePieChart,
-  Pie,
-  Cell,
-  CartesianGrid,
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  PieChart as RePieChart, Pie, Cell, CartesianGrid,
 } from "recharts";
 import { Users, PieChart, FolderOpen } from "lucide-react";
 
@@ -20,39 +12,9 @@ const VERDICT_COLORS: Record<string, string> = {
 };
 
 const CHART_COLORS = [
-  "hsl(220, 70%, 50%)",
-  "hsl(262, 60%, 55%)",
-  "hsl(142, 72%, 40%)",
-  "hsl(38, 92%, 50%)",
-  "hsl(0, 72%, 51%)",
-  "hsl(180, 60%, 40%)",
+  "hsl(220, 70%, 50%)", "hsl(262, 60%, 55%)", "hsl(142, 72%, 40%)",
+  "hsl(38, 92%, 50%)", "hsl(0, 72%, 51%)", "hsl(180, 60%, 40%)",
 ];
-
-/** Normalize a raw string: lowercase, trim, collapse whitespace, and title-case */
-function normalize(raw: string): string {
-  const cleaned = raw.trim().toLowerCase().replace(/\s+/g, " ");
-  // Title-case each word for display
-  return cleaned.replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
-/** Aggregate counts by normalized key */
-function aggregateCounts(
-  items: any[],
-  field: string,
-  limit: number
-): { name: string; count: number }[] {
-  const counts: Record<string, number> = {};
-  items.forEach((item) => {
-    const val = item[field];
-    if (!val || typeof val !== "string") return;
-    const key = normalize(val);
-    counts[key] = (counts[key] || 0) + 1;
-  });
-  return Object.entries(counts)
-    .map(([name, count]) => ({ name, count }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, limit);
-}
 
 const tooltipStyle = {
   contentStyle: {
@@ -66,24 +28,15 @@ const tooltipStyle = {
 };
 
 interface Props {
-  stats: { runs: any[]; reports: any[] };
+  stats: {
+    personaData: { name: string; count: number }[];
+    categoryData: { name: string; count: number }[];
+    verdictData: { name: string; value: number }[];
+  };
 }
 
 export function LandingCharts({ stats }: Props) {
-  const personaData = aggregateCounts(stats.runs, "persona", 6);
-  const categoryData = aggregateCounts(stats.runs, "category", 6);
-
-  const verdictData = (() => {
-    const counts: Record<string, number> = { Build: 0, Pivot: 0, Skip: 0 };
-    stats.reports.forEach((r: any) => {
-      const v = r.verdict;
-      if (v in counts) counts[v] = (counts[v] || 0) + 1;
-    });
-    return Object.entries(counts)
-      .filter(([, v]) => v > 0)
-      .map(([name, value]) => ({ name, value }));
-  })();
-
+  const { personaData, categoryData, verdictData } = stats;
   const verdictTotal = verdictData.reduce((s, d) => s + d.value, 0);
 
   return (
@@ -97,33 +50,14 @@ export function LandingCharts({ stats }: Props) {
                 Top Personas Explored
               </h4>
               <ResponsiveContainer width="100%" height={220}>
-                <BarChart
-                  data={personaData}
-                  layout="vertical"
-                  margin={{ left: 4, right: 20, top: 4, bottom: 4 }}
-                >
-                  <CartesianGrid
-                    horizontal={false}
-                    strokeDasharray="3 3"
-                    stroke="hsl(220 13% 91%)"
-                  />
+                <BarChart data={personaData} layout="vertical" margin={{ left: 4, right: 20, top: 4, bottom: 4 }}>
+                  <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke="hsl(220 13% 91%)" />
                   <XAxis type="number" hide />
-                  <YAxis
-                    dataKey="name"
-                    type="category"
-                    width={100}
-                    tick={{ fontSize: 11, fill: "hsl(220 10% 46%)" }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
+                  <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 11, fill: "hsl(220 10% 46%)" }} axisLine={false} tickLine={false} />
                   <Tooltip {...tooltipStyle} cursor={{ fill: "hsl(220 70% 50% / 0.06)" }} />
                   <Bar dataKey="count" radius={[0, 6, 6, 0]} barSize={20}>
                     {personaData.map((_, i) => (
-                      <Cell
-                        key={i}
-                        fill={CHART_COLORS[i % CHART_COLORS.length]}
-                        fillOpacity={0.85}
-                      />
+                      <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} fillOpacity={0.85} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -142,22 +76,9 @@ export function LandingCharts({ stats }: Props) {
               <div className="flex items-center gap-4">
                 <ResponsiveContainer width="55%" height={160}>
                   <RePieChart>
-                    <Pie
-                      data={verdictData}
-                      dataKey="value"
-                      nameKey="name"
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={35}
-                      outerRadius={65}
-                      paddingAngle={3}
-                    >
+                    <Pie data={verdictData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={35} outerRadius={65} paddingAngle={3}>
                       {verdictData.map((entry) => (
-                        <Cell
-                          key={entry.name}
-                          fill={VERDICT_COLORS[entry.name] || CHART_COLORS[0]}
-                          strokeWidth={0}
-                        />
+                        <Cell key={entry.name} fill={VERDICT_COLORS[entry.name] || CHART_COLORS[0]} strokeWidth={0} />
                       ))}
                     </Pie>
                     <Tooltip {...tooltipStyle} />
@@ -166,10 +87,7 @@ export function LandingCharts({ stats }: Props) {
                 <div className="flex flex-col gap-2.5">
                   {verdictData.map((entry) => (
                     <div key={entry.name} className="flex items-center gap-2">
-                      <span
-                        className="h-3 w-3 rounded-sm shrink-0"
-                        style={{ backgroundColor: VERDICT_COLORS[entry.name] || CHART_COLORS[0] }}
-                      />
+                      <span className="h-3 w-3 rounded-sm shrink-0" style={{ backgroundColor: VERDICT_COLORS[entry.name] || CHART_COLORS[0] }} />
                       <span className="text-sm text-muted-foreground">
                         {entry.name}{" "}
                         <span className="font-semibold text-foreground">
@@ -193,30 +111,14 @@ export function LandingCharts({ stats }: Props) {
               Categories Explored
             </h4>
             <ResponsiveContainer width="100%" height={220}>
-              <BarChart
-                data={categoryData}
-                margin={{ left: 0, right: 16, top: 8, bottom: 4 }}
-              >
-                <CartesianGrid
-                  vertical={false}
-                  strokeDasharray="3 3"
-                  stroke="hsl(220 13% 91%)"
-                />
-                <XAxis
-                  dataKey="name"
-                  tick={{ fontSize: 11, fill: "hsl(220 10% 46%)" }}
-                  axisLine={false}
-                  tickLine={false}
-                />
+              <BarChart data={categoryData} margin={{ left: 0, right: 16, top: 8, bottom: 4 }}>
+                <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(220 13% 91%)" />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: "hsl(220 10% 46%)" }} axisLine={false} tickLine={false} />
                 <YAxis allowDecimals={false} hide />
                 <Tooltip {...tooltipStyle} cursor={{ fill: "hsl(220 70% 50% / 0.06)" }} />
                 <Bar dataKey="count" radius={[6, 6, 0, 0]} barSize={36}>
                   {categoryData.map((_, i) => (
-                    <Cell
-                      key={i}
-                      fill={CHART_COLORS[i % CHART_COLORS.length]}
-                      fillOpacity={0.85}
-                    />
+                    <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} fillOpacity={0.85} />
                   ))}
                 </Bar>
               </BarChart>

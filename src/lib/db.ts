@@ -180,38 +180,4 @@ export async function updateNoteInBacklogDb(id: string, noteIndex: number, newTe
 }
 
 // ─── Stats ───
-
-export async function getPublicStats() {
-  const [runsRes, reportsRes] = await Promise.all([
-    supabase.from("generator_runs").select("id, idea_suggestions"),
-    supabase.from("validation_reports").select("id"),
-  ]);
-  const runs = runsRes.data || [];
-  const reports = reportsRes.data || [];
-  const totalIdeas = runs.reduce((s: number, r: any) => {
-    const suggestions = Array.isArray(r.idea_suggestions) ? r.idea_suggestions : [];
-    return s + suggestions.length;
-  }, 0);
-  return {
-    totalUsers: new Set([...runs, ...reports].map(() => "x")).size, // approximate
-    totalIdeas,
-    totalValidations: reports.length,
-    totalRuns: runs.length,
-  };
-}
-
-// ─── Community stats (for landing + trends) ───
-
-export async function getCommunityStats() {
-  const [runsRes, reportsRes, profilesRes] = await Promise.all([
-    supabase.from("generator_runs").select("*"),
-    supabase.from("validation_reports").select("*"),
-    supabase.from("profiles").select("id"),
-  ]);
-  
-  const runs = runsRes.data || [];
-  const reports = reportsRes.data || [];
-  const profiles = profilesRes.data || [];
-
-  return { runs, reports, totalUsers: profiles.length };
-}
+// Community stats are now served by the community-stats edge function
