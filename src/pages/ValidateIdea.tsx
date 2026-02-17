@@ -1,8 +1,8 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { ResearchTrace } from "@/components/ResearchTrace";
 import { ScoreBar } from "@/components/ScoreBar";
 import { VerdictBadge } from "@/components/VerdictBadge";
@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { saveValidationReport, addToBacklog } from "@/lib/storage";
 import { ValidationReport } from "@/lib/types";
 import { toast } from "sonner";
-import { Bookmark, Lightbulb, ThumbsUp, ThumbsDown, Target, AlertTriangle } from "lucide-react";
+import { Bookmark, Lightbulb, ThumbsUp, ThumbsDown, Target, AlertTriangle, Send } from "lucide-react";
 
 const researchSteps = [
   "Analyzing demand signals...",
@@ -21,17 +21,61 @@ const researchSteps = [
   "Generating verdict...",
 ];
 
+interface ChatMessage {
+  id: string;
+  role: 'user' | 'system';
+  text: string;
+}
+
 export default function ValidateIdea() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [ideaText, setIdeaText] = useState(searchParams.get('idea') || "");
-  const [phase, setPhase] = useState<'input' | 'researching' | 'results'>('input');
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const prefilled = searchParams.get('idea') || "";
+  const [inputValue, setInputValue] = useState(prefilled);
+  const [ideaText, setIdeaText] = useState("");
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    {
+      id: '1',
+      role: 'system',
+      text: "Describe your idea and I'll validate it — checking demand, competition, and feasibility.",
+    },
+  ]);
+  const [isTyping, setIsTyping] = useState(false);
+
+  const [phase, setPhase] = useState<'chat' | 'researching' | 'results'>('chat');
   const [currentStep, setCurrentStep] = useState(0);
   const [report, setReport] = useState<ValidationReport | null>(null);
 
-  const validate = useCallback(async () => {
-    if (!ideaText.trim()) { toast.error("Describe your idea first"); return; }
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isTyping]);
 
+  const addMessage = (msg: Omit<ChatMessage, 'id'>) => {
+    setIsTyping(false);
+    setMessages(prev => [...prev, { ...msg, id: crypto.randomUUID() }]);
+  };
+
+  const handleSubmit = () => {
+    const text = inputValue.trim();
+    if (!text) return;
+    setInputValue("");
+    setIdeaText(text);
+    addMessage({ role: 'user', text });
+
+    setIsTyping(true);
+    setTimeout(() => {
+      addMessage({
+        role: 'system',
+        text: `I'll validate "${text.slice(0, 60)}${text.length > 60 ? '...' : ''}". Starting research now...`,
+      });
+      triggerValidation(text);
+    }, 800);
+  };
+
+  const triggerValidation = useCallback(async (idea: string) => {
     setPhase('researching');
     setCurrentStep(0);
 
@@ -44,7 +88,7 @@ export default function ValidateIdea() {
       }, 2000);
 
       const { data, error } = await supabase.functions.invoke('perplexity-validate', {
-        body: { ideaText },
+        body: { ideaText: idea },
       });
 
       clearInterval(stepInterval);
@@ -54,7 +98,7 @@ export default function ValidateIdea() {
 
       const validationReport: ValidationReport = {
         id: crypto.randomUUID(),
-        ideaText,
+        ideaText: idea,
         scores: data.scores || { demand: 0, pain: 0, competition: 0, mvpFeasibility: 0 },
         verdict: data.verdict || 'Skip',
         pros: data.pros || [],
@@ -72,9 +116,9 @@ export default function ValidateIdea() {
       setPhase('results');
     } catch (err: any) {
       toast.error("Validation failed: " + (err.message || "Unknown error"));
-      setPhase('input');
+      setPhase('chat');
     }
-  }, [ideaText]);
+  }, []);
 
   const handleAddToBacklog = () => {
     if (!report) return;
@@ -91,28 +135,75 @@ export default function ValidateIdea() {
     toast.success("Saved to My Ideas");
   };
 
-  if (phase === 'input') {
+  const resetChat = () => {
+    setMessages([{
+      id: '1',
+      role: 'system',
+      text: "Describe your idea and I'll validate it — checking demand, competition, and feasibility.",
+    }]);
+    setInputValue("");
+    setIdeaText("");
+    setPhase('chat');
+    setReport(null);
+    setIsTyping(false);
+  };
+
+  // Chat phase
+  if (phase === 'chat') {
     return (
-      <div className="max-w-2xl mx-auto space-y-8">
-        <div>
+      <div className="max-w-2xl mx-auto flex flex-col h-[calc(100vh-6rem)]">
+        <div className="mb-4">
           <h1 className="text-3xl font-bold tracking-tight">Validate an Idea</h1>
-          <p className="text-muted-foreground mt-1">Test if your idea is worth building.</p>
+          <p className="text-muted-foreground mt-1">Tell me your idea — I'll research if it's worth building.</p>
         </div>
-        <Card>
-          <CardContent className="p-6 space-y-5">
-            <Textarea
-              placeholder="AI tool that tracks subscriptions automatically and suggests ways to save money..."
-              className="min-h-[120px] text-base"
-              value={ideaText}
-              onChange={e => setIdeaText(e.target.value)}
+
+        <div className="flex-1 overflow-y-auto space-y-3 pb-4">
+          {messages.map((msg) => (
+            <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div
+                className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+                  msg.role === 'user'
+                    ? 'bg-primary text-primary-foreground rounded-br-md'
+                    : 'bg-muted text-foreground rounded-bl-md'
+                }`}
+              >
+                <p>{msg.text}</p>
+              </div>
+            </div>
+          ))}
+          {isTyping && (
+            <div className="flex justify-start">
+              <div className="bg-muted rounded-2xl rounded-bl-md px-4 py-3 flex gap-1.5 items-center">
+                <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:0ms]" />
+                <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:150ms]" />
+                <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:300ms]" />
+              </div>
+            </div>
+          )}
+          <div ref={chatEndRef} />
+        </div>
+
+        <div className="border-t pt-3 pb-2">
+          <div className="flex gap-2">
+            <Input
+              ref={inputRef}
+              value={inputValue}
+              onChange={e => setInputValue(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+              placeholder="e.g. AI tool that tracks subscriptions and suggests ways to save money..."
+              className="flex-1"
+              autoFocus
             />
-            <Button onClick={validate} size="lg" className="w-full">Validate Idea</Button>
-          </CardContent>
-        </Card>
+            <Button size="icon" onClick={handleSubmit} disabled={!inputValue.trim()}>
+              <Send className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }
 
+  // Researching phase
   if (phase === 'researching') {
     return (
       <div className="max-w-lg mx-auto mt-20">
@@ -135,7 +226,7 @@ export default function ValidateIdea() {
           <h1 className="text-3xl font-bold tracking-tight">Validation Report</h1>
           <p className="text-muted-foreground mt-1 max-w-lg truncate">{report?.ideaText}</p>
         </div>
-        <Button variant="outline" onClick={() => { setPhase('input'); setReport(null); setIdeaText(""); }}>New Validation</Button>
+        <Button variant="outline" onClick={resetChat}>New Validation</Button>
       </div>
 
       {/* Verdict + Scores */}
