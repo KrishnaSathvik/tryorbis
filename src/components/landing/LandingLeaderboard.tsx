@@ -28,7 +28,20 @@ export function LandingLeaderboard({ stats }: Props) {
       source: "Validated",
       verdict: r.verdict,
     }));
-    return [...ideas, ...validated].sort((a, b) => b.score - a.score).slice(0, 10);
+
+    // Deduplicate by normalized name, keeping the highest score
+    const seen = new Map<string, typeof ideas[0]>();
+    [...ideas, ...validated].forEach((item) => {
+      const key = item.name.toLowerCase().trim();
+      const existing = seen.get(key);
+      if (!existing || item.score > existing.score) {
+        seen.set(key, item);
+      }
+    });
+
+    return Array.from(seen.values())
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 10);
   })();
 
   if (leaderboard.length === 0) return null;

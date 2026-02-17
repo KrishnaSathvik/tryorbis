@@ -39,7 +39,7 @@ Return ONLY valid JSON in this exact format:
     {
       "id": "idea_1",
       "clusterId": "cluster_1",
-      "name": "Product Name",
+      "name": "A short, catchy, brandable product name (2-3 words max, like 'Notion' or 'Stripe Atlas' — never generic descriptions)",
       "description": "What it does and why it helps",
       "mvpScope": "Smallest viable version to test",
       "monetization": "How to make money",
@@ -48,7 +48,9 @@ Return ONLY valid JSON in this exact format:
   ]
 }
 
-Generate 3-5 problem clusters and 4-6 ideas. Demand scores should range 40-95 based on evidence strength.`;
+Generate 3-5 problem clusters and 4-6 ideas. Demand scores should range 40-95 based on evidence strength.
+
+IMPORTANT for idea names: Create unique, memorable, brandable product names (like "Loom", "Figma", "Airtable", "Canva"). Do NOT use generic descriptive names like "AI-powered invoicing tool" — instead create a proper brand name. Each name must be distinct and different from the others.`;
 
     const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
