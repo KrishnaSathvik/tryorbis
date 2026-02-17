@@ -24,17 +24,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async (userId: string) => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("display_name, email")
-      .eq("user_id", userId)
-      .single();
-    if (data) setProfile(data);
+    // Retry a few times since the profile trigger may not have fired yet
+    for (let i = 0; i < 3; i++) {
+      const { data } = await supabase
+        .from("profiles")
+        .select("display_name, email")
+        .eq("user_id", userId)
+        .single();
+      if (data) { setProfile(data); return; }
+      if (i < 2) await new Promise(r => setTimeout(r, 500));
+    }
   };
 
   useEffect(() => {
+    let mounted = true;
+
+    // Initialize session
+    const init = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!mounted) return;
+        const u = session?.user ?? null;
+        setUser(u);
+        if (u) await fetchProfile(u.id);
+      } catch (e) {
+        console.error("Auth init error:", e);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    init();
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
+        if (!mounted) return;
         const u = session?.user ?? null;
         setUser(u);
         if (u) {
@@ -42,18 +66,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           setProfile(null);
         }
-        setLoading(false);
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      const u = session?.user ?? null;
-      setUser(u);
-      if (u) fetchProfile(u.id);
-      else setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (displayName: string, email?: string) => {
