@@ -52,7 +52,7 @@ export default function Landing() {
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border/50">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2">
-            <img src={orbisLogo} alt="Orbis" className="h-6 w-6 sm:h-7 sm:w-7" />
+            <img src={orbisLogo} alt="Orbis" className="h-6 w-6 sm:h-7 sm:w-7 dark-invert" />
             <h1 className="text-lg sm:text-xl font-bold tracking-tight font-nunito text-gradient-primary">Orbis</h1>
           </div>
           <div className="flex items-center gap-3">
@@ -232,7 +232,7 @@ export default function Landing() {
       {/* Footer */}
       <footer className="border-t border-border/50 py-8 text-center text-xs text-muted-foreground space-y-1">
         <div className="flex items-center gap-2 justify-center">
-          <img src={orbisLogo} alt="Orbis" className="h-5 w-5" />
+          <img src={orbisLogo} alt="Orbis" className="h-5 w-5 dark-invert" />
           <p className="font-medium text-foreground/60">Orbis</p>
         </div>
         <p>From problem discovery to product validation.</p>

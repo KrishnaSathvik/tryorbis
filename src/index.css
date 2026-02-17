@@ -140,4 +140,7 @@
   .btn-pill {
     @apply rounded-full;
   }
+  .dark-invert {
+    @apply dark:brightness-0 dark:invert;
+  }
 }
