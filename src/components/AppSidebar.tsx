@@ -1,4 +1,4 @@
-import { LayoutDashboard, Lightbulb, ClipboardCheck, Archive, FileText, LogOut, BarChart3, Coins } from "lucide-react";
+import { LayoutDashboard, Lightbulb, ClipboardCheck, Archive, FileText, LogOut, BarChart3, Zap } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCredits } from "@/hooks/useCredits";
@@ -72,7 +72,7 @@ export function AppSidebar() {
       </SidebarContent>
       <div className="mt-auto p-4 border-t border-sidebar-border space-y-2">
         <div className="flex items-center gap-2 px-6 py-2">
-          <Coins className="h-4 w-4 text-primary" />
+          <Zap className="h-4 w-4 text-primary" />
           <span className="text-sm font-medium">{credits} credits</span>
         </div>
         <button
