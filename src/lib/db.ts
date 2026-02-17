@@ -156,6 +156,14 @@ export async function removeFromBacklogDb(id: string) {
   await supabase.from("backlog_items").delete().eq("id", id);
 }
 
+export async function renameBacklogItemDb(id: string, newName: string) {
+  const { error } = await supabase
+    .from("backlog_items")
+    .update({ idea_name: newName })
+    .eq("id", id);
+  if (error) throw error;
+}
+
 // ─── Stats ───
 
 export async function getPublicStats() {
