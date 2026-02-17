@@ -1,6 +1,7 @@
-import { LayoutDashboard, Lightbulb, ClipboardCheck, Archive, FileText, LogOut, BarChart3 } from "lucide-react";
+import { LayoutDashboard, Lightbulb, ClipboardCheck, Archive, FileText, LogOut, BarChart3, Coins } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCredits } from "@/hooks/useCredits";
 import { useNavigate } from "react-router-dom";
 import orbisLogo from "@/assets/orbis-logo.png";
 import {
@@ -25,6 +26,7 @@ const navItems = [
 
 export function AppSidebar() {
   const { profile, signOut } = useAuth();
+  const { credits } = useCredits();
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
@@ -69,6 +71,10 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <div className="mt-auto p-4 border-t border-sidebar-border space-y-2">
+        <div className="flex items-center gap-2 px-6 py-2">
+          <Coins className="h-4 w-4 text-primary" />
+          <span className="text-sm font-medium">{credits} credits</span>
+        </div>
         <button
           onClick={handleSignOut}
           className="flex items-center gap-3 px-6 py-2.5 text-sm text-muted-foreground rounded-xl transition-all hover:text-foreground hover:bg-accent w-full"

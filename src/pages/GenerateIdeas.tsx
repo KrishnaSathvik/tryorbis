@@ -7,6 +7,7 @@ import { ResearchTrace } from "@/components/ResearchTrace";
 import { ScoreBar } from "@/components/ScoreBar";
 import { AIHandoff } from "@/components/AIHandoff";
 import { FollowUpChat } from "@/components/FollowUpChat";
+import { useCredits } from "@/hooks/useCredits";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, Bookmark, ClipboardCheck, Copy, Send, User, FolderOpen, Monitor, Globe, Rocket, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,6 +30,7 @@ export default function GenerateIdeas() {
   const navigate = useNavigate();
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { hasCredits, deductCredit } = useCredits();
 
   const [messages, setMessages] = useState<ChatMessage[]>([
     { id: '1', role: 'assistant', text: "What kind of product or problem are you thinking about? Describe your idea and I'll find real problems and opportunities." },
@@ -75,6 +77,7 @@ export default function GenerateIdeas() {
   };
 
   const triggerGenerate = useCallback(async (params: any) => {
+    if (!hasCredits) { toast.error("You're out of credits. Contact support to get more."); return; }
     setPhase('researching'); setResearchStep(0);
     try {
       const stepInterval = setInterval(() => { setResearchStep(prev => { if (prev >= researchSteps.length - 1) { clearInterval(stepInterval); return prev; } return prev + 1; }); }, 3500);
@@ -84,11 +87,12 @@ export default function GenerateIdeas() {
       clearInterval(stepInterval); setResearchStep(researchSteps.length);
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
+      await deductCredit();
       const run: GeneratorResult = { persona: params.persona, category: params.category, region: params.region || undefined, platform: params.platform || undefined, problemClusters: data.problemClusters || [], ideaSuggestions: data.ideaSuggestions || [] };
       try { await saveGeneratorRunDb(run); } catch (e) { console.error("Failed to save:", e); }
       setResult(run); setPhase('results');
     } catch (err: any) { toast.error("Generation failed: " + (err.message || "Unknown error")); setPhase('chat'); }
-  }, []);
+  }, [hasCredits, deductCredit]);
 
   const handleAddToBacklog = async (idea: any) => {
     try { await addToBacklogDb({ ideaName: idea.name, source: 'Generated', demandScore: idea.demandScore, status: 'New' }); toast.success(`"${idea.name}" saved to My Ideas`); } catch { toast.error("Failed to save"); }
