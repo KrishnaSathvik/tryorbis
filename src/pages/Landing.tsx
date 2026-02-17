@@ -114,29 +114,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Trusted stats strip */}
-      {stats && (
-        <section className="border-y border-border bg-muted/40">
-          <div className="max-w-5xl mx-auto px-6 py-8">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
-              {[
-                { label: "Researchers", value: stats.totalUsers, icon: Users },
-                { label: "Ideas Generated", value: totalIdeas, icon: Zap },
-                { label: "Validations", value: stats.reports.length, icon: BarChart3 },
-                { label: "Research Runs", value: stats.runs.length, icon: Trophy },
-              ].map((s) => (
-                <div key={s.label} className="flex flex-col items-center gap-2">
-                  <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                    <s.icon className="h-5 w-5 text-primary" />
-                  </div>
-                  <p className="text-2xl font-bold">{s.value}</p>
-                  <p className="text-xs text-muted-foreground">{s.label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
 
       {/* Features */}
       <section id="features" className="max-w-5xl mx-auto px-6 py-20 space-y-12">
@@ -278,7 +255,7 @@ export default function Landing() {
       </section>
 
       {/* Community trends */}
-      {hasData && stats && (
+      {stats && (
         <section className="bg-muted/30 border-y border-border py-20">
           <div className="max-w-5xl mx-auto px-6 space-y-12">
             <div className="text-center space-y-3">
@@ -290,8 +267,28 @@ export default function Landing() {
                 See what the community is researching right now.
               </p>
             </div>
-            <LandingCharts stats={stats} />
-            <LandingLeaderboard stats={stats} />
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
+              {[
+                { label: "Researchers", value: stats.totalUsers, icon: Users },
+                { label: "Ideas Generated", value: totalIdeas, icon: Zap },
+                { label: "Validations", value: stats.reports.length, icon: BarChart3 },
+                { label: "Research Runs", value: stats.runs.length, icon: Trophy },
+              ].map((s) => (
+                <div key={s.label} className="flex flex-col items-center gap-2">
+                  <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <s.icon className="h-5 w-5 text-primary" />
+                  </div>
+                  <p className="text-2xl font-bold">{s.value}</p>
+                  <p className="text-xs text-muted-foreground">{s.label}</p>
+                </div>
+              ))}
+            </div>
+            {hasData && (
+              <>
+                <LandingCharts stats={stats} />
+                <LandingLeaderboard stats={stats} />
+              </>
+            )}
           </div>
         </section>
       )}
