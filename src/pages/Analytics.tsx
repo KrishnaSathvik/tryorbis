@@ -3,7 +3,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { getMyValidationReports, getMyGeneratorRuns, getMyBacklog } from "@/lib/db";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, LineChart, Line, Legend,
+  PieChart, Pie, Cell, Legend,
+  RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
 } from "recharts";
 import { TrendingUp, Target, BarChart3, Activity } from "lucide-react";
 import { VerdictBadge } from "@/components/VerdictBadge";
@@ -70,17 +71,16 @@ export default function Analytics() {
   }, {});
   const verdictData = Object.entries(verdictCounts).map(([name, value]) => ({ name, value }));
 
-  // Scores over time
-  const scoresOverTime = reports
-    .slice()
-    .reverse()
-    .map((r: any, i: number) => ({
-      label: `#${i + 1}`,
-      demand: (r.scores as any)?.demand || 0,
-      pain: (r.scores as any)?.pain || 0,
-      competition: (r.scores as any)?.competition || 0,
-      feasibility: (r.scores as any)?.mvpFeasibility || 0,
-    }));
+  // Radar data — each validation as an overlay
+  const radarData = [
+    { metric: "Demand", ...Object.fromEntries(reports.slice().reverse().map((r: any, i: number) => [`idea${i + 1}`, (r.scores as any)?.demand || 0])) },
+    { metric: "Pain", ...Object.fromEntries(reports.slice().reverse().map((r: any, i: number) => [`idea${i + 1}`, (r.scores as any)?.pain || 0])) },
+    { metric: "Competition", ...Object.fromEntries(reports.slice().reverse().map((r: any, i: number) => [`idea${i + 1}`, (r.scores as any)?.competition || 0])) },
+    { metric: "Feasibility", ...Object.fromEntries(reports.slice().reverse().map((r: any, i: number) => [`idea${i + 1}`, (r.scores as any)?.mvpFeasibility || 0])) },
+  ];
+  const radarKeys = reports.slice().reverse().map((_: any, i: number) => `idea${i + 1}`);
+  const radarLabels = reports.slice().reverse().map((r: any) => r.idea_text?.slice(0, 25) + '…');
+  const radarStrokeColors = [CHART_COLORS.primary, CHART_COLORS.success, CHART_COLORS.warning, CHART_COLORS.destructive, CHART_COLORS.accent];
 
   // Category breakdown
   const categoryCounts = runs.reduce((acc: any, r: any) => {
@@ -213,29 +213,40 @@ export default function Analytics() {
             )}
           </div>
 
-          {/* Scores over time */}
-          {scoresOverTime.length > 1 && (
+          {/* Scores Comparison Radar */}
+          {reports.length > 1 && (
             <Card className="rounded-2xl border border-border/40 bg-card shadow-sm">
               <CardContent className="p-6">
-                <h3 className="text-sm font-semibold font-nunito mb-1">Scores Over Time</h3>
-                <p className="text-xs text-muted-foreground mb-4">How your validation scores trend across ideas</p>
-                <ResponsiveContainer width="100%" height={260}>
-                  <LineChart data={scoresOverTime}>
-                    <CartesianGrid vertical={false} {...gridStyle} />
-                    <XAxis dataKey="label" tick={axisStyle} axisLine={false} tickLine={false} />
-                    <YAxis domain={[0, 100]} tick={axisStyle} axisLine={false} tickLine={false} width={30} />
+                <h3 className="text-sm font-semibold font-nunito mb-1">Idea Score Comparison</h3>
+                <p className="text-xs text-muted-foreground mb-4">Radar overlay comparing each validated idea</p>
+                <ResponsiveContainer width="100%" height={300}>
+                  <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="75%">
+                    <PolarGrid stroke="hsl(30, 10%, 88%)" />
+                    <PolarAngleAxis dataKey="metric" tick={{ ...axisStyle, fontSize: 12 }} />
+                    <PolarRadiusAxis domain={[0, 100]} tick={axisStyle} axisLine={false} />
+                    {radarKeys.map((key: string, i: number) => (
+                      <Radar
+                        key={key}
+                        name={`Idea #${i + 1}`}
+                        dataKey={key}
+                        stroke={radarStrokeColors[i % radarStrokeColors.length]}
+                        fill={radarStrokeColors[i % radarStrokeColors.length]}
+                        fillOpacity={0.08}
+                        strokeWidth={2}
+                      />
+                    ))}
                     <Tooltip content={<CustomTooltip />} />
-                    <Legend
-                      iconType="circle"
-                      iconSize={8}
-                      wrapperStyle={{ fontSize: 11, fontFamily: "Inter", paddingTop: 8 }}
-                    />
-                    <Line type="monotone" dataKey="demand" stroke={SCORE_COLORS.demand} strokeWidth={2.5} dot={{ r: 4, strokeWidth: 2, fill: "hsl(30, 25%, 98%)" }} activeDot={{ r: 6 }} />
-                    <Line type="monotone" dataKey="pain" stroke={SCORE_COLORS.pain} strokeWidth={2.5} dot={{ r: 4, strokeWidth: 2, fill: "hsl(30, 25%, 98%)" }} activeDot={{ r: 6 }} />
-                    <Line type="monotone" dataKey="competition" stroke={SCORE_COLORS.competition} strokeWidth={2.5} dot={{ r: 4, strokeWidth: 2, fill: "hsl(30, 25%, 98%)" }} activeDot={{ r: 6 }} />
-                    <Line type="monotone" dataKey="feasibility" stroke={SCORE_COLORS.feasibility} strokeWidth={2.5} dot={{ r: 4, strokeWidth: 2, fill: "hsl(30, 25%, 98%)" }} activeDot={{ r: 6 }} />
-                  </LineChart>
+                    <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, fontFamily: "Inter", paddingTop: 8 }} />
+                  </RadarChart>
                 </ResponsiveContainer>
+                <div className="mt-3 space-y-1">
+                  {radarLabels.map((label: string, i: number) => (
+                    <p key={i} className="text-[10px] text-muted-foreground flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full" style={{ background: radarStrokeColors[i % radarStrokeColors.length] }} />
+                      <span className="font-semibold">Idea #{i + 1}:</span> {label}
+                    </p>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           )}
