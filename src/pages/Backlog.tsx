@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
@@ -67,7 +68,25 @@ export default function Backlog() {
     await addToBacklogDb({ ideaName: name, source: "Manual", notes }); setNewIdeaName(""); setNewIdeaNote(""); setShowAddIdea(false); fetchBacklog(); toast.success("Idea added");
   };
 
-  if (loading) return <div className="text-center text-muted-foreground py-20">Loading...</div>;
+  if (loading) return (
+    <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
+      <div>
+        <Skeleton className="h-9 w-32" />
+        <Skeleton className="h-4 w-40 mt-2" />
+      </div>
+      {Array.from({ length: 3 }).map((_, i) => (
+        <Card key={i} className="rounded-2xl border-border/50">
+          <CardContent className="p-5 flex items-center gap-3">
+            <div className="space-y-2 flex-1">
+              <Skeleton className="h-4 w-48" />
+              <Skeleton className="h-3 w-24" />
+            </div>
+            <Skeleton className="h-6 w-20 rounded-full" />
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">

@@ -17,7 +17,20 @@ serve(async (req) => {
 
     // GEMINI_API_KEY is fetched later in Pass 2
 
-    const { persona, category, region, platform, context } = await req.json();
+    const body = await req.json();
+    const { persona, category, region, platform, context } = body;
+
+    // Input validation
+    if (!persona || typeof persona !== 'string' || persona.length > 200) {
+      return new Response(JSON.stringify({ error: "Invalid or missing 'persona' (max 200 chars)" }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    if (!category || typeof category !== 'string' || category.length > 200) {
+      return new Response(JSON.stringify({ error: "Invalid or missing 'category' (max 200 chars)" }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     // ─── PASS 1: Deep web research with Perplexity sonar-pro ───
     const searchPrompt = `Research real, specific complaints and frustrations from "${persona}" in the "${category}" space${region ? ` in ${region}` : ''}${platform ? ` on ${platform}` : ''}.
