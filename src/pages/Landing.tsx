@@ -109,14 +109,17 @@ export default function Landing() {
             { icon: Lightbulb, title: "Idea Generation", desc: "Get actionable product ideas ranked by demand score, each backed by evidence from real user complaints." },
             { icon: Target, title: "Demand Scoring", desc: "Every idea is scored across demand, pain intensity, and MVP feasibility — no subjective guesswork." },
             { icon: ClipboardCheck, title: "Full Validation Report", desc: "Competitor analysis, pros & cons, evidence links, and a clear Build / Pivot / Skip verdict in one report." },
-            { icon: MessageSquareText, title: "AI Follow-Up Chat", desc: "Ask follow-up questions about any report — dive deeper into competitors, pricing strategy, or go-to-market." },
-          ].map((f) => (
-            <Card key={f.title} className="group card-warm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+            { icon: Sparkles, title: "Orbis AI Advisor", desc: "Your always-on startup advisor. Brainstorm ideas, discuss strategy, get go-to-market advice, or refine your pitch — all in a dedicated AI chat.", highlight: true },
+          ].map((f: any) => (
+            <Card key={f.title} className={`group card-warm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ${f.highlight ? 'ring-1 ring-primary/20 bg-gradient-to-br from-primary/[0.03] to-transparent' : ''}`}>
               <CardContent className="p-8 space-y-4">
-                <div className="h-14 w-14 rounded-2xl bg-secondary flex items-center justify-center shadow-sm group-hover:shadow-md transition-shadow">
+                <div className={`h-14 w-14 rounded-2xl flex items-center justify-center shadow-sm group-hover:shadow-md transition-shadow ${f.highlight ? 'bg-gradient-to-br from-primary/20 to-primary/5' : 'bg-secondary'}`}>
                   <f.icon className="h-6 w-6 text-primary" />
                 </div>
-                <h4 className="font-semibold text-base font-nunito">{f.title}</h4>
+                <div className="flex items-center gap-2">
+                  <h4 className="font-semibold text-base font-nunito">{f.title}</h4>
+                  {f.highlight && <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-full">New</span>}
+                </div>
                 <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
               </CardContent>
             </Card>
@@ -130,13 +133,14 @@ export default function Landing() {
           <div className="text-center space-y-3">
             <p className="text-xs font-bold tracking-widest uppercase text-muted-foreground">Process</p>
             <h3 className="text-3xl font-bold font-nunito">How <span className="text-gradient-primary">Orbis</span> Works</h3>
-            <p className="text-muted-foreground max-w-lg mx-auto">Three steps from zero to validated product idea.</p>
+            <p className="text-muted-foreground max-w-lg mx-auto">Four steps from zero to validated product idea.</p>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-4 gap-8">
             {[
-              { step: "01", icon: Globe, title: "Describe Your Idea", desc: "Tell Orbis what you're thinking — a target audience, a problem space, or a rough idea. AI extracts the persona and category automatically." },
-              { step: "02", icon: LineChart, title: "Generate & Score Ideas", desc: "AI clusters pain points and generates product ideas with demand scores. Save favorites to your backlog for later." },
-              { step: "03", icon: ShieldCheck, title: "Validate with Confidence", desc: "Run a full validation: competitors, evidence links, risk factors, and a definitive Build / Pivot / Skip verdict." },
+              { step: "01", icon: Globe, title: "Describe Your Idea", desc: "Tell Orbis what you're thinking — a target audience, a problem space, or a rough idea. AI extracts the context automatically." },
+              { step: "02", icon: LineChart, title: "Generate & Score", desc: "AI clusters pain points and generates product ideas with demand scores. Save favorites to your backlog." },
+              { step: "03", icon: ShieldCheck, title: "Validate", desc: "Run a full validation: competitors, evidence links, risk factors, and a Build / Pivot / Skip verdict." },
+              { step: "04", icon: Sparkles, title: "Chat with Orbis AI", desc: "Discuss findings, explore pivots, refine strategy — your AI advisor is always ready to help you think deeper." },
             ].map((s) => (
               <div key={s.step} className="relative space-y-4">
                 <span className="text-5xl font-bold text-primary/10 font-nunito">{s.step}</span>
@@ -162,7 +166,7 @@ export default function Landing() {
             "Save weeks of manual market research",
             "Clear Build / Pivot / Skip verdicts",
             "Real complaint data, not survey bias",
-            "AI follow-up chat for deeper insights",
+            "Orbis AI advisor for strategy & brainstorming",
             "See what the community is researching",
           ].map((b) => (
             <div key={b} className="flex items-start gap-3">

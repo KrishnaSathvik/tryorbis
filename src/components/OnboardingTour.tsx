@@ -14,19 +14,25 @@ const steps = [
     route: "/dashboard",
   },
   {
-    title: "Step 1: Generate Ideas",
+    title: "Chat with Orbis AI",
+    description: "Meet your AI startup advisor. Brainstorm ideas, discuss strategy, get go-to-market advice, or just think out loud — Orbis AI is always here to help.",
+    icon: Sparkles,
+    route: "/chat",
+  },
+  {
+    title: "Generate Ideas",
     description: "Describe a problem space and Orbis will mine real complaints from Reddit, forums, and reviews to surface product opportunities with demand scores.",
     icon: Lightbulb,
     route: "/generate",
   },
   {
-    title: "Step 2: Validate Ideas",
+    title: "Validate Ideas",
     description: "Test any idea against real market data. Get demand, pain, competition, and feasibility scores plus a clear Build / Pivot / Skip verdict.",
     icon: ClipboardCheck,
     route: "/validate",
   },
   {
-    title: "Step 3: Save & Track",
+    title: "Save & Track",
     description: "Save promising ideas to your pipeline. Add notes, change status, and track your journey from discovery to product.",
     icon: Bookmark,
     route: "/ideas",
