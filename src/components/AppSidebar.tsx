@@ -38,7 +38,7 @@ export function AppSidebar() {
     <Sidebar className="border-r border-sidebar-border bg-white/50 backdrop-blur-sm">
       <div className="px-6 py-5">
         <div className="flex items-center gap-2">
-          <img src={orbisLogo} alt="Orbis" className="h-7 w-7" />
+          <img src={orbisLogo} alt="Orbis" className="h-7 w-7 dark-invert" />
           <h1 className="text-xl font-bold tracking-tight font-nunito text-gradient-primary">
             Orbis
           </h1>

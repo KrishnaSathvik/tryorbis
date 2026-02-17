@@ -36,7 +36,7 @@ export default function Auth() {
       <Card className="w-full max-w-md rounded-[32px] border border-border/50 shadow-xl animate-slide-up">
         <CardContent className="p-8 space-y-6">
           <div className="text-center space-y-2">
-            <img src={orbisLogo} alt="Orbis" className="h-14 w-14 mx-auto" />
+            <img src={orbisLogo} alt="Orbis" className="h-14 w-14 mx-auto dark-invert" />
             <h1 className="text-2xl font-bold tracking-tight font-nunito">
               Join <span className="text-gradient-primary">Orbis</span>
             </h1>
