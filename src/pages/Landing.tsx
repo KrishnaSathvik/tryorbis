@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { LandingCharts } from "@/components/landing/LandingCharts";
 import { LandingLeaderboard } from "@/components/landing/LandingLeaderboard";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import orbisLogo from "@/assets/orbis-logo.png";
 
 export default function Landing() {
@@ -40,6 +41,7 @@ export default function Landing() {
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" className="hidden sm:inline-flex rounded-full" onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })}>Features</Button>
             <Button variant="ghost" size="sm" className="hidden sm:inline-flex rounded-full" onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })}>How It Works</Button>
+            <ThemeToggle />
             <Button onClick={handleCta} size="sm" className="rounded-full bg-foreground text-background hover:bg-foreground/90">
               {user ? "Dashboard" : "Get Started"}
             </Button>
