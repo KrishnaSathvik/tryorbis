@@ -21,20 +21,8 @@ const researchSteps = [
   "Scoring opportunities...",
 ];
 
-interface ChatMessage {
-  id: string;
-  role: 'user' | 'assistant';
-  text: string;
-}
-
-interface GeneratorResult {
-  persona: string;
-  category: string;
-  region?: string;
-  platform?: string;
-  problemClusters: any[];
-  ideaSuggestions: any[];
-}
+interface ChatMessage { id: string; role: 'user' | 'assistant'; text: string; }
+interface GeneratorResult { persona: string; category: string; region?: string; platform?: string; problemClusters: any[]; ideaSuggestions: any[]; }
 
 export default function GenerateIdeas() {
   const navigate = useNavigate();
@@ -51,105 +39,49 @@ export default function GenerateIdeas() {
   const [isTyping, setIsTyping] = useState(false);
   const [generatingParams, setGeneratingParams] = useState<any>(null);
 
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isTyping]);
+  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, isTyping]);
 
   const sendToAI = useCallback(async (allMessages: ChatMessage[]) => {
     setIsTyping(true);
     try {
       const { data, error } = await supabase.functions.invoke('chat-generate', {
-        body: {
-          messages: allMessages.map(m => ({
-            role: m.role === 'assistant' ? 'assistant' : 'user',
-            content: m.text,
-          })),
-        },
+        body: { messages: allMessages.map(m => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.text })) },
       });
       if (error) throw error;
-
-      const aiMsg: ChatMessage = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        text: data.reply || "I'm ready to research this for you!",
-      };
+      const aiMsg: ChatMessage = { id: crypto.randomUUID(), role: 'assistant', text: data.reply || "I'm ready to research this for you!" };
       setIsTyping(false);
       setMessages(prev => [...prev, aiMsg]);
-
-      if (data.ready && data.params) {
-        setGeneratingParams(data.params);
-        // Don't auto-trigger — let user confirm or continue chatting
-      }
-    } catch (err: any) {
-      setIsTyping(false);
-      toast.error("AI error: " + (err.message || "Unknown error"));
-    }
+      if (data.ready && data.params) setGeneratingParams(data.params);
+    } catch (err: any) { setIsTyping(false); toast.error("AI error: " + (err.message || "Unknown error")); }
   }, []);
 
   const handleUserInput = () => {
-    const text = inputValue.trim();
-    if (!text || isTyping) return;
+    const text = inputValue.trim(); if (!text || isTyping) return;
     setInputValue("");
     const userMsg: ChatMessage = { id: crypto.randomUUID(), role: 'user', text };
-    const updated = [...messages, userMsg];
-    setMessages(updated);
-    sendToAI(updated);
+    const updated = [...messages, userMsg]; setMessages(updated); sendToAI(updated);
   };
 
   const triggerGenerate = useCallback(async (params: any) => {
-    setPhase('researching');
-    setResearchStep(0);
+    setPhase('researching'); setResearchStep(0);
     try {
-      const stepInterval = setInterval(() => {
-        setResearchStep(prev => {
-          if (prev >= researchSteps.length - 1) { clearInterval(stepInterval); return prev; }
-          return prev + 1;
-        });
-      }, 2000);
-
+      const stepInterval = setInterval(() => { setResearchStep(prev => { if (prev >= researchSteps.length - 1) { clearInterval(stepInterval); return prev; } return prev + 1; }); }, 2000);
       const { data, error } = await supabase.functions.invoke('perplexity-generate', {
-        body: {
-          persona: params.persona,
-          category: params.category,
-          region: params.region || undefined,
-          platform: params.platform || undefined,
-          context: params.context || undefined,
-        },
+        body: { persona: params.persona, category: params.category, region: params.region || undefined, platform: params.platform || undefined, context: params.context || undefined },
       });
-
-      clearInterval(stepInterval);
-      setResearchStep(researchSteps.length);
+      clearInterval(stepInterval); setResearchStep(researchSteps.length);
       if (error) throw error;
-
-      const run: GeneratorResult = {
-        persona: params.persona,
-        category: params.category,
-        region: params.region || undefined,
-        platform: params.platform || undefined,
-        problemClusters: data.problemClusters || [],
-        ideaSuggestions: data.ideaSuggestions || [],
-      };
-
+      const run: GeneratorResult = { persona: params.persona, category: params.category, region: params.region || undefined, platform: params.platform || undefined, problemClusters: data.problemClusters || [], ideaSuggestions: data.ideaSuggestions || [] };
       try { await saveGeneratorRunDb(run); } catch (e) { console.error("Failed to save:", e); }
-
-      setResult(run);
-      setPhase('results');
-    } catch (err: any) {
-      toast.error("Generation failed: " + (err.message || "Unknown error"));
-      setPhase('chat');
-    }
+      setResult(run); setPhase('results');
+    } catch (err: any) { toast.error("Generation failed: " + (err.message || "Unknown error")); setPhase('chat'); }
   }, []);
 
   const handleAddToBacklog = async (idea: any) => {
-    try {
-      await addToBacklogDb({ ideaName: idea.name, source: 'Generated', demandScore: idea.demandScore, status: 'New' });
-      toast.success(`"${idea.name}" saved to My Ideas`);
-    } catch { toast.error("Failed to save"); }
+    try { await addToBacklogDb({ ideaName: idea.name, source: 'Generated', demandScore: idea.demandScore, status: 'New' }); toast.success(`"${idea.name}" saved to My Ideas`); } catch { toast.error("Failed to save"); }
   };
 
-  const handleValidate = (idea: any) => {
-    navigate(`/validate?idea=${encodeURIComponent(idea.name + ': ' + idea.description)}`);
-  };
+  const handleValidate = (idea: any) => { navigate(`/validate?idea=${encodeURIComponent(idea.name + ': ' + idea.description)}`); };
 
   const resetChat = () => {
     setMessages([{ id: '1', role: 'assistant', text: "What kind of product or problem are you thinking about? Describe your idea and I'll find real problems and opportunities." }]);
@@ -158,22 +90,22 @@ export default function GenerateIdeas() {
 
   if (phase === 'chat') {
     return (
-      <div className="max-w-2xl mx-auto flex flex-col h-[calc(100vh-6rem)]">
+      <div className="max-w-2xl mx-auto flex flex-col h-[calc(100vh-6rem)] animate-fade-in">
         <div className="mb-4">
-          <h1 className="text-3xl font-bold tracking-tight">Generate Ideas</h1>
+          <h1 className="text-3xl font-bold tracking-tight font-nunito">Generate Ideas</h1>
           <p className="text-muted-foreground mt-1">Tell me what you're thinking — I'll find real problems and opportunities.</p>
         </div>
-        <div className="flex-1 overflow-y-auto space-y-3 pb-4">
+        <div className="flex-1 overflow-y-auto space-y-3 pb-4 no-scrollbar">
           {messages.map((msg) => (
             <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${msg.role === 'user' ? 'bg-primary text-primary-foreground rounded-br-md' : 'bg-muted text-foreground rounded-bl-md'}`}>
+              <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${msg.role === 'user' ? 'bg-foreground text-background rounded-br-md' : 'bg-secondary text-foreground rounded-bl-md'}`}>
                 <p>{msg.text}</p>
               </div>
             </div>
           ))}
           {isTyping && (
             <div className="flex justify-start">
-              <div className="bg-muted rounded-2xl rounded-bl-md px-4 py-3 flex gap-1.5 items-center">
+              <div className="bg-secondary rounded-2xl rounded-bl-md px-4 py-3 flex gap-1.5 items-center">
                 <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:0ms]" />
                 <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:150ms]" />
                 <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:300ms]" />
@@ -182,9 +114,9 @@ export default function GenerateIdeas() {
           )}
           <div ref={chatEndRef} />
         </div>
-        <div className="border-t pt-3 pb-2 space-y-2">
+        <div className="border-t border-border/50 pt-3 pb-2 space-y-2">
           {generatingParams && (
-            <div className="bg-muted/50 border rounded-xl p-3 space-y-2">
+            <div className="bg-secondary/60 border border-border/50 rounded-2xl p-3 space-y-2">
               <p className="text-xs text-muted-foreground font-medium">I understood this from your idea:</p>
               <div className="flex flex-wrap gap-2">
                 <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-medium"><User className="h-3 w-3" /> {generatingParams.persona}</span>
@@ -192,16 +124,14 @@ export default function GenerateIdeas() {
                 {generatingParams.platform && <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-medium"><Monitor className="h-3 w-3" /> {generatingParams.platform}</span>}
                 {generatingParams.region && <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-medium"><Globe className="h-3 w-3" /> {generatingParams.region}</span>}
               </div>
-              <Button className="w-full" size="sm" onClick={() => triggerGenerate(generatingParams)}>
+              <Button className="w-full rounded-full" size="sm" onClick={() => triggerGenerate(generatingParams)}>
                 <Rocket className="h-3.5 w-3.5 mr-1" /> Start Research
               </Button>
             </div>
           )}
           <div className="flex gap-2">
-            <Input ref={inputRef} value={inputValue} onChange={e => setInputValue(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleUserInput()} placeholder={generatingParams ? "Add more context or hit Start Research..." : "e.g. I want to build a SQL prompt buddy for devs..."} className="flex-1" autoFocus disabled={isTyping} />
-            <Button size="icon" onClick={handleUserInput} disabled={!inputValue.trim() || isTyping}>
-              <Send className="h-4 w-4" />
-            </Button>
+            <Input ref={inputRef} value={inputValue} onChange={e => setInputValue(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleUserInput()} placeholder={generatingParams ? "Add more context or hit Start Research..." : "e.g. I want to build a SQL prompt buddy for devs..."} className="flex-1 rounded-xl" autoFocus disabled={isTyping} />
+            <Button size="icon" className="rounded-xl" onClick={handleUserInput} disabled={!inputValue.trim() || isTyping}><Send className="h-4 w-4" /></Button>
           </div>
         </div>
       </div>
@@ -210,9 +140,9 @@ export default function GenerateIdeas() {
 
   if (phase === 'researching') {
     return (
-      <div className="max-w-lg mx-auto mt-20">
-        <Card><CardContent className="p-8">
-          <h2 className="text-xl font-semibold mb-2">Researching...</h2>
+      <div className="max-w-lg mx-auto mt-20 animate-fade-in">
+        <Card className="rounded-[32px] shadow-lg"><CardContent className="p-8">
+          <h2 className="text-xl font-semibold font-nunito mb-2">Researching...</h2>
           <p className="text-sm text-muted-foreground mb-4">Mining real complaints and opportunities{generatingParams ? ` for ${generatingParams.persona} in ${generatingParams.category}` : ''}.</p>
           <ResearchTrace steps={researchSteps} currentStep={researchStep} isComplete={false} />
         </CardContent></Card>
@@ -221,21 +151,21 @@ export default function GenerateIdeas() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Results</h1>
+          <h1 className="text-3xl font-bold tracking-tight font-nunito">Results</h1>
           <p className="text-muted-foreground mt-1">{result?.persona} × {result?.category} — {result?.ideaSuggestions.length} ideas found</p>
         </div>
-        <Button variant="outline" onClick={resetChat}>New Search</Button>
+        <Button variant="outline" className="rounded-full" onClick={resetChat}>New Search</Button>
       </div>
 
       <div>
-        <h2 className="text-lg font-semibold mb-4">Problem Themes</h2>
+        <h2 className="text-lg font-semibold font-nunito mb-4">Problem Themes</h2>
         <div className="space-y-3">
           {result?.problemClusters.map((cluster: any) => (
             <Collapsible key={cluster.id}>
-              <Card className="border">
+              <Card className="rounded-2xl border-border/50">
                 <CollapsibleTrigger className="w-full">
                   <CardContent className="p-4 flex items-center justify-between">
                     <div className="text-left">
@@ -249,15 +179,11 @@ export default function GenerateIdeas() {
                   </CardContent>
                 </CollapsibleTrigger>
                 <CollapsibleContent>
-                  <div className="px-4 pb-4 space-y-2 border-t pt-3">
-                    {cluster.complaints?.map((c: string, i: number) => (
-                      <p key={i} className="text-xs text-muted-foreground italic">"{c}"</p>
-                    ))}
+                  <div className="px-4 pb-4 space-y-2 border-t border-border/50 pt-3">
+                    {cluster.complaints?.map((c: string, i: number) => (<p key={i} className="text-xs text-muted-foreground italic">"{c}"</p>))}
                     {cluster.evidenceLinks?.length > 0 && (
                       <div className="flex gap-2 flex-wrap mt-2">
-                        {cluster.evidenceLinks.map((link: string, i: number) => (
-                          <a key={i} href={link} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline">Source {i + 1}</a>
-                        ))}
+                        {cluster.evidenceLinks.map((link: string, i: number) => (<a key={i} href={link} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline">Source {i + 1}</a>))}
                       </div>
                     )}
                   </div>
@@ -269,12 +195,12 @@ export default function GenerateIdeas() {
       </div>
 
       <div>
-        <h2 className="text-lg font-semibold mb-4">Idea Suggestions</h2>
+        <h2 className="text-lg font-semibold font-nunito mb-4">Idea Suggestions</h2>
         <div className="grid md:grid-cols-2 gap-4">
           {result?.ideaSuggestions.map((idea: any) => (
-            <Card key={idea.id} className="border">
+            <Card key={idea.id} className="rounded-2xl border-border/50 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
               <CardContent className="p-5 space-y-3">
-                <h3 className="font-semibold">{idea.name}</h3>
+                <h3 className="font-semibold font-nunito">{idea.name}</h3>
                 <p className="text-sm text-muted-foreground">{idea.description}</p>
                 <ScoreBar label="Opportunity Score" value={idea.demandScore} />
                 <div className="text-xs space-y-1 text-muted-foreground">
@@ -282,18 +208,9 @@ export default function GenerateIdeas() {
                   <p><span className="font-medium text-foreground">Monetization:</span> {idea.monetization}</p>
                 </div>
                 <div className="flex gap-2 pt-2">
-                  <Button size="sm" variant="outline" onClick={() => handleValidate(idea)}>
-                    <ClipboardCheck className="h-3 w-3 mr-1" /> Validate
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => handleAddToBacklog(idea)}>
-                    <Bookmark className="h-3 w-3 mr-1" /> Save
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => {
-                    navigator.clipboard.writeText(`Build a ${idea.name}: ${idea.description}\nMVP: ${idea.mvpScope}`);
-                    toast.success("Copied PRD prompt");
-                  }}>
-                    <Copy className="h-3 w-3" />
-                  </Button>
+                  <Button size="sm" variant="outline" className="rounded-full" onClick={() => handleValidate(idea)}><ClipboardCheck className="h-3 w-3 mr-1" /> Validate</Button>
+                  <Button size="sm" variant="outline" className="rounded-full" onClick={() => handleAddToBacklog(idea)}><Bookmark className="h-3 w-3 mr-1" /> Save</Button>
+                  <Button size="sm" variant="ghost" className="rounded-full" onClick={() => { navigator.clipboard.writeText(`Build a ${idea.name}: ${idea.description}\nMVP: ${idea.mvpScope}`); toast.success("Copied PRD prompt"); }}><Copy className="h-3 w-3" /></Button>
                 </div>
               </CardContent>
             </Card>
