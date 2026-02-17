@@ -208,23 +208,23 @@ export default function Analytics() {
 
           {/* Row 2: Score Comparison + Pipeline */}
           <div className="grid md:grid-cols-2 gap-6">
-            {/* Scores Comparison */}
-            {comparisonData.length > 1 && (
+            {/* Average Scores */}
+            {avgScores && (
               <Card className="rounded-2xl border border-border/40 bg-card shadow-sm">
                 <CardContent className="p-6">
-                  <h3 className="text-sm font-semibold font-nunito mb-1">Idea Score Comparison</h3>
-                  <p className="text-xs text-muted-foreground mb-4">Side-by-side scores for each validated idea</p>
+                  <h3 className="text-sm font-semibold font-nunito mb-1">Average Scores</h3>
+                  <p className="text-xs text-muted-foreground mb-4">Mean scores across all {reports.length} validations</p>
                   <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={comparisonData} barCategoryGap="20%">
+                    <BarChart data={avgScores} barCategoryGap="20%">
                       <CartesianGrid vertical={false} {...gridStyle} />
                       <XAxis dataKey="name" tick={axisStyle} axisLine={false} tickLine={false} />
                       <YAxis domain={[0, 100]} tick={axisStyle} axisLine={false} tickLine={false} width={30} />
-                      <Tooltip content={<CustomTooltip />} cursor={{ fill: "hsl(30, 15%, 94%)", radius: 4 }} />
-                      <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, fontFamily: "Inter", paddingTop: 8 }} />
-                      <Bar dataKey="demand" name="Demand" fill={SCORE_COLORS.demand} radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="pain" name="Pain" fill={SCORE_COLORS.pain} radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="competition" name="Competition" fill={SCORE_COLORS.competition} radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="feasibility" name="Feasibility" fill={SCORE_COLORS.feasibility} radius={[4, 4, 0, 0]} />
+                      <Tooltip content={<CustomTooltip />} cursor={{ fill: "hsl(30, 15%, 94%)", radius: 6 }} />
+                      <Bar dataKey="score" radius={[6, 6, 0, 0]}>
+                        {avgScores.map((entry, i) => (
+                          <Cell key={i} fill={entry.fill} />
+                        ))}
+                      </Bar>
                     </BarChart>
                   </ResponsiveContainer>
                 </CardContent>
