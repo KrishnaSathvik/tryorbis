@@ -31,42 +31,42 @@ export function GuestUpgradeBanner() {
   };
 
   return (
-    <div className="bg-warning/10 border border-warning/20 rounded-2xl p-3 flex items-center justify-between gap-3">
-      <div className="flex items-center gap-2 text-sm">
-        <Shield className="h-4 w-4 text-warning shrink-0" />
-        <span className="text-muted-foreground">
-          You're in <strong className="text-foreground">guest mode</strong>. Upgrade to keep your data & get 20 credits.
-        </span>
-      </div>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger asChild>
-          <Button size="sm" className="rounded-full shrink-0">Upgrade</Button>
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-md rounded-[24px]">
-          <DialogHeader>
-            <DialogTitle className="font-nunito">Upgrade Your Account</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleUpgrade} className="space-y-3 pt-2">
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">Email</label>
-              <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" className="rounded-xl" />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">Password</label>
-              <div className="relative">
-                <Input type={showPw ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} placeholder="Min 6 characters" className="rounded-xl pr-10" />
-                <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                  {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
+    <div className="bg-warning/5 border border-warning/15 rounded-xl px-3 py-2.5">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground min-w-0">
+          <Shield className="h-3.5 w-3.5 text-warning shrink-0" />
+          <span className="truncate"><strong className="text-foreground">Guest mode</strong> — upgrade to keep data</span>
+        </div>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button size="sm" variant="outline" className="rounded-full text-xs h-7 px-3 shrink-0 border-warning/30 text-warning hover:bg-warning/10 hover:text-warning">Upgrade</Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-md rounded-[24px]">
+            <DialogHeader>
+              <DialogTitle className="font-nunito">Upgrade Your Account</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleUpgrade} className="space-y-3 pt-2">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">Email</label>
+                <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" className="rounded-xl" />
               </div>
-            </div>
-            <p className="text-xs text-muted-foreground">All your ideas, validations, and chat history will be preserved.</p>
-            <Button type="submit" className="w-full rounded-full" disabled={loading}>
-              {loading ? "Upgrading..." : "Upgrade Account"}
-            </Button>
-          </form>
-        </DialogContent>
-      </Dialog>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">Password</label>
+                <div className="relative">
+                  <Input type={showPw ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} placeholder="Min 6 characters" className="rounded-xl pr-10" />
+                  <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">All your ideas, validations, and chat history will be preserved.</p>
+              <Button type="submit" className="w-full rounded-full" disabled={loading}>
+                {loading ? "Upgrading..." : "Upgrade Account"}
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 }
