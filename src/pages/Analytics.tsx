@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { Card, CardContent } from "@/components/ui/card";
 import { getMyValidationReports, getMyGeneratorRuns, getMyBacklog } from "@/lib/db";
 import {
@@ -51,6 +52,7 @@ const axisStyle = { fontSize: 11, fill: "hsl(220, 10%, 46%)", fontFamily: "Inter
 const gridStyle = { stroke: "hsl(30, 10%, 90%)", strokeDasharray: "4 4" };
 
 export default function Analytics() {
+  usePageTitle("Analytics");
   const [reports, setReports] = useState<any[]>([]);
   const [runs, setRuns] = useState<any[]>([]);
   const [backlog, setBacklog] = useState<any[]>([]);

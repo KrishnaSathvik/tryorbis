@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSearchParams } from "react-router-dom";
@@ -32,6 +33,7 @@ const SUGGESTIONS = [
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/orbis-chat`;
 
 export default function OrbisChat() {
+  usePageTitle("Orbis AI Chat");
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeConvoId, setActiveConvoId] = useState<string | null>(searchParams.get("c"));

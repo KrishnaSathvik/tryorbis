@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
@@ -20,6 +21,7 @@ interface Conversation {
 }
 
 export default function Reports() {
+  usePageTitle("History");
   const navigate = useNavigate();
   const [allItems, setAllItems] = useState<any[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);

@@ -5,8 +5,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { getMyGeneratorRuns, getMyValidationReports, getMyBacklog } from "@/lib/db";
 import { useEffect, useState } from "react";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 export default function Dashboard() {
+  usePageTitle("Dashboard");
   const navigate = useNavigate();
   const { profile } = useAuth();
   const [stats, setStats] = useState({ ideasGenerated: 0, ideasValidated: 0, ideasInBacklog: 0 });

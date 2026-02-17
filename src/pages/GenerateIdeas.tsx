@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ interface ChatMessage { id: string; role: 'user' | 'assistant'; text: string; }
 interface GeneratorResult { persona: string; category: string; region?: string; platform?: string; problemClusters: any[]; ideaSuggestions: any[]; }
 
 export default function GenerateIdeas() {
+  usePageTitle("Generate Ideas");
   const navigate = useNavigate();
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);

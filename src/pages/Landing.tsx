@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import orbisLogo from "@/assets/orbis-logo.png";
 
 export default function Landing() {
+  usePageTitle();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [stats, setStats] = useState<{ runs: any[]; reports: any[]; totalUsers: number } | null>(null);

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -31,6 +32,7 @@ const statusDots: Record<BacklogStatus, string> = {
 const allStatuses: BacklogStatus[] = ['New', 'Exploring', 'Validated', 'Building', 'Archived'];
 
 export default function Backlog() {
+  usePageTitle("Idea Backlog");
   const [filter, setFilter] = useState<string>("All");
   const [backlog, setBacklog] = useState<any[]>([]);
   const [noteInputs, setNoteInputs] = useState<Record<string, string>>({});
