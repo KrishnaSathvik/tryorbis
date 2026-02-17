@@ -255,11 +255,7 @@ export default function Landing() {
             <span className="font-bold font-nunito text-gradient-primary">Orbis</span>
             <span className="text-xs text-muted-foreground ml-1">From problem discovery to product validation.</span>
           </div>
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <a href="mailto:hello@tryorbis.com" className="hover:text-foreground transition-colors">Contact</a>
-            <span>•</span>
-            <span>© {new Date().getFullYear()} Orbis. All rights reserved.</span>
-          </div>
+          <span className="text-xs text-muted-foreground">© {new Date().getFullYear()} Orbis. All rights reserved.</span>
         </div>
       </footer>
     </div>
