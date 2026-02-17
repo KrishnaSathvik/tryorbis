@@ -35,7 +35,7 @@ export function AppSidebar() {
     <Sidebar className="border-r border-sidebar-border">
       <div className="px-6 py-5">
         <h1 className="text-xl font-bold tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-          Idea<span className="text-primary">Forge</span>
+          Curo
         </h1>
         {profile?.display_name && (
           <p className="text-xs text-muted-foreground mt-0.5">Hey, {profile.display_name}</p>
