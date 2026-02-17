@@ -13,7 +13,7 @@ import { saveValidationReportDb, addToBacklogDb } from "@/lib/db";
 import { toast } from "sonner";
 import { Bookmark, Lightbulb, ThumbsUp, ThumbsDown, Target, AlertTriangle, Send, Search } from "lucide-react";
 
-const researchSteps = ["Analyzing demand signals...", "Scanning for competitors...", "Extracting pain indicators...", "Evaluating MVP feasibility...", "Generating verdict..."];
+const researchSteps = ["Deep-diving demand signals & market data...", "Scanning competitors, pricing & reviews...", "Analyzing pain severity & workarounds...", "AI strategist scoring & verdict...", "Cross-checking verdict consistency...", "Finalizing validation report..."];
 
 interface ChatMessage { id: string; role: 'user' | 'assistant'; text: string; }
 interface Report {
@@ -50,7 +50,18 @@ export default function ValidateIdea() {
     setIsTyping(true);
     try {
       const { data, error } = await supabase.functions.invoke('chat-validate', { body: { messages: allMessages.map(m => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.text })) } });
-      if (error) throw error;
+      if (error) {
+        if (error.message?.includes('429') || (data as any)?.error?.includes('rate limit')) {
+          toast.error("Rate limit reached — please wait a moment and try again.");
+        } else if (error.message?.includes('402') || (data as any)?.error?.includes('usage limit')) {
+          toast.error("AI usage limit reached. Please add credits to continue.");
+        } else {
+          throw error;
+        }
+        setIsTyping(false);
+        return;
+      }
+      if (data?.error) { toast.error(data.error); setIsTyping(false); return; }
       const aiMsg: ChatMessage = { id: crypto.randomUUID(), role: 'assistant', text: data.reply || "I'll validate this for you!" };
       setIsTyping(false); setMessages(prev => [...prev, aiMsg]);
       if (data.ready && data.params?.ideaText) setValidatingParams(data.params);
@@ -67,10 +78,11 @@ export default function ValidateIdea() {
   const triggerValidation = useCallback(async (ideaText: string) => {
     setPhase('researching'); setCurrentStep(0);
     try {
-      const stepInterval = setInterval(() => { setCurrentStep(prev => { if (prev >= researchSteps.length - 1) { clearInterval(stepInterval); return prev; } return prev + 1; }); }, 2000);
+      const stepInterval = setInterval(() => { setCurrentStep(prev => { if (prev >= researchSteps.length - 1) { clearInterval(stepInterval); return prev; } return prev + 1; }); }, 3500);
       const { data, error } = await supabase.functions.invoke('perplexity-validate', { body: { ideaText } });
       clearInterval(stepInterval); setCurrentStep(researchSteps.length);
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
       const r: Report = {
         ideaText, scores: data.scores || { demand: 0, pain: 0, competition: 0, mvpFeasibility: 0 },
         verdict: data.verdict || 'Skip', pros: data.pros || [], cons: data.cons || [],

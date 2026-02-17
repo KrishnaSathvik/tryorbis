@@ -14,11 +14,12 @@ import { saveGeneratorRunDb, addToBacklogDb } from "@/lib/db";
 import { toast } from "sonner";
 
 const researchSteps = [
-  "Searching for complaints and frustrations...",
-  "Analyzing pain points and patterns...",
-  "Clustering problem themes...",
-  "Generating product ideas...",
-  "Scoring opportunities...",
+  "Mining complaints from Reddit, forums & reviews...",
+  "Cross-referencing across multiple sources...",
+  "Clustering pain points by theme...",
+  "Analyzing with AI strategist...",
+  "Scoring opportunities & generating ideas...",
+  "Finalizing research report...",
 ];
 
 interface ChatMessage { id: string; role: 'user' | 'assistant'; text: string; }
@@ -47,7 +48,18 @@ export default function GenerateIdeas() {
       const { data, error } = await supabase.functions.invoke('chat-generate', {
         body: { messages: allMessages.map(m => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.text })) },
       });
-      if (error) throw error;
+      if (error) {
+        if (error.message?.includes('429') || (data as any)?.error?.includes('rate limit')) {
+          toast.error("Rate limit reached — please wait a moment and try again.");
+        } else if (error.message?.includes('402') || (data as any)?.error?.includes('usage limit')) {
+          toast.error("AI usage limit reached. Please add credits to continue.");
+        } else {
+          throw error;
+        }
+        setIsTyping(false);
+        return;
+      }
+      if (data?.error) { toast.error(data.error); setIsTyping(false); return; }
       const aiMsg: ChatMessage = { id: crypto.randomUUID(), role: 'assistant', text: data.reply || "I'm ready to research this for you!" };
       setIsTyping(false);
       setMessages(prev => [...prev, aiMsg]);
@@ -65,12 +77,13 @@ export default function GenerateIdeas() {
   const triggerGenerate = useCallback(async (params: any) => {
     setPhase('researching'); setResearchStep(0);
     try {
-      const stepInterval = setInterval(() => { setResearchStep(prev => { if (prev >= researchSteps.length - 1) { clearInterval(stepInterval); return prev; } return prev + 1; }); }, 2000);
+      const stepInterval = setInterval(() => { setResearchStep(prev => { if (prev >= researchSteps.length - 1) { clearInterval(stepInterval); return prev; } return prev + 1; }); }, 3500);
       const { data, error } = await supabase.functions.invoke('perplexity-generate', {
         body: { persona: params.persona, category: params.category, region: params.region || undefined, platform: params.platform || undefined, context: params.context || undefined },
       });
       clearInterval(stepInterval); setResearchStep(researchSteps.length);
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
       const run: GeneratorResult = { persona: params.persona, category: params.category, region: params.region || undefined, platform: params.platform || undefined, problemClusters: data.problemClusters || [], ideaSuggestions: data.ideaSuggestions || [] };
       try { await saveGeneratorRunDb(run); } catch (e) { console.error("Failed to save:", e); }
       setResult(run); setPhase('results');

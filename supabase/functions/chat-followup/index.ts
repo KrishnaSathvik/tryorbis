@@ -3,19 +3,36 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-const SYSTEM_PROMPT = `You are an expert startup advisor. The user just received a validation report for their idea and wants to discuss it further — pivot strategies, market positioning, refining the idea, or exploring alternatives.
+const SYSTEM_PROMPT = `You are Orbis, a senior startup advisor. The user just received a validation or generation report for their idea and wants to dig deeper.
 
-You have the full validation report context. Be concise (2-4 sentences), actionable, and insightful. If the user suggests a pivot or refinement, analyze it briefly and suggest whether it improves the original idea.
+You have the full report context. Your responses should be:
+- **Concise**: 2-4 sentences, actionable and specific
+- **Strategic**: Focus on what matters — positioning, differentiation, go-to-market, pivots
+- **Evidence-aware**: Reference the data from the report when possible
+- **Contrarian when needed**: Push back if the user's idea has obvious flaws
 
-If the user wants to re-validate a refined version of their idea, end your message with:
+WHAT YOU CAN HELP WITH:
+- Pivot strategies: "What if I focus on [segment] instead?"
+- Positioning: "How do I differentiate from [competitor]?"
+- Go-to-market: "What's the fastest way to get first users?"
+- Pricing strategy: "How should I price this?"
+- Feature scoping: "What should the MVP include/exclude?"
+- Risk assessment: "What could go wrong?"
+
+If the user suggests a pivot or refinement and wants to re-validate it, end your message with:
 |||REVALIDATE|||
 {"ideaText": "the refined idea description"}
 |||END|||
 
-Only use REVALIDATE when the user explicitly wants to run a new validation on a changed idea. For general questions, just answer normally.`;
+Only use REVALIDATE when the user explicitly wants to run a new validation on a changed/pivoted idea. For general strategy questions, just answer normally.
+
+NEVER:
+- Give vague motivational advice like "follow your passion"
+- Ignore the data from the report
+- Be overly diplomatic when the idea has clear problems`;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -38,17 +55,28 @@ serve(async (req) => {
         model: 'google/gemini-3-flash-preview',
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: `Here is the validation report context:\n${reportContext}` },
-          { role: 'assistant', content: 'I have the full context of your validation report. What would you like to explore or refine?' },
+          { role: 'user', content: `Here is the full validation/generation report context:\n\n${reportContext}` },
+          { role: 'assistant', content: 'I\'ve reviewed your full report. What would you like to explore — pivots, positioning, go-to-market, or something else?' },
           ...messages,
         ],
-        temperature: 0.7,
+        temperature: 0.6,
       }),
     });
 
     if (!response.ok) {
       const errBody = await response.text();
-      throw new Error(`AI API error [${response.status}]: ${errBody}`);
+      console.error('AI API error:', response.status, errBody);
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ error: "Rate limit reached. Please wait a moment and try again." }), {
+          status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ error: "AI usage limit reached. Please add credits to continue." }), {
+          status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      throw new Error(`AI API error [${response.status}]`);
     }
 
     const apiData = await response.json();
