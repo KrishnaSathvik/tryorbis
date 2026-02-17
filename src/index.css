@@ -55,50 +55,50 @@
   }
 
   .dark {
-    --background: 220 20% 7%;
-    --foreground: 220 14% 96%;
+    --background: 240 10% 6%;
+    --foreground: 30 15% 92%;
 
-    --card: 220 18% 10%;
-    --card-foreground: 220 14% 96%;
+    --card: 240 8% 9%;
+    --card-foreground: 30 15% 92%;
 
-    --popover: 220 20% 10%;
-    --popover-foreground: 220 14% 96%;
+    --popover: 240 8% 9%;
+    --popover-foreground: 30 15% 92%;
 
-    --primary: 220 70% 55%;
+    --primary: 225 65% 60%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 15% 14%;
-    --secondary-foreground: 220 14% 96%;
+    --secondary: 240 6% 13%;
+    --secondary-foreground: 30 12% 88%;
 
-    --muted: 220 15% 14%;
-    --muted-foreground: 220 10% 55%;
+    --muted: 240 6% 13%;
+    --muted-foreground: 30 6% 50%;
 
-    --accent: 220 15% 16%;
-    --accent-foreground: 220 14% 96%;
+    --accent: 240 6% 15%;
+    --accent-foreground: 30 12% 88%;
 
-    --destructive: 0 62% 30%;
+    --destructive: 0 55% 45%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 142 60% 35%;
+    --success: 142 50% 40%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 38 80% 45%;
+    --warning: 38 75% 50%;
     --warning-foreground: 0 0% 100%;
 
-    --border: 220 15% 18%;
-    --input: 220 15% 18%;
-    --ring: 220 70% 55%;
+    --border: 240 6% 16%;
+    --input: 240 6% 16%;
+    --ring: 225 65% 60%;
 
-    --sidebar-background: 220 20% 7%;
-    --sidebar-foreground: 220 10% 55%;
-    --sidebar-primary: 220 70% 55%;
+    --sidebar-background: 240 10% 6%;
+    --sidebar-foreground: 30 6% 50%;
+    --sidebar-primary: 225 65% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 15% 13%;
-    --sidebar-accent-foreground: 220 14% 96%;
-    --sidebar-border: 220 15% 15%;
-    --sidebar-ring: 220 70% 55%;
+    --sidebar-accent: 240 6% 12%;
+    --sidebar-accent-foreground: 30 12% 88%;
+    --sidebar-border: 240 6% 14%;
+    --sidebar-ring: 225 65% 60%;
 
-    --primary-glow: 240 50% 65%;
+    --primary-glow: 250 55% 68%;
   }
 }
 
@@ -135,7 +135,7 @@
     box-shadow: 0 0 40px -10px hsl(var(--primary) / 0.25);
   }
   .card-warm {
-    @apply bg-card/80 backdrop-blur-md rounded-[32px] border border-white/60 shadow-lg;
+    @apply bg-card/80 backdrop-blur-md rounded-[32px] border border-border/60 shadow-lg;
   }
   .btn-pill {
     @apply rounded-full;
