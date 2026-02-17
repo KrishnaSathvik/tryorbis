@@ -1,4 +1,4 @@
-import { LayoutDashboard, Lightbulb, ClipboardCheck, Archive, FileText, LogOut, BarChart3, Zap } from "lucide-react";
+import { LayoutDashboard, Lightbulb, ClipboardCheck, Archive, FileText, LogOut, BarChart3, Zap, Sparkles } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCredits } from "@/hooks/useCredits";
@@ -17,6 +17,7 @@ import {
 
 const navItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Orbis AI", url: "/chat", icon: Sparkles },
   { title: "Generate Ideas", url: "/generate", icon: Lightbulb },
   { title: "Validate Idea", url: "/validate", icon: ClipboardCheck },
   { title: "My Ideas", url: "/ideas", icon: Archive },
