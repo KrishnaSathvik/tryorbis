@@ -4,7 +4,6 @@ import { getMyValidationReports, getMyGeneratorRuns, getMyBacklog } from "@/lib/
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
-  RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
 } from "recharts";
 import { TrendingUp, Target, BarChart3, Activity } from "lucide-react";
 import { VerdictBadge } from "@/components/VerdictBadge";
@@ -71,16 +70,14 @@ export default function Analytics() {
   }, {});
   const verdictData = Object.entries(verdictCounts).map(([name, value]) => ({ name, value }));
 
-  // Radar data — each validation as an overlay
-  const radarData = [
-    { metric: "Demand", ...Object.fromEntries(reports.slice().reverse().map((r: any, i: number) => [`idea${i + 1}`, (r.scores as any)?.demand || 0])) },
-    { metric: "Pain", ...Object.fromEntries(reports.slice().reverse().map((r: any, i: number) => [`idea${i + 1}`, (r.scores as any)?.pain || 0])) },
-    { metric: "Competition", ...Object.fromEntries(reports.slice().reverse().map((r: any, i: number) => [`idea${i + 1}`, (r.scores as any)?.competition || 0])) },
-    { metric: "Feasibility", ...Object.fromEntries(reports.slice().reverse().map((r: any, i: number) => [`idea${i + 1}`, (r.scores as any)?.mvpFeasibility || 0])) },
-  ];
-  const radarKeys = reports.slice().reverse().map((_: any, i: number) => `idea${i + 1}`);
-  const radarLabels = reports.slice().reverse().map((r: any) => r.idea_text?.slice(0, 25) + '…');
-  const radarStrokeColors = [CHART_COLORS.primary, CHART_COLORS.success, CHART_COLORS.warning, CHART_COLORS.destructive, CHART_COLORS.accent];
+  // Grouped bar data — each idea as a group of 4 scores
+  const comparisonData = reports.slice().reverse().map((r: any, i: number) => ({
+    name: `#${i + 1}`,
+    demand: (r.scores as any)?.demand || 0,
+    pain: (r.scores as any)?.pain || 0,
+    competition: (r.scores as any)?.competition || 0,
+    feasibility: (r.scores as any)?.mvpFeasibility || 0,
+  }));
 
   // Category breakdown
   const categoryCounts = runs.reduce((acc: any, r: any) => {
@@ -213,40 +210,25 @@ export default function Analytics() {
             )}
           </div>
 
-          {/* Scores Comparison Radar */}
-          {reports.length > 1 && (
+          {/* Scores Comparison - Grouped Bar */}
+          {comparisonData.length > 1 && (
             <Card className="rounded-2xl border border-border/40 bg-card shadow-sm">
               <CardContent className="p-6">
                 <h3 className="text-sm font-semibold font-nunito mb-1">Idea Score Comparison</h3>
-                <p className="text-xs text-muted-foreground mb-4">Radar overlay comparing each validated idea</p>
-                <ResponsiveContainer width="100%" height={300}>
-                  <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="75%">
-                    <PolarGrid stroke="hsl(30, 10%, 88%)" />
-                    <PolarAngleAxis dataKey="metric" tick={{ ...axisStyle, fontSize: 12 }} />
-                    <PolarRadiusAxis domain={[0, 100]} tick={axisStyle} axisLine={false} />
-                    {radarKeys.map((key: string, i: number) => (
-                      <Radar
-                        key={key}
-                        name={`Idea #${i + 1}`}
-                        dataKey={key}
-                        stroke={radarStrokeColors[i % radarStrokeColors.length]}
-                        fill={radarStrokeColors[i % radarStrokeColors.length]}
-                        fillOpacity={0.08}
-                        strokeWidth={2}
-                      />
-                    ))}
-                    <Tooltip content={<CustomTooltip />} />
+                <p className="text-xs text-muted-foreground mb-4">Side-by-side scores for each validated idea</p>
+                <ResponsiveContainer width="100%" height={260}>
+                  <BarChart data={comparisonData} barCategoryGap="20%">
+                    <CartesianGrid vertical={false} {...gridStyle} />
+                    <XAxis dataKey="name" tick={axisStyle} axisLine={false} tickLine={false} />
+                    <YAxis domain={[0, 100]} tick={axisStyle} axisLine={false} tickLine={false} width={30} />
+                    <Tooltip content={<CustomTooltip />} cursor={{ fill: "hsl(30, 15%, 94%)", radius: 4 }} />
                     <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, fontFamily: "Inter", paddingTop: 8 }} />
-                  </RadarChart>
+                    <Bar dataKey="demand" name="Demand" fill={SCORE_COLORS.demand} radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="pain" name="Pain" fill={SCORE_COLORS.pain} radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="competition" name="Competition" fill={SCORE_COLORS.competition} radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="feasibility" name="Feasibility" fill={SCORE_COLORS.feasibility} radius={[4, 4, 0, 0]} />
+                  </BarChart>
                 </ResponsiveContainer>
-                <div className="mt-3 space-y-1">
-                  {radarLabels.map((label: string, i: number) => (
-                    <p key={i} className="text-[10px] text-muted-foreground flex items-center gap-1.5">
-                      <span className="h-2 w-2 rounded-full" style={{ background: radarStrokeColors[i % radarStrokeColors.length] }} />
-                      <span className="font-semibold">Idea #{i + 1}:</span> {label}
-                    </p>
-                  ))}
-                </div>
               </CardContent>
             </Card>
           )}
@@ -258,15 +240,23 @@ export default function Analytics() {
                 <CardContent className="p-6">
                   <h3 className="text-sm font-semibold font-nunito mb-1">Categories Explored</h3>
                   <p className="text-xs text-muted-foreground mb-4">Market categories from your idea generations</p>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <BarChart data={categoryData} layout="vertical" barCategoryGap="16%">
-                      <CartesianGrid horizontal={false} {...gridStyle} />
-                      <XAxis type="number" tick={axisStyle} axisLine={false} tickLine={false} />
-                      <YAxis type="category" dataKey="name" tick={{ ...axisStyle, fontSize: 10 }} width={140} axisLine={false} tickLine={false} />
-                      <Tooltip content={<CustomTooltip />} cursor={{ fill: "hsl(30, 15%, 94%)", radius: 6 }} />
-                      <Bar dataKey="value" fill={CHART_COLORS.primary} radius={[0, 6, 6, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  <div className="space-y-3">
+                    {categoryData.map((cat: any, i: number) => {
+                      const max = Math.max(...categoryData.map((c: any) => c.value as number));
+                      const pct = ((cat.value as number) / max) * 100;
+                      return (
+                        <div key={i}>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs font-medium text-foreground truncate max-w-[180px]">{cat.name}</span>
+                            <span className="text-xs font-semibold text-muted-foreground">{cat.value as number}</span>
+                          </div>
+                          <div className="h-2 rounded-full bg-secondary overflow-hidden">
+                            <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: PALETTE[i % PALETTE.length] }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </CardContent>
               </Card>
             )}
