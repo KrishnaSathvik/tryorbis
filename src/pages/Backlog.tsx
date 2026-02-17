@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+
 import { getMyBacklog, updateBacklogStatusDb, removeFromBacklogDb, addNoteToBacklogDb, renameBacklogItemDb } from "@/lib/db";
-import { Trash2, MessageSquarePlus, Archive, Filter, Pencil, Check, X, ChevronDown, StickyNote } from "lucide-react";
+import { Trash2, MessageSquarePlus, Archive, Filter, Pencil, Check, X, StickyNote } from "lucide-react";
 import { toast } from "sonner";
 
 type BacklogStatus = 'New' | 'Exploring' | 'Validated' | 'Building' | 'Archived';
@@ -25,6 +25,7 @@ export default function Backlog() {
   const [filter, setFilter] = useState<string>("All");
   const [backlog, setBacklog] = useState<any[]>([]);
   const [noteInputs, setNoteInputs] = useState<Record<string, string>>({});
+  const [addingNoteFor, setAddingNoteFor] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [loading, setLoading] = useState(true);
@@ -55,6 +56,7 @@ export default function Backlog() {
     if (!text) return;
     await addNoteToBacklogDb(id, text);
     setNoteInputs(prev => ({ ...prev, [id]: "" }));
+    setAddingNoteFor(null);
     fetchBacklog();
     toast.success("Note added");
   };
@@ -109,7 +111,7 @@ export default function Backlog() {
             const notes = Array.isArray(item.notes) ? item.notes : [];
             const isEditing = editingId === item.id;
             return (
-              <Collapsible key={item.id}>
+              <div key={item.id}>
                 <Card className="border hover:border-primary/20 transition-colors">
                   <CardContent className="p-5 space-y-0">
                     {/* Top row: name + actions */}
@@ -161,47 +163,53 @@ export default function Backlog() {
                       </div>
                     </div>
 
-                    {/* Notes section - always visible as a teaser */}
-                    <Collapsible>
-                      <CollapsibleTrigger asChild>
-                        <button className="flex items-center gap-1.5 mt-3 text-xs text-muted-foreground hover:text-foreground transition-colors group/notes">
-                          <StickyNote className="h-3 w-3" />
-                          <span>{notes.length > 0 ? `${notes.length} note${notes.length !== 1 ? 's' : ''}` : 'Add notes'}</span>
-                          <ChevronDown className="h-3 w-3 transition-transform group-data-[state=open]/notes:rotate-180" />
-                        </button>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <div className="mt-3 pt-3 border-t space-y-3">
-                          <div className="space-y-2">
-                            <Textarea
-                              placeholder="Paste or type your thoughts here..."
-                              value={noteInputs[item.id] || ""}
-                              onChange={e => setNoteInputs(prev => ({ ...prev, [item.id]: e.target.value }))}
-                              onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleAddNote(item.id); }}
-                              className="text-sm min-h-[80px] resize-y"
-                            />
-                            <div className="flex items-center justify-between">
-                              <p className="text-[10px] text-muted-foreground">⌘ + Enter to save</p>
-                              <Button size="sm" variant="outline" className="h-8" onClick={() => handleAddNote(item.id)} disabled={!noteInputs[item.id]?.trim()}>
-                                <MessageSquarePlus className="h-3.5 w-3.5 mr-1" /> Save Note
-                              </Button>
-                            </div>
+                    {/* Notes displayed inline */}
+                    {notes.length > 0 && (
+                      <div className="mt-3 space-y-1.5">
+                        {notes.map((note: string, i: number) => (
+                          <div key={i} className="flex gap-2 items-start">
+                            <StickyNote className="h-3 w-3 mt-1 shrink-0 text-muted-foreground" />
+                            <p className="text-xs text-muted-foreground leading-relaxed">{note}</p>
                           </div>
-                          {notes.length > 0 ? (
-                            <div className="space-y-2">
-                              {notes.map((note: string, i: number) => (
-                                <p key={i} className="text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2.5 leading-relaxed">{note}</p>
-                              ))}
-                            </div>
-                          ) : (
-                            <p className="text-xs text-muted-foreground italic">No notes yet — jot down thoughts, next steps, or reminders.</p>
-                          )}
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Add note toggle */}
+                    {addingNoteFor === item.id ? (
+                      <div className="mt-3 pt-3 border-t space-y-2">
+                        <Textarea
+                          placeholder="Paste or type your thoughts here..."
+                          value={noteInputs[item.id] || ""}
+                          onChange={e => setNoteInputs(prev => ({ ...prev, [item.id]: e.target.value }))}
+                          onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleAddNote(item.id); }}
+                          className="text-sm min-h-[80px] resize-y"
+                          autoFocus
+                        />
+                        <div className="flex items-center justify-between">
+                          <p className="text-[10px] text-muted-foreground">⌘ + Enter to save</p>
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="ghost" className="h-8" onClick={() => setAddingNoteFor(null)}>
+                              Cancel
+                            </Button>
+                            <Button size="sm" variant="outline" className="h-8" onClick={() => handleAddNote(item.id)} disabled={!noteInputs[item.id]?.trim()}>
+                              <MessageSquarePlus className="h-3.5 w-3.5 mr-1" /> Save Note
+                            </Button>
+                          </div>
                         </div>
-                      </CollapsibleContent>
-                    </Collapsible>
+                      </div>
+                    ) : (
+                      <button
+                        className="flex items-center gap-1.5 mt-3 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                        onClick={() => setAddingNoteFor(item.id)}
+                      >
+                        <MessageSquarePlus className="h-3 w-3" />
+                        <span>Add a note</span>
+                      </button>
+                    )}
                   </CardContent>
                 </Card>
-              </Collapsible>
+              </div>
             );
           })}
         </div>
