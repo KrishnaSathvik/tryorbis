@@ -111,6 +111,24 @@ PLATFORM RISK RESEARCH (Phase 2 — new):
 - Check for new regulations that could restrict or enable this category
 - Note any platform dependency risks (e.g., relying on a single API that could change)
 
+GTM STRATEGY RESEARCH (Phase 3 — new):
+- How do existing competitors acquire customers? (SEO, paid ads, communities, marketplaces, partnerships)
+- Look for founder stories about early customer acquisition in this space
+- Check which channels have the most organic discussion about this problem
+- Note if marketplace listings (Shopify App Store, Chrome Web Store, etc.) are viable
+
+PRICING BENCHMARK RESEARCH (Phase 3 — new):
+- Document exact pricing of ALL competitors found (free tier, paid tiers, enterprise pricing)
+- Look for pricing comparison posts and "alternatives to X" discussions
+- Note which pricing models are used (per-seat, usage-based, flat-rate, freemium)
+- Find discussions about pricing fairness and value perception
+
+DEFENSIBILITY / MOAT RESEARCH (Phase 3 — new):
+- Look for network effects in this space (data moats, community flywheels)
+- Check for integration ecosystems that create switching costs
+- Identify technical moats (proprietary data, algorithms, patents)
+- Note any regulatory barriers to entry or compliance moats
+
 Also research existing solutions in this space:
 - What tools already exist?
 - What are their most common complaints?
@@ -118,7 +136,7 @@ Also research existing solutions in this space:
 - What gaps do users mention?
 - How many competitors exist and what's their funding level?
 
-Return your findings as detailed, unstructured text. Include all quotes, sources, competitor names, pricing, WTP signals, timing data, workaround details, feature gaps, and platform risks. Do NOT structure as JSON yet — just give me the raw research.`;
+Return your findings as detailed, unstructured text. Include all quotes, sources, competitor names, pricing, WTP signals, timing data, workaround details, feature gaps, platform risks, GTM channels, pricing benchmarks, and moat signals. Do NOT structure as JSON yet — just give me the raw research.`;
 
     console.log('Pass 1: Starting deep research with sonar-pro...');
     const researchResponse = await fetch('https://api.perplexity.ai/chat/completions', {
@@ -130,7 +148,7 @@ Return your findings as detailed, unstructured text. Include all quotes, sources
       body: JSON.stringify({
         model: 'sonar-pro',
         messages: [
-          { role: 'system', content: 'You are a meticulous market research analyst. Find real, specific, verifiable complaints, willingness-to-pay signals, market timing indicators, workaround evidence, feature gaps, and platform risks. Always cite where you found information. Be thorough — quality and specificity matter more than speed.' },
+          { role: 'system', content: 'You are a meticulous market research analyst. Find real, specific, verifiable complaints, willingness-to-pay signals, market timing indicators, workaround evidence, feature gaps, platform risks, GTM channels, pricing benchmarks, and moat signals. Always cite where you found information. Be thorough — quality and specificity matter more than speed.' },
           { role: 'user', content: searchPrompt },
         ],
         temperature: 0.1,
@@ -163,7 +181,7 @@ ${rawResearch}
 CITATIONS/SOURCES:
 ${citations.map((c: string, i: number) => `[${i + 1}] ${c}`).join('\n')}
 
-YOUR TASK: Analyze this research and produce structured output with enhanced intelligence layers (Phase 1 + Phase 2).
+YOUR TASK: Analyze this research and produce structured output with enhanced intelligence layers (Phase 1 + Phase 2 + Phase 3).
 
 CLUSTERING RULES:
 - Group complaints into 4-6 distinct thematic clusters
@@ -236,7 +254,27 @@ PLATFORM RISK SCORING (Phase 2 — NEW):
 Assess platform dependency risks:
 - Level: "low", "medium", "high", or "critical"
 - For each risk signal, classify type: "bundling", "api_limitation", "roadmap_overlap", "regulation", "dependency"
-- Examples: Stripe launching competing features = "bundling", API rate limits = "api_limitation"
+
+GTM STRATEGY ENGINE (Phase 3 — NEW):
+Recommend go-to-market approach:
+- Identify 3-5 acquisition channels with viability rating: "high", "medium", "low"
+- Determine if founder-led sales is viable (boolean)
+- Assess SEO viability: "strong", "moderate", "weak"
+- Identify the single best primary channel to start with
+- Consider: content marketing, communities, marketplaces, paid ads, partnerships, Product Hunt, outbound
+
+PRICING BENCHMARK ANALYSIS (Phase 3 — NEW):
+Not pricing suggestions — market benchmarks from research:
+- List 3-6 competitor pricing with tool name, price, model (per-seat/usage/flat), and notes
+- Suggest a price range (low/mid/high) based on market data
+- Recommend pricing model based on what works in this space
+
+DEFENSIBILITY / MOAT ANALYSIS (Phase 3 — NEW):
+Assess long-term defensibility potential:
+- Overall strength: "strong", "moderate", "weak", "none"
+- For each moat signal, classify type: "data_network", "integrations", "lock_in", "community", "brand", "technical", "regulatory"
+- Rate each signal's strength individually
+- Estimate time to build meaningful moat (e.g., "6-12 months", "2+ years")
 
 Return ONLY valid JSON:
 {
@@ -244,10 +282,10 @@ Return ONLY valid JSON:
     {
       "id": "cluster_1",
       "theme": "Clear theme name",
-      "painSummary": "1-2 sentence summary of the core frustration",
+      "painSummary": "1-2 sentence summary",
       "complaintCount": 150,
-      "evidenceLinks": ["url1", "url2"],
-      "complaints": ["Actual quote 1", "Actual quote 2", "Actual quote 3"]
+      "evidenceLinks": ["url1"],
+      "complaints": ["Quote 1", "Quote 2", "Quote 3"]
     }
   ],
   "ideaSuggestions": [
@@ -255,67 +293,86 @@ Return ONLY valid JSON:
       "id": "idea_1",
       "clusterId": "cluster_1",
       "name": "BrandName",
-      "description": "What it does and why it's different from existing solutions",
-      "mvpScope": "The absolute smallest version you could build in 2-4 weeks to test demand",
-      "monetization": "Specific pricing model with price points",
+      "description": "What it does",
+      "mvpScope": "Smallest version",
+      "monetization": "Pricing model",
       "demandScore": 72
     }
   ],
   "wtpSignals": {
     "strength": "strong",
-    "signals": [
-      {"quote": "I'd pay $50/mo for this easily", "source": "Reddit r/SaaS", "context": "User discussing the problem"}
-    ],
+    "signals": [{"quote": "Quote", "source": "Source", "context": "Context"}],
     "priceRange": {"low": 19, "mid": 49, "high": 99, "currency": "USD/mo"},
-    "summary": "Strong willingness to pay based on multiple direct mentions"
+    "summary": "Summary"
   },
   "competitionDensity": {
     "level": "fragmented",
     "competitorCount": 8,
     "totalFundingEstimate": "$45M",
-    "keyIncumbents": ["Competitor A ($20M raised)"],
+    "keyIncumbents": ["Competitor A"],
     "switchingCosts": "low",
-    "summary": "Fragmented market with no dominant player."
+    "summary": "Summary"
   },
   "marketTiming": {
     "phase": "growing",
-    "signals": ["VC funding up 40% YoY"],
-    "summary": "Growing market with increasing interest."
+    "signals": ["Signal"],
+    "summary": "Summary"
   },
   "icp": {
     "businessType": "B2B SaaS",
-    "companySize": "10-50 employees",
-    "revenueRange": "$500K-$5M ARR",
-    "industry": "SaaS / subscription businesses",
-    "techStack": ["Stripe", "Intercom"],
-    "buyingTriggers": ["Churn rate exceeds 5%"],
+    "companySize": "10-50",
+    "revenueRange": "$500K-$5M",
+    "industry": "SaaS",
+    "techStack": ["Stripe"],
+    "buyingTriggers": ["Trigger"],
     "budgetRange": "$30-100/mo",
-    "summary": "Early-stage B2B SaaS companies."
+    "summary": "Summary"
   },
   "workaroundDetection": {
     "severity": "strong",
-    "workarounds": [
-      {"description": "Teams building custom spreadsheets to track churn manually", "source": "Reddit r/SaaS", "investmentLevel": "high"},
-      {"description": "Using Zapier to cobble together alerts from Stripe webhooks", "source": "Indie Hackers", "investmentLevel": "medium"}
-    ],
-    "summary": "Strong workaround signals — multiple teams investing hours/week in manual processes."
+    "workarounds": [{"description": "Description", "source": "Source", "investmentLevel": "high"}],
+    "summary": "Summary"
   },
   "featureGapMap": {
-    "gaps": [
-      {"feature": "Exit surveys", "competitorCoverage": "weak", "opportunity": "high"},
-      {"feature": "Dunning management", "competitorCoverage": "strong", "opportunity": "low"},
-      {"feature": "Predictive churn scoring", "competitorCoverage": "none", "opportunity": "high"}
-    ],
-    "topWedge": "Predictive churn scoring — no competitor does this well, high demand signal",
-    "summary": "Key gaps in exit surveys and predictive scoring."
+    "gaps": [{"feature": "Feature", "competitorCoverage": "weak", "opportunity": "high"}],
+    "topWedge": "Best entry feature",
+    "summary": "Summary"
   },
   "platformRisk": {
     "level": "medium",
-    "signals": [
-      {"signal": "Stripe launched Revenue Recovery in 2024", "riskType": "bundling"},
-      {"signal": "Heavy dependency on Stripe's billing API", "riskType": "dependency"}
+    "signals": [{"signal": "Signal", "riskType": "bundling"}],
+    "summary": "Summary"
+  },
+  "gtmStrategy": {
+    "primaryChannel": "Content marketing + SEO",
+    "channels": [
+      {"channel": "Content / SEO", "viability": "high", "reasoning": "High search volume for this problem"},
+      {"channel": "Product Hunt launch", "viability": "high", "reasoning": "Target audience active on PH"},
+      {"channel": "Reddit communities", "viability": "medium", "reasoning": "Active discussions but anti-promotion"},
+      {"channel": "Paid ads", "viability": "low", "reasoning": "High CPC in this space"}
     ],
-    "summary": "Medium risk — Stripe entering adjacent features but core differentiation is defensible."
+    "founderLedSales": true,
+    "seoViability": "strong",
+    "summary": "Content-led growth with founder-led sales for early traction."
+  },
+  "pricingBenchmarks": {
+    "benchmarks": [
+      {"tool": "Competitor A", "price": "$49/mo", "model": "per-seat", "notes": "Most popular tier"},
+      {"tool": "Competitor B", "price": "$29/mo", "model": "flat-rate", "notes": "Budget option"}
+    ],
+    "suggestedRange": {"low": "$19/mo", "mid": "$39/mo", "high": "$79/mo"},
+    "pricingModel": "Flat-rate with usage limits — simplest for this market",
+    "summary": "Market prices cluster around $30-50/mo. Flat-rate preferred."
+  },
+  "defensibility": {
+    "overallStrength": "moderate",
+    "signals": [
+      {"type": "data_network", "description": "Usage data improves recommendations over time", "strength": "moderate"},
+      {"type": "integrations", "description": "Deep Stripe integration creates switching costs", "strength": "strong"},
+      {"type": "community", "description": "Potential for user community sharing templates", "strength": "weak"}
+    ],
+    "timeToMoat": "12-18 months",
+    "summary": "Moderate defensibility via integrations and data accumulation."
   }
 }`;
 
@@ -328,7 +385,7 @@ Return ONLY valid JSON:
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [
-          { role: 'user', parts: [{ text: 'You are a senior product strategist. Analyze research data and produce precise, honest, structured analysis. Never inflate scores or fabricate evidence. Be brutally honest about demand levels. Extract willingness-to-pay signals, competition density, market timing, ideal customer profiles, workaround evidence, feature gaps, and platform risks from the research data.\n\n' + analysisPrompt }] },
+          { role: 'user', parts: [{ text: 'You are a senior product strategist. Analyze research data and produce precise, honest, structured analysis. Never inflate scores or fabricate evidence. Be brutally honest about demand levels. Extract all intelligence layers: WTP, competition density, market timing, ICP, workarounds, feature gaps, platform risks, GTM strategy, pricing benchmarks, and defensibility/moat analysis.\n\n' + analysisPrompt }] },
         ],
         generationConfig: { temperature: 0.2 },
       }),
@@ -370,7 +427,7 @@ Return ONLY valid JSON:
     // Inject citations into evidence
     parsed.evidenceLinks = citations;
 
-    console.log(`Complete: ${parsed.problemClusters?.length || 0} clusters, ${parsed.ideaSuggestions?.length || 0} ideas, WTP: ${parsed.wtpSignals?.strength || 'none'}, Competition: ${parsed.competitionDensity?.level || 'unknown'}, Timing: ${parsed.marketTiming?.phase || 'unknown'}, Workarounds: ${parsed.workaroundDetection?.severity || 'none'}, Gaps: ${parsed.featureGapMap?.gaps?.length || 0}, PlatformRisk: ${parsed.platformRisk?.level || 'unknown'}`);
+    console.log(`Complete: ${parsed.problemClusters?.length || 0} clusters, ${parsed.ideaSuggestions?.length || 0} ideas, WTP: ${parsed.wtpSignals?.strength || 'none'}, Competition: ${parsed.competitionDensity?.level || 'unknown'}, Timing: ${parsed.marketTiming?.phase || 'unknown'}, Workarounds: ${parsed.workaroundDetection?.severity || 'none'}, GTM: ${parsed.gtmStrategy?.primaryChannel || 'none'}, Moat: ${parsed.defensibility?.overallStrength || 'unknown'}`);
 
     return new Response(JSON.stringify(parsed), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

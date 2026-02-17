@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { DollarSign, Shield, Clock, Users, TrendingUp, TrendingDown, Minus, Quote, Wrench, Layers, AlertOctagon } from "lucide-react";
-import type { WtpSignals, CompetitionDensity, MarketTiming, ICP, WorkaroundDetection, FeatureGapMap, PlatformRisk } from "@/lib/types";
+import { DollarSign, Shield, Clock, Users, TrendingUp, TrendingDown, Minus, Quote, Wrench, Layers, AlertOctagon, Megaphone, Tag, Castle } from "lucide-react";
+import type { WtpSignals, CompetitionDensity, MarketTiming, ICP, WorkaroundDetection, FeatureGapMap, PlatformRisk, GtmStrategy, PricingBenchmarks, DefensibilityAnalysis } from "@/lib/types";
 
 const wtpColors: Record<string, string> = {
   strong: "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20",
@@ -302,6 +302,131 @@ export function PlatformRiskSection({ data }: { data: PlatformRisk }) {
                   {riskTypeLabels[s.riskType] || s.riskType}
                 </Badge>
                 <p className="text-muted-foreground">{s.signal}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+const channelViabilityColors: Record<string, string> = {
+  high: "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20",
+  medium: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20",
+  low: "bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20",
+};
+
+const moatStrengthColors: Record<string, string> = {
+  strong: "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20",
+  moderate: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20",
+  weak: "bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20",
+  none: "bg-muted text-muted-foreground border-border",
+};
+
+const moatTypeLabels: Record<string, string> = {
+  data_network: "Data Network",
+  integrations: "Integrations",
+  lock_in: "Lock-in",
+  community: "Community",
+  brand: "Brand",
+  technical: "Technical",
+  regulatory: "Regulatory",
+};
+
+export function GtmStrategySection({ data }: { data: GtmStrategy }) {
+  return (
+    <Card className="rounded-2xl border-border/50">
+      <CardContent className="p-5 space-y-3">
+        <div className="flex items-center gap-2">
+          <Megaphone className="h-4 w-4 text-primary shrink-0" />
+          <h3 className="font-semibold text-sm">Go-To-Market Strategy</h3>
+        </div>
+        <p className="text-sm text-muted-foreground">{data.summary}</p>
+        <div className="flex flex-wrap gap-2 text-xs">
+          <span className="bg-primary/10 text-primary px-2.5 py-1 rounded-full font-medium">Primary: {data.primaryChannel}</span>
+          {data.founderLedSales && <span className="bg-secondary px-2.5 py-1 rounded-full">Founder-led sales ✓</span>}
+          <span className="bg-secondary px-2.5 py-1 rounded-full">SEO: {data.seoViability}</span>
+        </div>
+        {data.channels?.length > 0 && (
+          <div className="space-y-1.5 pt-1">
+            {data.channels.slice(0, 5).map((ch, i) => (
+              <div key={i} className="flex items-center justify-between text-xs">
+                <span className="text-foreground font-medium">{ch.channel}</span>
+                <Badge variant="outline" className={`text-[10px] capitalize ${channelViabilityColors[ch.viability] || ''}`}>
+                  {ch.viability}
+                </Badge>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+export function PricingBenchmarkSection({ data }: { data: PricingBenchmarks }) {
+  return (
+    <Card className="rounded-2xl border-border/50">
+      <CardContent className="p-5 space-y-3">
+        <div className="flex items-center gap-2">
+          <Tag className="h-4 w-4 text-primary shrink-0" />
+          <h3 className="font-semibold text-sm">Pricing Benchmarks</h3>
+        </div>
+        <p className="text-sm text-muted-foreground">{data.summary}</p>
+        {data.suggestedRange && (
+          <div className="flex gap-3 text-xs">
+            <span className="bg-secondary px-2.5 py-1 rounded-full font-medium">Low: {data.suggestedRange.low}</span>
+            <span className="bg-primary/10 text-primary px-2.5 py-1 rounded-full font-medium">Mid: {data.suggestedRange.mid}</span>
+            <span className="bg-secondary px-2.5 py-1 rounded-full font-medium">High: {data.suggestedRange.high}</span>
+          </div>
+        )}
+        {data.pricingModel && (
+          <div className="text-xs"><span className="font-medium text-foreground">Model:</span> <span className="text-muted-foreground">{data.pricingModel}</span></div>
+        )}
+        {data.benchmarks?.length > 0 && (
+          <div className="space-y-1.5 pt-1">
+            {data.benchmarks.slice(0, 5).map((b, i) => (
+              <div key={i} className="flex items-center justify-between text-xs">
+                <span className="text-foreground font-medium truncate mr-2">{b.tool}</span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-muted-foreground">{b.price}</span>
+                  <span className="text-muted-foreground/60">{b.model}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+export function DefensibilitySection({ data }: { data: DefensibilityAnalysis }) {
+  return (
+    <Card className="rounded-2xl border-border/50">
+      <CardContent className="p-5 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Castle className="h-4 w-4 text-primary shrink-0" />
+            <h3 className="font-semibold text-sm">Defensibility & Moat</h3>
+          </div>
+          <Badge variant="outline" className={`text-xs capitalize ${moatStrengthColors[data.overallStrength] || moatStrengthColors.none}`}>
+            {data.overallStrength}
+          </Badge>
+        </div>
+        <p className="text-sm text-muted-foreground">{data.summary}</p>
+        {data.timeToMoat && (
+          <div className="text-xs"><span className="font-medium text-foreground">Time to moat:</span> <span className="text-muted-foreground">{data.timeToMoat}</span></div>
+        )}
+        {data.signals?.length > 0 && (
+          <div className="space-y-1.5 pt-1">
+            {data.signals.map((s, i) => (
+              <div key={i} className="flex items-start gap-2 text-xs">
+                <Badge variant="outline" className={`text-[10px] shrink-0 mt-0.5 capitalize ${moatStrengthColors[s.strength] || ''}`}>
+                  {moatTypeLabels[s.type] || s.type}
+                </Badge>
+                <p className="text-muted-foreground">{s.description}</p>
               </div>
             ))}
           </div>
