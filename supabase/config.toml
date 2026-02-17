@@ -11,3 +11,15 @@ verify_jwt = false
 
 [functions.stripe-webhook]
 verify_jwt = false
+
+[functions.orbis-chat]
+verify_jwt = false
+
+[functions.chat-followup]
+verify_jwt = false
+
+[functions.chat-generate]
+verify_jwt = false
+
+[functions.chat-validate]
+verify_jwt = false

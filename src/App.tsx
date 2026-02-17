@@ -14,6 +14,7 @@ import ValidateIdea from "./pages/ValidateIdea";
 import Backlog from "./pages/Backlog";
 import Reports from "./pages/Reports";
 import Analytics from "./pages/Analytics";
+import OrbisChat from "./pages/OrbisChat";
 
 import NotFound from "./pages/NotFound";
 
@@ -34,6 +35,7 @@ const AppRoutes = () => (
       <Route path="/auth" element={<Auth />} />
       <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/chat" element={<OrbisChat />} />
         <Route path="/generate" element={<GenerateIdeas />} />
         <Route path="/validate" element={<ValidateIdea />} />
         <Route path="/ideas" element={<Backlog />} />
