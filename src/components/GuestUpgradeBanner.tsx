@@ -31,12 +31,11 @@ export function GuestUpgradeBanner() {
   };
 
   return (
-    <div className="bg-warning/5 border border-warning/15 rounded-xl px-3 py-2.5">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground min-w-0">
-          <Shield className="h-3.5 w-3.5 text-warning shrink-0" />
-          <span className="truncate"><strong className="text-foreground">Guest mode</strong> — upgrade to keep data</span>
-        </div>
+    <div className="flex items-center justify-between gap-2 bg-warning/5 border border-warning/15 rounded-xl px-3 py-2">
+      <div className="flex items-center gap-2 text-xs">
+        <Shield className="h-3.5 w-3.5 text-warning shrink-0" />
+        <span className="font-medium">Guest mode</span>
+      </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button size="sm" variant="outline" className="rounded-full text-xs h-7 px-3 shrink-0 border-warning/30 text-warning hover:bg-warning/10 hover:text-warning">Upgrade</Button>
@@ -66,7 +65,6 @@ export function GuestUpgradeBanner() {
             </form>
           </DialogContent>
         </Dialog>
-      </div>
     </div>
   );
 }
