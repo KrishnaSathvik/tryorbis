@@ -290,7 +290,7 @@ export default function ValidateIdea() {
       {report!.competitors.length > 0 && (
         <div>
           <h2 className="text-lg font-semibold mb-4">Competitors</h2>
-          <div className="grid md:grid-cols-3 gap-4">
+           <div className="grid sm:grid-cols-3 gap-4">
             {report!.competitors.map((c, i) => (
               <Card key={i} className="border"><CardContent className="p-5 space-y-1">
                 <p className="font-medium text-sm">{c.name}</p>
