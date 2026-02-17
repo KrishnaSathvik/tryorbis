@@ -62,13 +62,20 @@ export default function GenerateIdeas() {
   const [phase, setPhase] = useState<'chat' | 'researching' | 'results'>('chat');
   const [researchStep, setResearchStep] = useState(0);
   const [result, setResult] = useState<GeneratorRun | null>(null);
+  const [isTyping, setIsTyping] = useState(false);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, isTyping]);
 
   const addMessage = (msg: Omit<ChatMessage, 'id'>) => {
+    setIsTyping(false);
     setMessages(prev => [...prev, { ...msg, id: crypto.randomUUID() }]);
+  };
+
+  const showTypingThenMessage = (msg: Omit<ChatMessage, 'id'>, delay = 800) => {
+    setIsTyping(true);
+    setTimeout(() => addMessage(msg), delay);
   };
 
   const handleUserInput = () => {
@@ -80,14 +87,12 @@ export default function GenerateIdeas() {
     if (currentStep === 'initial') {
       setIdeaContext(text);
       setCurrentStep('persona');
-      setTimeout(() => {
-        addMessage({
-          role: 'system',
-          text: "Great! Who are you building this for?",
-          options: personas,
-          step: 'persona',
-        });
-      }, 400);
+      showTypingThenMessage({
+        role: 'system',
+        text: "Great! Who are you building this for?",
+        options: personas,
+        step: 'persona',
+      });
     }
   };
 
@@ -97,47 +102,39 @@ export default function GenerateIdeas() {
     if (step === 'persona') {
       setPersona(option);
       setCurrentStep('category');
-      setTimeout(() => {
-        addMessage({
-          role: 'system',
-          text: "What industry or domain should I focus on?",
-          options: categories,
-          step: 'category',
-        });
-      }, 400);
+      showTypingThenMessage({
+        role: 'system',
+        text: "What industry or domain should I focus on?",
+        options: categories,
+        step: 'category',
+      });
     } else if (step === 'category') {
       setCategory(option);
       setCurrentStep('region');
-      setTimeout(() => {
-        addMessage({
-          role: 'system',
-          text: "Any specific region to focus on?",
-          options: regions,
-          step: 'region',
-        });
-      }, 400);
+      showTypingThenMessage({
+        role: 'system',
+        text: "Any specific region to focus on?",
+        options: regions,
+        step: 'region',
+      });
     } else if (step === 'region') {
       setRegion(option === 'Skip' ? '' : option);
       setCurrentStep('platform');
-      setTimeout(() => {
-        addMessage({
-          role: 'system',
-          text: "What platform do you prefer?",
-          options: platforms,
-          step: 'platform',
-        });
-      }, 400);
+      showTypingThenMessage({
+        role: 'system',
+        text: "What platform do you prefer?",
+        options: platforms,
+        step: 'platform',
+      });
     } else if (step === 'platform') {
       setPlatform(option === 'Skip' ? '' : option);
       setCurrentStep('ready');
-      setTimeout(() => {
-        addMessage({
-          role: 'system',
-          text: `Got it! I'll research opportunities for **${option === 'Skip' ? 'any platform' : option}** products targeting **${persona || 'your audience'}** in **${category || 'your domain'}**. Ready to go?`,
-          options: ['Generate Ideas ✨'],
-          step: 'ready',
-        });
-      }, 400);
+      showTypingThenMessage({
+        role: 'system',
+        text: `Got it! I'll research opportunities for **${option === 'Skip' ? 'any platform' : option}** products targeting **${persona || 'your audience'}** in **${category || 'your domain'}**. Ready to go?`,
+        options: ['Generate Ideas ✨'],
+        step: 'ready',
+      });
     } else if (step === 'ready') {
       triggerGenerate();
     }
@@ -262,6 +259,15 @@ export default function GenerateIdeas() {
               </div>
             </div>
           ))}
+          {isTyping && (
+            <div className="flex justify-start">
+              <div className="bg-muted rounded-2xl rounded-bl-md px-4 py-3 flex gap-1.5 items-center">
+                <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:0ms]" />
+                <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:150ms]" />
+                <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:300ms]" />
+              </div>
+            </div>
+          )}
           <div ref={chatEndRef} />
         </div>
 
