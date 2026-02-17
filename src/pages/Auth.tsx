@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Rocket } from "lucide-react";
+import orbisLogo from "@/assets/orbis-logo.png";
 
 export default function Auth() {
   const { signUp } = useAuth();
@@ -36,9 +36,7 @@ export default function Auth() {
       <Card className="w-full max-w-md border-2">
         <CardContent className="p-8 space-y-6">
           <div className="text-center space-y-2">
-            <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
-              <Rocket className="h-7 w-7 text-primary" />
-            </div>
+            <img src={orbisLogo} alt="Orbis" className="h-14 w-14 mx-auto" />
             <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
               Join <span className="text-primary">Orbis</span>
             </h1>

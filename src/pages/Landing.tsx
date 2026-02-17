@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { LandingCharts } from "@/components/landing/LandingCharts";
 import { LandingLeaderboard } from "@/components/landing/LandingLeaderboard";
+import orbisLogo from "@/assets/orbis-logo.png";
 
 export default function Landing() {
   const navigate = useNavigate();
@@ -59,9 +60,12 @@ export default function Landing() {
       {/* Nav */}
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
-          <h1 className="text-xl font-bold tracking-tight text-gradient-primary">
-            Orbis
-          </h1>
+          <div className="flex items-center gap-2">
+            <img src={orbisLogo} alt="Orbis" className="h-7 w-7" />
+            <h1 className="text-xl font-bold tracking-tight text-gradient-primary">
+              Orbis
+            </h1>
+          </div>
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })}>
               Features
@@ -317,7 +321,10 @@ export default function Landing() {
 
       {/* Footer */}
       <footer className="border-t border-border py-8 text-center text-xs text-muted-foreground space-y-1">
-        <p className="font-medium text-foreground/60">Orbis</p>
+        <div className="flex items-center gap-2 justify-center">
+          <img src={orbisLogo} alt="Orbis" className="h-5 w-5" />
+          <p className="font-medium text-foreground/60">Orbis</p>
+        </div>
         <p>From problem discovery to product validation.</p>
       </footer>
     </div>
