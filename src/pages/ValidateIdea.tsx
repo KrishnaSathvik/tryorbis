@@ -9,13 +9,13 @@ import { ScoreBar } from "@/components/ScoreBar";
 import { VerdictBadge } from "@/components/VerdictBadge";
 import { AIHandoff } from "@/components/AIHandoff";
 import { FollowUpChat } from "@/components/FollowUpChat";
-import { WtpSection, CompetitionDensitySection, MarketTimingSection, IcpSection } from "@/components/IntelligenceSections";
+import { WtpSection, CompetitionDensitySection, MarketTimingSection, IcpSection, WorkaroundSection, FeatureGapSection, PlatformRiskSection } from "@/components/IntelligenceSections";
 import { useCredits } from "@/hooks/useCredits";
 import { supabase } from "@/integrations/supabase/client";
 import { saveValidationReportDb, addToBacklogDb } from "@/lib/db";
 import { toast } from "sonner";
 import { Bookmark, Lightbulb, ThumbsUp, ThumbsDown, Target, AlertTriangle, Send, Search, Globe } from "lucide-react";
-import type { WtpSignals, CompetitionDensity, MarketTiming, ICP } from "@/lib/types";
+import type { WtpSignals, CompetitionDensity, MarketTiming, ICP, WorkaroundDetection, FeatureGapMap, PlatformRisk } from "@/lib/types";
 
 const researchSteps = ["Deep-diving demand signals & market data...", "Scanning competitors, pricing & reviews...", "Analyzing pain severity & workarounds...", "AI strategist scoring & verdict...", "Cross-checking verdict consistency...", "Finalizing validation report..."];
 
@@ -33,6 +33,9 @@ interface Report {
   competitionDensity?: CompetitionDensity;
   marketTiming?: MarketTiming;
   icp?: ICP;
+  workaroundDetection?: WorkaroundDetection;
+  featureGapMap?: FeatureGapMap;
+  platformRisk?: PlatformRisk;
 }
 
 export default function ValidateIdea() {
@@ -106,6 +109,9 @@ export default function ValidateIdea() {
         competitionDensity: data.competitionDensity || undefined,
         marketTiming: data.marketTiming || undefined,
         icp: data.icp || undefined,
+        workaroundDetection: data.workaroundDetection || undefined,
+        featureGapMap: data.featureGapMap || undefined,
+        platformRisk: data.platformRisk || undefined,
       };
       try { await saveValidationReportDb(r); } catch (e) { console.error("Failed to save to DB:", e); }
       setReport(r); setPhase('results');
@@ -243,8 +249,8 @@ export default function ValidateIdea() {
         </CardContent></Card>
       )}
 
-      {/* ─── Phase 1 Intelligence Layers ─── */}
-      {(report!.wtpSignals || report!.competitionDensity || report!.marketTiming || report!.icp) && (
+      {/* ─── Phase 1 + Phase 2 Intelligence Layers ─── */}
+      {(report!.wtpSignals || report!.competitionDensity || report!.marketTiming || report!.icp || report!.workaroundDetection || report!.featureGapMap || report!.platformRisk) && (
         <div>
           <h2 className="text-lg font-semibold font-nunito mb-4">Market Intelligence</h2>
           <div className="grid md:grid-cols-2 gap-4">
@@ -252,6 +258,9 @@ export default function ValidateIdea() {
             {report!.competitionDensity && <CompetitionDensitySection data={report!.competitionDensity} />}
             {report!.marketTiming && <MarketTimingSection data={report!.marketTiming} />}
             {report!.icp && <IcpSection data={report!.icp} />}
+            {report!.workaroundDetection && <WorkaroundSection data={report!.workaroundDetection} />}
+            {report!.featureGapMap && <FeatureGapSection data={report!.featureGapMap} />}
+            {report!.platformRisk && <PlatformRiskSection data={report!.platformRisk} />}
           </div>
         </div>
       )}
