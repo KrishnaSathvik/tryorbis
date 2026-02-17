@@ -260,38 +260,46 @@ export default function Landing() {
 
       {/* Community trends */}
       {stats && (
-        <section className="bg-muted/30 border-y border-border py-20">
-          <div className="max-w-5xl mx-auto px-6 space-y-12">
+        <section className="relative py-20 overflow-hidden">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,hsl(var(--primary)/0.06)_0%,transparent_70%)]" />
+          <div className="max-w-5xl mx-auto px-6 space-y-14 relative">
             <div className="text-center space-y-3">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-sm text-primary font-medium mb-2">
+                <TrendingUp className="h-3.5 w-3.5" />
+                Live Stats
+              </div>
               <h3 className="text-3xl font-bold">
-                <TrendingUp className="inline h-7 w-7 text-primary mr-2 -mt-1" />
-                Community Trends
+                Community <span className="text-gradient-primary">Trends</span>
               </h3>
               <p className="text-muted-foreground max-w-lg mx-auto">
                 See what the community is researching right now.
               </p>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
               {[
-                { label: "Researchers", value: stats.totalUsers, icon: Users },
-                { label: "Ideas Generated", value: totalIdeas, icon: Zap },
-                { label: "Validations", value: stats.reports.length, icon: BarChart3 },
-                { label: "Research Runs", value: stats.runs.length, icon: Trophy },
+                { label: "Users", value: stats.totalUsers, icon: Users, color: "from-blue-500/20 to-indigo-500/20", iconColor: "text-blue-500" },
+                { label: "Ideas Generated", value: totalIdeas, icon: Zap, color: "from-amber-500/20 to-orange-500/20", iconColor: "text-amber-500" },
+                { label: "Validations", value: stats.reports.length, icon: BarChart3, color: "from-emerald-500/20 to-teal-500/20", iconColor: "text-emerald-500" },
+                { label: "Research Runs", value: stats.runs.length, icon: Trophy, color: "from-purple-500/20 to-pink-500/20", iconColor: "text-purple-500" },
               ].map((s) => (
-                <div key={s.label} className="flex flex-col items-center gap-2">
-                  <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                    <s.icon className="h-5 w-5 text-primary" />
-                  </div>
-                  <p className="text-2xl font-bold">{s.value}</p>
-                  <p className="text-xs text-muted-foreground">{s.label}</p>
-                </div>
+                <Card key={s.label} className="group border border-border/50 bg-background/60 backdrop-blur-sm hover:border-primary/30 hover:shadow-glow/20 transition-all duration-300">
+                  <CardContent className="p-5 sm:p-6 flex flex-col items-center gap-3 text-center">
+                    <div className={`h-12 w-12 rounded-2xl bg-gradient-to-br ${s.color} flex items-center justify-center ring-1 ring-black/5`}>
+                      <s.icon className={`h-5 w-5 ${s.iconColor}`} />
+                    </div>
+                    <div>
+                      <p className="text-3xl sm:text-4xl font-bold tracking-tight">{s.value}</p>
+                      <p className="text-xs text-muted-foreground mt-1 font-medium uppercase tracking-wider">{s.label}</p>
+                    </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
             {hasData && (
-              <>
+              <div className="space-y-6">
                 <LandingCharts stats={stats} />
                 <LandingLeaderboard stats={stats} />
-              </>
+              </div>
             )}
           </div>
         </section>
