@@ -183,9 +183,18 @@ export default function GenerateIdeas() {
         </div>
         <div className="border-t pt-3 pb-2 space-y-2">
           {generatingParams && (
-            <Button className="w-full" onClick={() => triggerGenerate(generatingParams)}>
-              🚀 Start Research — {generatingParams.persona} × {generatingParams.category}
-            </Button>
+            <div className="bg-muted/50 border rounded-xl p-3 space-y-2">
+              <p className="text-xs text-muted-foreground font-medium">I understood this from your idea:</p>
+              <div className="flex flex-wrap gap-2">
+                <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-medium">👤 {generatingParams.persona}</span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-medium">📂 {generatingParams.category}</span>
+                {generatingParams.platform && <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-medium">💻 {generatingParams.platform}</span>}
+                {generatingParams.region && <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-medium">🌍 {generatingParams.region}</span>}
+              </div>
+              <Button className="w-full" size="sm" onClick={() => triggerGenerate(generatingParams)}>
+                🚀 Start Research
+              </Button>
+            </div>
           )}
           <div className="flex gap-2">
             <Input ref={inputRef} value={inputValue} onChange={e => setInputValue(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleUserInput()} placeholder={generatingParams ? "Add more context or hit Start Research..." : "e.g. I want to build a SQL prompt buddy for devs..."} className="flex-1" autoFocus disabled={isTyping} />
