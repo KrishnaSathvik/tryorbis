@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,10 +13,39 @@ serve(async (req) => {
   }
 
   try {
-    const PERPLEXITY_API_KEY = Deno.env.get('PERPLEXITY_API_KEY');
-    if (!PERPLEXITY_API_KEY) throw new Error('PERPLEXITY_API_KEY not configured');
+    // ─── Auth check ───
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
-    // GEMINI_API_KEY is fetched later in Pass 2
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: 'Invalid authentication' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const userId = claimsData.claims.sub;
+
+    // ─── Server-side credit check & deduction ───
+    const { data: deducted } = await supabaseClient.rpc('try_deduct_credit', { p_user_id: userId });
+    if (!deducted) {
+      return new Response(JSON.stringify({ error: 'Insufficient credits' }), {
+        status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const PERPLEXITY_API_KEY = Deno.env.get('PERPLEXITY_API_KEY');
+    if (!PERPLEXITY_API_KEY) throw new Error('API key not configured');
 
     const body = await req.json();
     const { persona, category, region, platform, context } = body;
@@ -83,7 +113,7 @@ Return your findings as detailed, unstructured text. Include all quotes, sources
           status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      throw new Error(`Perplexity API error [${researchResponse.status}]`);
+      throw new Error(`Research API error [${researchResponse.status}]`);
     }
 
     const researchData = await researchResponse.json();
@@ -148,9 +178,9 @@ Return ONLY valid JSON:
   ]
 }`;
 
-    console.log('Pass 2: Analyzing with Gemini Flash...');
+    console.log('Pass 2: Analyzing with Gemini...');
     const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
-    if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not configured');
+    if (!GEMINI_API_KEY) throw new Error('API key not configured');
 
     const analysisResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
@@ -171,12 +201,7 @@ Return ONLY valid JSON:
           status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      if (analysisResponse.status === 402) {
-        return new Response(JSON.stringify({ error: "AI usage limit reached. Please add credits to continue." }), {
-          status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      throw new Error(`Gemini API error [${analysisResponse.status}]`);
+      throw new Error(`Analysis API error [${analysisResponse.status}]`);
     }
 
     const analysisData = await analysisResponse.json();
@@ -187,7 +212,7 @@ Return ONLY valid JSON:
       const jsonMatch = analysisContent.match(/\{[\s\S]*\}/);
       parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : { problemClusters: [], ideaSuggestions: [] };
     } catch {
-      console.error('Failed to parse Gemini output, raw:', analysisContent.slice(0, 500));
+      console.error('Failed to parse output, raw:', analysisContent.slice(0, 500));
       parsed = { problemClusters: [], ideaSuggestions: [] };
     }
 
@@ -208,7 +233,7 @@ Return ONLY valid JSON:
     });
   } catch (error: any) {
     console.error('perplexity-generate error:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: 'An error occurred processing your request' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

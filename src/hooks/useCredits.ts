@@ -22,13 +22,10 @@ export function useCredits() {
 
   const deductCredit = useCallback(async () => {
     if (!user || credits === null || credits <= 0) return false;
-    const { error } = await supabase
-      .from("profiles")
-      .update({ credits: credits - 1 })
-      .eq("user_id", user.id);
-    if (error) return false;
+    // Use atomic server-side credit deduction
+    const { data: deducted, error } = await supabase.rpc('try_deduct_credit', { p_user_id: user.id });
+    if (error || !deducted) return false;
     setCredits(prev => (prev !== null ? prev - 1 : null));
-    // Immediately refetch to ensure UI is in sync
     setTimeout(() => fetchCredits(), 100);
     return true;
   }, [user, credits, fetchCredits]);
