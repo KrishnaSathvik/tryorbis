@@ -203,8 +203,8 @@ export default function Landing() {
               {
                 step: "01",
                 icon: Globe,
-                title: "Choose Your Persona",
-                desc: "Pick a target persona and category — freelancers, teachers, developers, you name it. Orbis scans real complaints across the web.",
+                title: "Describe Your Idea",
+                desc: "Tell Orbis what you're thinking — a target audience, a problem space, or a rough idea. AI extracts the persona and category automatically.",
               },
               {
                 step: "02",
@@ -248,7 +248,7 @@ export default function Landing() {
             "Clear Build / Pivot / Skip verdicts",
             "Real complaint data, not survey bias",
             "AI follow-up chat for deeper insights",
-            "Track trends across the community",
+            "See what the community is researching",
           ].map((b) => (
             <div key={b} className="flex items-start gap-3">
               <CheckCircle2 className="h-5 w-5 text-primary mt-0.5 shrink-0" />
@@ -307,7 +307,7 @@ export default function Landing() {
             <span className="text-gradient-primary">Winning Idea?</span>
           </h3>
           <p className="text-muted-foreground">
-            No credit card. No email required. Jump in and start discovering.
+            No credit card required. Sign up in seconds and start discovering.
           </p>
           <Button
             size="lg"
