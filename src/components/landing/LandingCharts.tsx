@@ -84,27 +84,7 @@ export function LandingCharts({ stats }: Props) {
       .map(([name, value]) => ({ name, value }));
   })();
 
-  const renderCustomLabel = ({
-    name,
-    percent,
-    cx,
-    x,
-  }: any) => {
-    const anchor = x > cx ? "start" : "end";
-    return (
-      <text
-        x={x}
-        y={undefined}
-        fill="hsl(220 10% 46%)"
-        textAnchor={anchor}
-        dominantBaseline="central"
-        fontSize={12}
-        fontWeight={500}
-      >
-        {`${name} ${(percent * 100).toFixed(0)}%`}
-      </text>
-    );
-  };
+  const verdictTotal = verdictData.reduce((s, d) => s + d.value, 0);
 
   return (
     <div className="space-y-6">
@@ -159,31 +139,47 @@ export function LandingCharts({ stats }: Props) {
                 <PieChart className="h-4 w-4 text-primary" />
                 Verdict Distribution
               </h4>
-              <ResponsiveContainer width="100%" height={220}>
-                <RePieChart>
-                  <Pie
-                    data={verdictData}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={45}
-                    outerRadius={80}
-                    paddingAngle={3}
-                    label={renderCustomLabel}
-                    labelLine={{ stroke: "hsl(220 13% 80%)", strokeWidth: 1 }}
-                  >
-                    {verdictData.map((entry) => (
-                      <Cell
-                        key={entry.name}
-                        fill={VERDICT_COLORS[entry.name] || CHART_COLORS[0]}
-                        strokeWidth={0}
+              <div className="flex items-center gap-4">
+                <ResponsiveContainer width="55%" height={160}>
+                  <RePieChart>
+                    <Pie
+                      data={verdictData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={35}
+                      outerRadius={65}
+                      paddingAngle={3}
+                    >
+                      {verdictData.map((entry) => (
+                        <Cell
+                          key={entry.name}
+                          fill={VERDICT_COLORS[entry.name] || CHART_COLORS[0]}
+                          strokeWidth={0}
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip {...tooltipStyle} />
+                  </RePieChart>
+                </ResponsiveContainer>
+                <div className="flex flex-col gap-2.5">
+                  {verdictData.map((entry) => (
+                    <div key={entry.name} className="flex items-center gap-2">
+                      <span
+                        className="h-3 w-3 rounded-sm shrink-0"
+                        style={{ backgroundColor: VERDICT_COLORS[entry.name] || CHART_COLORS[0] }}
                       />
-                    ))}
-                  </Pie>
-                  <Tooltip {...tooltipStyle} />
-                </RePieChart>
-              </ResponsiveContainer>
+                      <span className="text-sm text-muted-foreground">
+                        {entry.name}{" "}
+                        <span className="font-semibold text-foreground">
+                          {verdictTotal > 0 ? Math.round((entry.value / verdictTotal) * 100) : 0}%
+                        </span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </CardContent>
           </Card>
         )}
