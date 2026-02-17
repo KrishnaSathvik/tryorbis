@@ -4,9 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-
-import { getMyBacklog, updateBacklogStatusDb, removeFromBacklogDb, addNoteToBacklogDb, renameBacklogItemDb } from "@/lib/db";
-import { Trash2, MessageSquarePlus, Archive, Filter, Pencil, Check, X, StickyNote } from "lucide-react";
+import { getMyBacklog, updateBacklogStatusDb, removeFromBacklogDb, addNoteToBacklogDb, renameBacklogItemDb, updateNoteInBacklogDb } from "@/lib/db";
+import { Trash2, MessageSquarePlus, Archive, Filter, Pencil, Check, X, StickyNote, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 type BacklogStatus = 'New' | 'Exploring' | 'Validated' | 'Building' | 'Archived';
@@ -28,6 +27,8 @@ export default function Backlog() {
   const [addingNoteFor, setAddingNoteFor] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
+  const [editingNote, setEditingNote] = useState<{ itemId: string; index: number } | null>(null);
+  const [editNoteText, setEditNoteText] = useState("");
   const [loading, setLoading] = useState(true);
 
   const fetchBacklog = async () => {
@@ -59,6 +60,19 @@ export default function Backlog() {
     setAddingNoteFor(null);
     fetchBacklog();
     toast.success("Note added");
+  };
+
+  const startEditNote = (itemId: string, index: number, currentText: string) => {
+    setEditingNote({ itemId, index });
+    setEditNoteText(currentText);
+  };
+
+  const saveEditNote = async () => {
+    if (!editingNote || !editNoteText.trim()) return;
+    await updateNoteInBacklogDb(editingNote.itemId, editingNote.index, editNoteText.trim());
+    setEditingNote(null);
+    fetchBacklog();
+    toast.success("Note updated");
   };
 
   const startRename = (id: string, currentName: string) => {
@@ -108,108 +122,142 @@ export default function Backlog() {
       ) : (
         <div className="space-y-3">
           {filtered.map((item: any) => {
-            const notes = Array.isArray(item.notes) ? item.notes : [];
+            const notes: string[] = Array.isArray(item.notes) ? item.notes : [];
             const isEditing = editingId === item.id;
             return (
-              <div key={item.id}>
-                <Card className="border hover:border-primary/20 transition-colors">
-                  <CardContent className="p-5 space-y-0">
-                    {/* Top row: name + actions */}
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1">
-                        {isEditing ? (
-                          <div className="flex items-center gap-2">
-                            <Input
-                              value={editName}
-                              onChange={e => setEditName(e.target.value)}
-                              onKeyDown={e => { if (e.key === 'Enter') saveRename(item.id); if (e.key === 'Escape') setEditingId(null); }}
-                              className="h-8 text-sm font-semibold"
-                              autoFocus
-                            />
-                            <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-green-600" onClick={() => saveRename(item.id)}>
-                              <Check className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => setEditingId(null)}>
-                              <X className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                        ) : (
-                          <div className="group/name flex items-center gap-1.5">
-                            <p className="text-sm font-semibold leading-snug">{item.idea_name}</p>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6 opacity-0 group-hover/name:opacity-100 transition-opacity shrink-0"
-                              onClick={() => startRename(item.id, item.idea_name)}
-                            >
-                              <Pencil className="h-3 w-3 text-muted-foreground" />
-                            </Button>
-                          </div>
+              <Card key={item.id} className="border hover:border-primary/20 transition-colors">
+                <CardContent className="p-5">
+                  {/* Header row */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      {isEditing ? (
+                        <div className="flex items-center gap-2">
+                          <Input
+                            value={editName}
+                            onChange={e => setEditName(e.target.value)}
+                            onKeyDown={e => { if (e.key === 'Enter') saveRename(item.id); if (e.key === 'Escape') setEditingId(null); }}
+                            className="h-8 text-sm font-semibold"
+                            autoFocus
+                          />
+                          <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-primary" onClick={() => saveRename(item.id)}>
+                            <Check className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => setEditingId(null)}>
+                            <X className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="group/name flex items-center gap-1.5">
+                          <p className="text-sm font-semibold leading-snug">{item.idea_name}</p>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 opacity-0 group-hover/name:opacity-100 transition-opacity shrink-0"
+                            onClick={() => startRename(item.id, item.idea_name)}
+                          >
+                            <Pencil className="h-3 w-3 text-muted-foreground" />
+                          </Button>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-3 mt-0.5">
+                        <p className="text-xs text-muted-foreground">{new Date(item.created_at).toLocaleDateString()}</p>
+                        {notes.length > 0 && (
+                          <span className="text-xs text-muted-foreground flex items-center gap-1">
+                            <StickyNote className="h-3 w-3" />
+                            {notes.length} note{notes.length !== 1 ? 's' : ''}
+                          </span>
                         )}
-                        <p className="text-xs text-muted-foreground mt-0.5">{new Date(item.created_at).toLocaleDateString()}</p>
-                      </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <Select value={item.status} onValueChange={(v) => handleStatusChange(item.id, v as BacklogStatus)}>
-                          <SelectTrigger className="w-auto h-7 border-0 bg-transparent px-1">
-                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusColors[item.status as BacklogStatus] || ''}`}>{item.status}</span>
-                          </SelectTrigger>
-                          <SelectContent>
-                            {allStatuses.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 hover:text-destructive" onClick={() => handleRemove(item.id)}>
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
                       </div>
                     </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Select value={item.status} onValueChange={(v) => handleStatusChange(item.id, v as BacklogStatus)}>
+                        <SelectTrigger className="w-auto h-7 border-0 bg-transparent px-1">
+                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusColors[item.status as BacklogStatus] || ''}`}>{item.status}</span>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {allStatuses.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 hover:text-destructive" onClick={() => handleRemove(item.id)}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
 
-                    {/* Notes displayed inline */}
-                    {notes.length > 0 && (
-                      <div className="mt-3 space-y-1.5">
-                        {notes.map((note: string, i: number) => (
-                          <div key={i} className="flex gap-2 items-start">
-                            <StickyNote className="h-3 w-3 mt-1 shrink-0 text-muted-foreground" />
-                            <p className="text-xs text-muted-foreground leading-relaxed">{note}</p>
+                  {/* Notes section */}
+                  {notes.length > 0 && (
+                    <div className="mt-4 space-y-2">
+                      {notes.map((note: string, i: number) => {
+                        const isEditingThis = editingNote?.itemId === item.id && editingNote?.index === i;
+                        return (
+                          <div key={i} className="group/note rounded-lg bg-muted/40 border border-border/50 px-4 py-3">
+                            {isEditingThis ? (
+                              <div className="space-y-2">
+                                <Textarea
+                                  value={editNoteText}
+                                  onChange={e => setEditNoteText(e.target.value)}
+                                  onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) saveEditNote(); }}
+                                  className="text-sm min-h-[60px] resize-y"
+                                  autoFocus
+                                />
+                                <div className="flex justify-end gap-2">
+                                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setEditingNote(null)}>Cancel</Button>
+                                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={saveEditNote}>
+                                    <Check className="h-3 w-3 mr-1" /> Update
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex items-start justify-between gap-3">
+                                <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap flex-1">{note}</p>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 opacity-0 group-hover/note:opacity-100 transition-opacity shrink-0"
+                                  onClick={() => startEditNote(item.id, i, note)}
+                                >
+                                  <Pencil className="h-3 w-3 text-muted-foreground" />
+                                </Button>
+                              </div>
+                            )}
                           </div>
-                        ))}
-                      </div>
-                    )}
+                        );
+                      })}
+                    </div>
+                  )}
 
-                    {/* Add note toggle */}
-                    {addingNoteFor === item.id ? (
-                      <div className="mt-3 pt-3 border-t space-y-2">
-                        <Textarea
-                          placeholder="Paste or type your thoughts here..."
-                          value={noteInputs[item.id] || ""}
-                          onChange={e => setNoteInputs(prev => ({ ...prev, [item.id]: e.target.value }))}
-                          onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleAddNote(item.id); }}
-                          className="text-sm min-h-[80px] resize-y"
-                          autoFocus
-                        />
-                        <div className="flex items-center justify-between">
-                          <p className="text-[10px] text-muted-foreground">⌘ + Enter to save</p>
-                          <div className="flex gap-2">
-                            <Button size="sm" variant="ghost" className="h-8" onClick={() => setAddingNoteFor(null)}>
-                              Cancel
-                            </Button>
-                            <Button size="sm" variant="outline" className="h-8" onClick={() => handleAddNote(item.id)} disabled={!noteInputs[item.id]?.trim()}>
-                              <MessageSquarePlus className="h-3.5 w-3.5 mr-1" /> Save Note
-                            </Button>
-                          </div>
+                  {/* Add note */}
+                  {addingNoteFor === item.id ? (
+                    <div className="mt-3 pt-3 border-t space-y-2">
+                      <Textarea
+                        placeholder="Paste or type your thoughts here..."
+                        value={noteInputs[item.id] || ""}
+                        onChange={e => setNoteInputs(prev => ({ ...prev, [item.id]: e.target.value }))}
+                        onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleAddNote(item.id); }}
+                        className="text-sm min-h-[80px] resize-y"
+                        autoFocus
+                      />
+                      <div className="flex items-center justify-between">
+                        <p className="text-[10px] text-muted-foreground">⌘ + Enter to save</p>
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setAddingNoteFor(null)}>Cancel</Button>
+                          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleAddNote(item.id)} disabled={!noteInputs[item.id]?.trim()}>
+                            <MessageSquarePlus className="h-3 w-3 mr-1" /> Save Note
+                          </Button>
                         </div>
                       </div>
-                    ) : (
-                      <button
-                        className="flex items-center gap-1.5 mt-3 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                        onClick={() => setAddingNoteFor(item.id)}
-                      >
-                        <MessageSquarePlus className="h-3 w-3" />
-                        <span>Add a note</span>
-                      </button>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
+                    </div>
+                  ) : (
+                    <button
+                      className="flex items-center gap-1.5 mt-3 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      onClick={() => setAddingNoteFor(item.id)}
+                    >
+                      <Plus className="h-3 w-3" />
+                      <span>Add a note</span>
+                    </button>
+                  )}
+                </CardContent>
+              </Card>
             );
           })}
         </div>
