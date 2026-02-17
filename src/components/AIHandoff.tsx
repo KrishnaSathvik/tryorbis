@@ -1,6 +1,6 @@
 import { ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ChatGPTIcon, ClaudeIcon, GeminiIcon } from "@/components/icons/AIBrandIcons";
+import { ChatGPTIcon, ClaudeIcon, GeminiIcon, CursorIcon, CodexIcon } from "@/components/icons/AIBrandIcons";
 import { type SVGProps } from "react";
 
 interface AIHandoffProps {
@@ -11,6 +11,8 @@ const tools: { name: string; url: string; icon: (props: SVGProps<SVGSVGElement>)
   { name: "ChatGPT", url: "https://chat.openai.com/?q=", icon: ChatGPTIcon },
   { name: "Claude", url: "https://claude.ai/new?q=", icon: ClaudeIcon },
   { name: "Gemini", url: "https://gemini.google.com/app?q=", icon: GeminiIcon },
+  { name: "Cursor", url: "https://cursor.com", icon: CursorIcon },
+  { name: "Codex", url: "https://chatgpt.com/codex?q=", icon: CodexIcon },
 ];
 
 export function AIHandoff({ context }: AIHandoffProps) {
