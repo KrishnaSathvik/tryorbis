@@ -22,7 +22,7 @@ const researchSteps = [
 
 interface ChatMessage {
   id: string;
-  role: 'user' | 'system';
+  role: 'user' | 'assistant';
   text: string;
 }
 
@@ -48,7 +48,7 @@ export default function ValidateIdea() {
   const prefilled = searchParams.get('idea') || "";
   const [inputValue, setInputValue] = useState(prefilled);
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { id: '1', role: 'system', text: "Describe your idea and I'll validate it — checking demand, competition, and feasibility." },
+    { id: '1', role: 'assistant', text: "Describe your idea and I'll validate it — checking demand, competition, and feasibility." },
   ]);
   const [isTyping, setIsTyping] = useState(false);
   const [phase, setPhase] = useState<'chat' | 'researching' | 'results'>('chat');
@@ -59,24 +59,55 @@ export default function ValidateIdea() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  const addMessage = (msg: Omit<ChatMessage, 'id'>) => {
-    setIsTyping(false);
-    setMessages(prev => [...prev, { ...msg, id: crypto.randomUUID() }]);
-  };
+  // Auto-send prefilled idea
+  useEffect(() => {
+    if (prefilled && messages.length === 1) {
+      setTimeout(() => handleUserInput(prefilled), 300);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const handleSubmit = () => {
-    const text = inputValue.trim();
-    if (!text) return;
-    setInputValue("");
-    addMessage({ role: 'user', text });
+  const sendToAI = useCallback(async (allMessages: ChatMessage[]) => {
     setIsTyping(true);
-    setTimeout(() => {
-      addMessage({ role: 'system', text: `I'll validate "${text.slice(0, 60)}${text.length > 60 ? '...' : ''}". Starting research now...` });
-      triggerValidation(text);
-    }, 800);
+    try {
+      const { data, error } = await supabase.functions.invoke('chat-validate', {
+        body: {
+          messages: allMessages.map(m => ({
+            role: m.role === 'assistant' ? 'assistant' : 'user',
+            content: m.text,
+          })),
+        },
+      });
+      if (error) throw error;
+
+      const aiMsg: ChatMessage = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        text: data.reply || "I'll validate this for you!",
+      };
+      setIsTyping(false);
+      setMessages(prev => [...prev, aiMsg]);
+
+      if (data.ready && data.params?.ideaText) {
+        setTimeout(() => triggerValidation(data.params.ideaText), 1200);
+      }
+    } catch (err: any) {
+      setIsTyping(false);
+      toast.error("AI error: " + (err.message || "Unknown error"));
+    }
+  }, []);
+
+  const handleUserInput = (overrideText?: string) => {
+    const text = (overrideText || inputValue).trim();
+    if (!text || isTyping) return;
+    if (!overrideText) setInputValue("");
+    const userMsg: ChatMessage = { id: crypto.randomUUID(), role: 'user', text };
+    const updated = [...messages, userMsg];
+    setMessages(updated);
+    sendToAI(updated);
   };
 
-  const triggerValidation = useCallback(async (idea: string) => {
+  const triggerValidation = useCallback(async (ideaText: string) => {
     setPhase('researching');
     setCurrentStep(0);
     try {
@@ -87,13 +118,13 @@ export default function ValidateIdea() {
         });
       }, 2000);
 
-      const { data, error } = await supabase.functions.invoke('perplexity-validate', { body: { ideaText: idea } });
+      const { data, error } = await supabase.functions.invoke('perplexity-validate', { body: { ideaText } });
       clearInterval(stepInterval);
       setCurrentStep(researchSteps.length);
       if (error) throw error;
 
       const r: Report = {
-        ideaText: idea,
+        ideaText,
         scores: data.scores || { demand: 0, pain: 0, competition: 0, mvpFeasibility: 0 },
         verdict: data.verdict || 'Skip',
         pros: data.pros || [],
@@ -105,12 +136,7 @@ export default function ValidateIdea() {
         evidenceLinks: data.evidenceLinks || [],
       };
 
-      // Save to DB
-      try {
-        await saveValidationReportDb(r);
-      } catch (e) {
-        console.error("Failed to save to DB:", e);
-      }
+      try { await saveValidationReportDb(r); } catch (e) { console.error("Failed to save to DB:", e); }
 
       setReport(r);
       setPhase('results');
@@ -130,13 +156,11 @@ export default function ValidateIdea() {
         status: report.verdict === 'Build' ? 'Validated' : 'Exploring',
       });
       toast.success("Saved to My Ideas");
-    } catch {
-      toast.error("Failed to save");
-    }
+    } catch { toast.error("Failed to save"); }
   };
 
   const resetChat = () => {
-    setMessages([{ id: '1', role: 'system', text: "Describe your idea and I'll validate it — checking demand, competition, and feasibility." }]);
+    setMessages([{ id: '1', role: 'assistant', text: "Describe your idea and I'll validate it — checking demand, competition, and feasibility." }]);
     setInputValue(""); setPhase('chat'); setReport(null); setIsTyping(false);
   };
 
@@ -168,8 +192,8 @@ export default function ValidateIdea() {
         </div>
         <div className="border-t pt-3 pb-2">
           <div className="flex gap-2">
-            <Input ref={inputRef} value={inputValue} onChange={e => setInputValue(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSubmit()} placeholder="e.g. AI tool that tracks subscriptions and suggests ways to save money..." className="flex-1" autoFocus />
-            <Button size="icon" onClick={handleSubmit} disabled={!inputValue.trim()}>
+            <Input ref={inputRef} value={inputValue} onChange={e => setInputValue(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleUserInput()} placeholder="e.g. AI tool that tracks subscriptions and suggests ways to save money..." className="flex-1" autoFocus disabled={isTyping} />
+            <Button size="icon" onClick={() => handleUserInput()} disabled={!inputValue.trim() || isTyping}>
               <Send className="h-4 w-4" />
             </Button>
           </div>
@@ -190,6 +214,7 @@ export default function ValidateIdea() {
     );
   }
 
+  // Results phase - same as before
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <div className="flex items-center justify-between">
