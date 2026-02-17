@@ -56,7 +56,7 @@ export default function Dashboard() {
         {[
           { label: "Ideas Generated", value: stats.ideasGenerated, icon: TrendingUp },
           { label: "Ideas Validated", value: stats.ideasValidated, icon: CheckCircle },
-          { label: "In Backlog", value: stats.ideasInBacklog, icon: Archive },
+          { label: "Saved Ideas", value: stats.ideasInBacklog, icon: Archive },
         ].map((stat) => (
           <Card key={stat.label} className="border">
             <CardContent className="p-5 flex items-center gap-4">

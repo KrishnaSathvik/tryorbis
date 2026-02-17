@@ -85,9 +85,10 @@ export default function ValidateIdea() {
       sourceId: report.id,
       overallScore: Math.round((report.scores.demand + report.scores.pain + report.scores.mvpFeasibility - report.scores.competition) / 3),
       status: report.verdict === 'Build' ? 'Validated' : 'Exploring',
+      notes: [],
       createdAt: new Date().toISOString(),
     });
-    toast.success("Added to backlog");
+    toast.success("Saved to My Ideas");
   };
 
   if (phase === 'input') {
@@ -253,7 +254,7 @@ export default function ValidateIdea() {
       {/* Actions */}
       <div className="flex gap-2 pt-2">
         <Button size="sm" variant="outline" onClick={handleAddToBacklog}>
-          <Bookmark className="h-3 w-3 mr-1" /> Add to Backlog
+          <Bookmark className="h-3 w-3 mr-1" /> Save to My Ideas
         </Button>
         {report!.verdict !== 'Build' && (
           <Button size="sm" variant="outline" onClick={() => navigate('/generate')}>

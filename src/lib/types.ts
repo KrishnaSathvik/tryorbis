@@ -67,5 +67,6 @@ export interface BacklogItem {
   demandScore?: number;
   overallScore?: number;
   status: BacklogStatus;
+  notes: string[];
   createdAt: string;
 }

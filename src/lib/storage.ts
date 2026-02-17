@@ -47,6 +47,15 @@ export const updateBacklogStatus = (id: string, status: BacklogItem['status']) =
   const idx = backlog.findIndex(i => i.id === id);
   if (idx >= 0) { backlog[idx].status = status; set(KEYS.backlog, backlog); }
 };
+export const addNoteToBacklog = (id: string, note: string) => {
+  const backlog = getBacklog();
+  const idx = backlog.findIndex(i => i.id === id);
+  if (idx >= 0) {
+    if (!backlog[idx].notes) backlog[idx].notes = [];
+    backlog[idx].notes.unshift(note);
+    set(KEYS.backlog, backlog);
+  }
+};
 export const removeFromBacklog = (id: string) => {
   set(KEYS.backlog, getBacklog().filter(i => i.id !== id));
 };

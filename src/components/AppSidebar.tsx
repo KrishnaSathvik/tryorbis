@@ -15,7 +15,7 @@ const navItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Generate Ideas", url: "/generate", icon: Lightbulb },
   { title: "Validate Idea", url: "/validate", icon: ClipboardCheck },
-  { title: "My Backlog", url: "/backlog", icon: Archive },
+  { title: "My Ideas", url: "/ideas", icon: Archive },
   { title: "Reports", url: "/reports", icon: FileText },
   { title: "Trends", url: "/trends", icon: TrendingUp },
 ];

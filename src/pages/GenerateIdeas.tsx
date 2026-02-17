@@ -90,9 +90,10 @@ export default function GenerateIdeas() {
       sourceId: result!.id,
       demandScore: idea.demandScore,
       status: 'New',
+      notes: [],
       createdAt: new Date().toISOString(),
     });
-    toast.success(`"${idea.name}" added to backlog`);
+    toast.success(`"${idea.name}" saved to My Ideas`);
   };
 
   const handleValidate = (idea: IdeaSuggestion) => {
@@ -230,7 +231,7 @@ export default function GenerateIdeas() {
                     <ClipboardCheck className="h-3 w-3 mr-1" /> Validate
                   </Button>
                   <Button size="sm" variant="outline" onClick={() => handleAddToBacklog(idea)}>
-                    <Bookmark className="h-3 w-3 mr-1" /> Backlog
+                    <Bookmark className="h-3 w-3 mr-1" /> Save
                   </Button>
                   <Button size="sm" variant="ghost" onClick={() => {
                     navigator.clipboard.writeText(`Build a ${idea.name}: ${idea.description}\nMVP: ${idea.mvpScope}`);
