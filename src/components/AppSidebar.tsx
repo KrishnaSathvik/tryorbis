@@ -2,6 +2,7 @@ import { LayoutDashboard, Lightbulb, ClipboardCheck, Archive, FileText, LogOut }
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import orbisLogo from "@/assets/orbis-logo.png";
 import {
   Sidebar,
   SidebarContent,
@@ -34,9 +35,12 @@ export function AppSidebar() {
   return (
     <Sidebar className="border-r border-sidebar-border">
       <div className="px-6 py-5">
-        <h1 className="text-xl font-bold tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-          Orbis
-        </h1>
+        <div className="flex items-center gap-2">
+          <img src={orbisLogo} alt="Orbis" className="h-7 w-7" />
+          <h1 className="text-xl font-bold tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+            Orbis
+          </h1>
+        </div>
         {profile?.display_name && (
           <p className="text-xs text-muted-foreground mt-0.5">Hey, {profile.display_name}</p>
         )}
