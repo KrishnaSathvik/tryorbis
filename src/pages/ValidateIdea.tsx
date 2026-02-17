@@ -7,6 +7,7 @@ import { ResearchTrace } from "@/components/ResearchTrace";
 import { ScoreBar } from "@/components/ScoreBar";
 import { VerdictBadge } from "@/components/VerdictBadge";
 import { AIHandoff } from "@/components/AIHandoff";
+import { FollowUpChat } from "@/components/FollowUpChat";
 import { supabase } from "@/integrations/supabase/client";
 import { saveValidationReportDb, addToBacklogDb } from "@/lib/db";
 import { toast } from "sonner";
@@ -308,6 +309,13 @@ export default function ValidateIdea() {
           <Button size="sm" variant="outline" onClick={() => navigate('/generate')}><Lightbulb className="h-3 w-3 mr-1" /> Explore Adjacent Ideas</Button>
         )}
       </div>
+
+      {report && (
+        <FollowUpChat
+          reportContext={`Idea: "${report.ideaText}"\nVerdict: ${report.verdict}\nDemand: ${report.scores.demand}/100, Pain: ${report.scores.pain}/100, Competition: ${report.scores.competition}/100, Feasibility: ${report.scores.mvpFeasibility}/100\nPros: ${report.pros.join(', ')}\nCons: ${report.cons.join(', ')}\nGap Opportunities: ${report.gapOpportunities.join(', ')}\nMVP Wedge: ${report.mvpWedge}\nKill Test: ${report.killTest}\nCompetitors: ${report.competitors.map(c => c.name).join(', ')}`}
+          onRevalidate={(ideaText) => triggerValidation(ideaText)}
+        />
+      )}
 
       {report && (
         <AIHandoff context={`Validation Report for: "${report.ideaText}"\n\nVerdict: ${report.verdict}\nDemand: ${report.scores.demand}/100, Pain: ${report.scores.pain}/100, Competition: ${report.scores.competition}/100, Feasibility: ${report.scores.mvpFeasibility}/100\n\nPros: ${report.pros.join(', ')}\nCons: ${report.cons.join(', ')}\nMVP Wedge: ${report.mvpWedge}\n\nHelp me build this product.`} />
