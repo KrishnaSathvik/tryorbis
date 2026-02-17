@@ -70,7 +70,7 @@ export default function Auth() {
               <p className="text-xs text-muted-foreground">Only used if you want to recover your account later.</p>
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Creating account..." : "Start Forging Ideas →"}
+              {loading ? "Creating account..." : "Start Exploring →"}
             </Button>
           </form>
         </CardContent>
