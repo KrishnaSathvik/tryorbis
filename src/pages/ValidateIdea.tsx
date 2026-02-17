@@ -11,7 +11,7 @@ import { FollowUpChat } from "@/components/FollowUpChat";
 import { supabase } from "@/integrations/supabase/client";
 import { saveValidationReportDb, addToBacklogDb } from "@/lib/db";
 import { toast } from "sonner";
-import { Bookmark, Lightbulb, ThumbsUp, ThumbsDown, Target, AlertTriangle, Send } from "lucide-react";
+import { Bookmark, Lightbulb, ThumbsUp, ThumbsDown, Target, AlertTriangle, Send, Search } from "lucide-react";
 
 const researchSteps = [
   "Analyzing demand signals...",
@@ -197,10 +197,10 @@ export default function ValidateIdea() {
             <div className="bg-muted/50 border rounded-xl p-3 space-y-2">
               <p className="text-xs text-muted-foreground font-medium">I'll validate this idea:</p>
               <div className="flex flex-wrap gap-2">
-                <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-medium">💡 {validatingParams.ideaText.length > 80 ? validatingParams.ideaText.slice(0, 80) + '...' : validatingParams.ideaText}</span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-medium"><Lightbulb className="h-3 w-3 shrink-0" /> {validatingParams.ideaText.length > 80 ? validatingParams.ideaText.slice(0, 80) + '...' : validatingParams.ideaText}</span>
               </div>
               <Button className="w-full" size="sm" onClick={() => triggerValidation(validatingParams.ideaText)}>
-                🔍 Start Validation
+                <Search className="h-3.5 w-3.5 mr-1" /> Start Validation
               </Button>
             </div>
           )}
