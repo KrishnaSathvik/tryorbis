@@ -8,12 +8,14 @@ import { ResearchTrace } from "@/components/ResearchTrace";
 import { ScoreBar } from "@/components/ScoreBar";
 import { AIHandoff } from "@/components/AIHandoff";
 import { FollowUpChat } from "@/components/FollowUpChat";
+import { WtpSection, CompetitionDensitySection, MarketTimingSection, IcpSection } from "@/components/IntelligenceSections";
 import { useCredits } from "@/hooks/useCredits";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, Bookmark, ClipboardCheck, Copy, Send, User, FolderOpen, Monitor, Globe, Rocket, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { saveGeneratorRunDb, addToBacklogDb } from "@/lib/db";
 import { toast } from "sonner";
+import type { WtpSignals, CompetitionDensity, MarketTiming, ICP } from "@/lib/types";
 
 const researchSteps = [
   "Mining complaints from Reddit, forums & reviews...",
@@ -25,7 +27,12 @@ const researchSteps = [
 ];
 
 interface ChatMessage { id: string; role: 'user' | 'assistant'; text: string; }
-interface GeneratorResult { persona: string; category: string; region?: string; platform?: string; problemClusters: any[]; ideaSuggestions: any[]; }
+interface GeneratorResult {
+  persona: string; category: string; region?: string; platform?: string;
+  problemClusters: any[]; ideaSuggestions: any[];
+  wtpSignals?: WtpSignals; competitionDensity?: CompetitionDensity;
+  marketTiming?: MarketTiming; icp?: ICP;
+}
 
 export default function GenerateIdeas() {
   usePageTitle("Generate Ideas");
@@ -90,7 +97,13 @@ export default function GenerateIdeas() {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       await deductCredit();
-      const run: GeneratorResult = { persona: params.persona, category: params.category, region: params.region || undefined, platform: params.platform || undefined, problemClusters: data.problemClusters || [], ideaSuggestions: data.ideaSuggestions || [] };
+      const run: GeneratorResult = {
+        persona: params.persona, category: params.category,
+        region: params.region || undefined, platform: params.platform || undefined,
+        problemClusters: data.problemClusters || [], ideaSuggestions: data.ideaSuggestions || [],
+        wtpSignals: data.wtpSignals || undefined, competitionDensity: data.competitionDensity || undefined,
+        marketTiming: data.marketTiming || undefined, icp: data.icp || undefined,
+      };
       try { await saveGeneratorRunDb(run); } catch (e) { console.error("Failed to save:", e); }
       setResult(run); setPhase('results');
     } catch (err: any) { toast.error("Generation failed: " + (err.message || "Unknown error")); setPhase('chat'); }
@@ -245,6 +258,19 @@ export default function GenerateIdeas() {
           ))}
         </div>
       </div>
+
+      {/* ─── Phase 1 Intelligence Layers ─── */}
+      {result && (result.wtpSignals || result.competitionDensity || result.marketTiming || result.icp) && (
+        <div>
+          <h2 className="text-lg font-semibold font-nunito mb-4">Market Intelligence</h2>
+          <div className="grid md:grid-cols-2 gap-4">
+            {result.wtpSignals && <WtpSection data={result.wtpSignals} />}
+            {result.competitionDensity && <CompetitionDensitySection data={result.competitionDensity} />}
+            {result.marketTiming && <MarketTimingSection data={result.marketTiming} />}
+            {result.icp && <IcpSection data={result.icp} />}
+          </div>
+        </div>
+      )}
 
       {result && (
         <FollowUpChat

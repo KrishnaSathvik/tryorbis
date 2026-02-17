@@ -80,13 +80,27 @@ For EACH complaint or pain point you find:
 
 Find at least 15-25 distinct complaints. Group them into 4-6 thematic clusters.
 
+WILLINGNESS-TO-PAY RESEARCH (CRITICAL — new):
+- Search for "what tools do you pay for to solve ${category}" and "how much would you pay for ${category}"
+- Look for pricing complaints: "too expensive", "overpriced", "I'd pay $X for..."
+- Find budget discussions, tool switching reasons, and actual price points mentioned
+- Search for "alternatives to [popular tool] pricing" in this space
+- Quote actual WTP statements with source
+
+MARKET TIMING RESEARCH (new):
+- Check Google Trends for "${category}" related searches — is interest growing, stable, or declining?
+- Look for recent VC funding in this space (Crunchbase, TechCrunch mentions)
+- Check for new regulations, platform changes, or technology shifts affecting this space
+- Note any recent Product Hunt launches or YC companies in this category
+
 Also research existing solutions in this space:
 - What tools already exist?
 - What are their most common complaints?
 - What pricing do they charge?
 - What gaps do users mention?
+- How many competitors exist and what's their funding level?
 
-Return your findings as detailed, unstructured text. Include all quotes, sources, competitor names, and data points. Do NOT structure as JSON yet — just give me the raw research.`;
+Return your findings as detailed, unstructured text. Include all quotes, sources, competitor names, pricing, WTP signals, and timing data. Do NOT structure as JSON yet — just give me the raw research.`;
 
     console.log('Pass 1: Starting deep research with sonar-pro...');
     const researchResponse = await fetch('https://api.perplexity.ai/chat/completions', {
@@ -98,7 +112,7 @@ Return your findings as detailed, unstructured text. Include all quotes, sources
       body: JSON.stringify({
         model: 'sonar-pro',
         messages: [
-          { role: 'system', content: 'You are a meticulous market research analyst. Find real, specific, verifiable complaints and pain points. Always cite where you found information. Be thorough — quality and specificity matter more than speed.' },
+          { role: 'system', content: 'You are a meticulous market research analyst. Find real, specific, verifiable complaints, willingness-to-pay signals, and market timing indicators. Always cite where you found information. Be thorough — quality and specificity matter more than speed.' },
           { role: 'user', content: searchPrompt },
         ],
         temperature: 0.1,
@@ -131,7 +145,7 @@ ${rawResearch}
 CITATIONS/SOURCES:
 ${citations.map((c: string, i: number) => `[${i + 1}] ${c}`).join('\n')}
 
-YOUR TASK: Analyze this research and produce structured output.
+YOUR TASK: Analyze this research and produce structured output with enhanced intelligence layers.
 
 CLUSTERING RULES:
 - Group complaints into 4-6 distinct thematic clusters
@@ -152,6 +166,39 @@ DEMAND SCORING RUBRIC (be strict and honest):
 - 55-69: Moderate signals, dozens of complaints, some solutions exist but imperfect
 - 40-54: Weak signals, few complaints, decent solutions already available
 - Below 40: Minimal evidence of demand
+
+WILLINGNESS-TO-PAY EXTRACTION (NEW — CRITICAL):
+Extract real WTP signals from the research. Look for:
+- Direct price mentions ("I'd pay $X for this")
+- Pricing complaints about existing tools ("too expensive at $X/mo")
+- Budget discussions and tool switching due to price
+- Workaround investment (time/money spent on manual alternatives)
+Rate the overall WTP signal strength: "strong", "moderate", "weak", or "none"
+
+COMPETITION DENSITY ANALYSIS (NEW):
+Classify the competitive landscape:
+- "blue_ocean": Almost no competitors, wide open space
+- "fragmented": Several small players, no dominant leader
+- "crowded": Many competitors but room for differentiation
+- "winner_take_most": Dominated by 1-2 incumbents with network effects
+Include: number of competitors found, total funding in space, key incumbents
+
+MARKET TIMING ASSESSMENT (NEW):
+Classify market timing:
+- "emerging": New category, early signals, few players
+- "growing": Category expanding, VC interest rising, search trends up
+- "saturated": Mature market, many players, innovation slowing
+- "declining": Interest waning, consolidation happening
+Include timing signals from the research (trends, funding, regulations)
+
+ICP (IDEAL CUSTOMER PROFILE) EXTRACTION (NEW):
+Define the ideal first customer with specifics:
+- Business type (B2B/B2C/B2B2C)
+- Company size / revenue range
+- Industry vertical
+- Current tech stack indicators
+- Key buying triggers
+- Budget range
 
 Return ONLY valid JSON:
 {
@@ -175,7 +222,39 @@ Return ONLY valid JSON:
       "monetization": "Specific pricing model with price points (e.g., 'Freemium: free tier + $19/mo pro')",
       "demandScore": 72
     }
-  ]
+  ],
+  "wtpSignals": {
+    "strength": "strong",
+    "signals": [
+      {"quote": "I'd pay $50/mo for this easily", "source": "Reddit r/SaaS", "context": "User discussing churn prevention tools"},
+      {"quote": "Switched from X because it cost $200/mo", "source": "G2 Review", "context": "Small SaaS founder"}
+    ],
+    "priceRange": {"low": 19, "mid": 49, "high": 99, "currency": "USD/mo"},
+    "summary": "Strong willingness to pay $30-60/mo based on multiple direct mentions and existing tool pricing"
+  },
+  "competitionDensity": {
+    "level": "fragmented",
+    "competitorCount": 8,
+    "totalFundingEstimate": "$45M",
+    "keyIncumbents": ["Competitor A ($20M raised)", "Competitor B (bootstrapped)"],
+    "switchingCosts": "low",
+    "summary": "Fragmented market with 8 players, none dominant. Low switching costs create opportunity for better UX."
+  },
+  "marketTiming": {
+    "phase": "growing",
+    "signals": ["VC funding up 40% YoY in this space", "Google Trends showing steady growth", "2 YC companies in latest batch"],
+    "summary": "Growing market with increasing VC interest and rising search demand."
+  },
+  "icp": {
+    "businessType": "B2B SaaS",
+    "companySize": "10-50 employees",
+    "revenueRange": "$500K-$5M ARR",
+    "industry": "SaaS / subscription businesses",
+    "techStack": ["Stripe", "Intercom", "HubSpot"],
+    "buyingTriggers": ["Churn rate exceeds 5%", "Manual processes taking 10+ hrs/week"],
+    "budgetRange": "$30-100/mo",
+    "summary": "Early-stage B2B SaaS companies with $500K-$5M ARR struggling with churn, currently using spreadsheets or overpriced enterprise tools."
+  }
 }`;
 
     console.log('Pass 2: Analyzing with Gemini...');
@@ -187,7 +266,7 @@ Return ONLY valid JSON:
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [
-          { role: 'user', parts: [{ text: 'You are a senior product strategist. Analyze research data and produce precise, honest, structured analysis. Never inflate scores or fabricate evidence. Be brutally honest about demand levels.\n\n' + analysisPrompt }] },
+          { role: 'user', parts: [{ text: 'You are a senior product strategist. Analyze research data and produce precise, honest, structured analysis. Never inflate scores or fabricate evidence. Be brutally honest about demand levels. Extract willingness-to-pay signals, competition density, market timing, and ideal customer profiles from the research data.\n\n' + analysisPrompt }] },
         ],
         generationConfig: { temperature: 0.2 },
       }),
@@ -226,7 +305,10 @@ Return ONLY valid JSON:
       });
     }
 
-    console.log(`Complete: ${parsed.problemClusters?.length || 0} clusters, ${parsed.ideaSuggestions?.length || 0} ideas`);
+    // Inject citations into evidence
+    parsed.evidenceLinks = citations;
+
+    console.log(`Complete: ${parsed.problemClusters?.length || 0} clusters, ${parsed.ideaSuggestions?.length || 0} ideas, WTP: ${parsed.wtpSignals?.strength || 'none'}, Competition: ${parsed.competitionDensity?.level || 'unknown'}, Timing: ${parsed.marketTiming?.phase || 'unknown'}`);
 
     return new Response(JSON.stringify(parsed), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
