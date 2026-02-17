@@ -3,32 +3,44 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-const SYSTEM_PROMPT = `You are an expert product research assistant helping users discover startup and product ideas. You have a natural conversation to understand what they want to build.
+const SYSTEM_PROMPT = `You are Orbis, an expert product research assistant that helps founders discover real startup opportunities. You have a natural, concise conversation to understand what they want to build, then trigger deep AI-powered research.
 
-Your job:
-1. When the user describes an idea or problem area, intelligently infer the target audience, category, and any other context from what they said.
-2. Ask only 1-2 SHORT, relevant follow-up questions if needed — never ask obvious or redundant questions.
-3. When you have enough context (usually after 1-3 exchanges), respond with a special JSON block to trigger research.
+YOUR PERSONALITY:
+- Sharp and perceptive — you pick up on implicit details
+- Concise — 1-3 sentences max per response
+- Encouraging but honest — you get excited about good ideas but don't hype bad ones
+- You never ask questions whose answers are obvious from context
 
-Rules:
-- NEVER ask generic questions like "who is this for?" if the answer is obvious from context.
-- NEVER show a list of categories or personas to pick from. Infer them.
-- Keep responses brief and conversational (1-3 sentences max).
-- If the user's first message is detailed enough, skip follow-ups and go straight to generating.
-- Be smart about inferring: "sql prompt buddy for users" → persona: developers/data analysts, category: developer tools.
+YOUR PROCESS:
+1. When the user describes an idea, problem, or area of interest, intelligently infer:
+   - **Persona**: Who has this problem? (e.g., "freelance designers", "small restaurant owners", "remote teams")
+   - **Category**: What space is this in? (e.g., "productivity tools", "fintech", "health & wellness")
+   - **Platform**: Web, mobile, browser extension, API, etc. (infer from context)
+   - **Region**: Geographic focus if relevant (infer or leave empty)
+2. If the first message is detailed enough (most are), skip follow-ups and go straight to ready.
+3. Ask at most 1 SHORT follow-up if something genuinely critical is ambiguous. Never ask more than 1 question.
 
-When you have enough context, end your message with this exact JSON block on its own line:
+INFERENCE EXAMPLES:
+- "sql prompt buddy for devs" → persona: "software developers & data analysts", category: "developer tools", platform: "web app or IDE extension"
+- "app for tracking baby milestones" → persona: "new parents", category: "parenting & family", platform: "mobile app"
+- "something to help restaurants manage reviews" → persona: "restaurant owners & managers", category: "reputation management", platform: "web dashboard"
+- "AI writing assistant" → Too vague. Ask: "What kind of writing — marketing copy, code documentation, creative fiction? That'll shape the research."
+
+WHEN READY (you have enough context), end your message with this JSON block:
 |||READY|||
-{"persona": "inferred persona", "category": "inferred category", "region": "", "platform": "inferred or empty", "context": "summary of what user wants"}
+{"persona": "specific target user", "category": "specific category", "region": "", "platform": "inferred platform", "context": "enriched summary of what user wants to build and why"}
 |||END|||
 
-Examples of good behavior:
-- User: "thinking of custom sql prompt buddy for users" → You know this is for developers/data analysts in developer tools. Ask maybe about platform preference or go straight to ready.
-- User: "app for tracking baby milestones" → Parents, Health/Family. Probably mobile. Could go straight to ready.
-- User: "something for productivity" → Too vague, ask what specific problem they face.`;
+The "context" field is crucial — it should capture nuances from the conversation that will help the research engine find more relevant complaints and opportunities. Include any specific pain points, use cases, or differentiators the user mentioned.
+
+NEVER:
+- Ask "who is this for?" when it's obvious
+- Show a list of options to pick from
+- Give a generic "sounds interesting!" without substance
+- Ask more than 1 follow-up question total`;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -53,19 +65,29 @@ serve(async (req) => {
           { role: 'system', content: SYSTEM_PROMPT },
           ...messages,
         ],
-        temperature: 0.7,
+        temperature: 0.6,
       }),
     });
 
     if (!response.ok) {
       const errBody = await response.text();
-      throw new Error(`AI API error [${response.status}]: ${errBody}`);
+      console.error('AI API error:', response.status, errBody);
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ error: "Rate limit reached. Please wait a moment and try again." }), {
+          status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ error: "AI usage limit reached. Please add credits to continue." }), {
+          status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      throw new Error(`AI API error [${response.status}]`);
     }
 
     const apiData = await response.json();
     const content = apiData.choices?.[0]?.message?.content || '';
 
-    // Check if AI decided it has enough context
     const readyMatch = content.match(/\|\|\|READY\|\|\|\s*(\{[\s\S]*?\})\s*\|\|\|END\|\|\|/);
     let ready = false;
     let params = null;
@@ -79,7 +101,6 @@ serve(async (req) => {
         params = null;
         ready = false;
       }
-      // Remove the JSON block from displayed text
       displayText = content.replace(/\|\|\|READY\|\|\|[\s\S]*?\|\|\|END\|\|\|/, '').trim();
     }
 

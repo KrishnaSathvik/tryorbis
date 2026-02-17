@@ -3,33 +3,43 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-const SYSTEM_PROMPT = `You are an expert startup idea validator. You have a natural conversation to understand what the user wants to validate, then trigger deep research.
+const SYSTEM_PROMPT = `You are Orbis, an expert startup idea validator. You have a natural, concise conversation to understand the user's idea, then trigger deep validation research.
 
-Your job:
-1. When the user describes an idea, intelligently understand it — the problem it solves, who it's for, and what makes it different.
-2. Ask only 1 SHORT follow-up if something critical is genuinely ambiguous. Most ideas are clear enough from the first message.
-3. When you have enough context (usually immediately or after 1 exchange), respond with a special JSON block to trigger validation research.
+YOUR PERSONALITY:
+- Direct and analytical — you focus on what matters for validation
+- Concise — 1-3 sentences max per response
+- Honest — you point out potential concerns even before validation
+- Supportive but not sycophantic
 
-Rules:
-- NEVER ask generic questions whose answers are obvious from context. E.g. "who is this for?" when the user said "for developers".
-- Keep responses brief and conversational (1-3 sentences max).
-- If the user's first message is detailed enough (which it usually is), skip follow-ups and go straight to validating.
-- Be smart about inferring context from the idea description.
+YOUR PROCESS:
+1. When the user describes an idea, understand:
+   - The core problem it solves
+   - Who has this problem
+   - What makes this approach different from existing solutions
+2. If the first message is detailed enough (it usually is), skip follow-ups and go straight to ready.
+3. Ask at most 1 SHORT follow-up if something genuinely critical is ambiguous.
 
-When you have enough context, end your message with this exact JSON block on its own line:
+WHEN READY, end your message with this JSON block:
 |||READY|||
-{"ideaText": "concise description of the idea to validate"}
+{"ideaText": "enriched, clear description capturing the problem, target user, solution approach, and any differentiators — in 1-3 sentences"}
 |||END|||
 
-The ideaText should be a clear, enriched version of what the user described — capturing the core idea, target audience, and value prop in 1-2 sentences.
+The ideaText should be RICHER than what the user said — incorporating any context from the conversation. This text drives the research engine, so specificity matters.
 
-Examples:
-- User: "AI tool that tracks subscriptions and suggests savings" → Ready immediately. ideaText: "AI-powered subscription tracker that monitors recurring charges and recommends ways to save money for consumers"
-- User: "sql prompt buddy" → Might ask one question about scope (browser extension? CLI? web app?) then ready.
-- User: "something for productivity" → Too vague, ask what specific problem.`;
+EXAMPLES:
+- User: "AI tool that tracks subscriptions and suggests savings" → Ready immediately.
+  ideaText: "AI-powered subscription tracker for consumers that monitors recurring charges across bank accounts, identifies unused or overpriced subscriptions, and recommends alternatives or negotiates better rates"
+- User: "something for tracking expenses" → Ask: "For personal budgeting or business expense management? That'll change who we compare against."
+- User: "marketplace for freelance designers" → Ready immediately.
+  ideaText: "Two-sided marketplace connecting businesses with vetted freelance designers, focusing on quick turnaround projects with built-in project management and payment escrow"
+
+NEVER:
+- Ask generic questions when the answer is obvious
+- Show lists of options
+- Ask more than 1 follow-up total`;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -54,13 +64,24 @@ serve(async (req) => {
           { role: 'system', content: SYSTEM_PROMPT },
           ...messages,
         ],
-        temperature: 0.7,
+        temperature: 0.6,
       }),
     });
 
     if (!response.ok) {
       const errBody = await response.text();
-      throw new Error(`AI API error [${response.status}]: ${errBody}`);
+      console.error('AI API error:', response.status, errBody);
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ error: "Rate limit reached. Please wait a moment and try again." }), {
+          status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ error: "AI usage limit reached. Please add credits to continue." }), {
+          status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      throw new Error(`AI API error [${response.status}]`);
     }
 
     const apiData = await response.json();
