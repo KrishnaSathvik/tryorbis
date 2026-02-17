@@ -1,5 +1,5 @@
-import { Loader2, CheckCircle2, Clock } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Loader2, CheckCircle2, Clock, Timer } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
 
 interface ResearchTraceProps {
   steps: string[];
@@ -15,13 +15,32 @@ function formatTime(seconds: number) {
 
 export function ResearchTrace({ steps, currentStep, isComplete }: ResearchTraceProps) {
   const [elapsed, setElapsed] = useState(0);
+  const stepTimestamps = useRef<number[]>([]);
+
+  // Track when each step starts
+  useEffect(() => {
+    if (!isComplete) {
+      stepTimestamps.current[currentStep] = Date.now();
+    }
+  }, [currentStep, isComplete]);
 
   useEffect(() => {
     if (isComplete) return;
     setElapsed(0);
+    stepTimestamps.current = [Date.now()];
     const interval = setInterval(() => setElapsed((e) => e + 1), 1000);
     return () => clearInterval(interval);
   }, [isComplete]);
+
+  // Estimate remaining time based on average time per completed step
+  const getEstimate = () => {
+    if (isComplete || currentStep === 0) return null;
+    const avgPerStep = elapsed / currentStep;
+    const remaining = Math.max(0, Math.round(avgPerStep * (steps.length - currentStep)));
+    return remaining;
+  };
+
+  const estimate = getEstimate();
 
   return (
     <div className="space-y-4 py-4">
@@ -33,9 +52,18 @@ export function ResearchTrace({ steps, currentStep, isComplete }: ResearchTraceP
             {isComplete ? `Completed in ${formatTime(elapsed)}` : `Elapsed: ${formatTime(elapsed)}`}
           </span>
         </div>
-        {!isComplete && (
-          <span className="text-xs text-muted-foreground/60">Usually takes 30-60s</span>
-        )}
+        <div className="flex items-center gap-2 text-muted-foreground">
+          {!isComplete && estimate !== null ? (
+            <>
+              <Timer className="h-3.5 w-3.5" />
+              <span className="text-xs font-medium tabular-nums">
+                ~{formatTime(estimate)} remaining
+              </span>
+            </>
+          ) : !isComplete ? (
+            <span className="text-xs text-muted-foreground/60">Estimating...</span>
+          ) : null}
+        </div>
       </div>
 
       {/* Progress bar */}
