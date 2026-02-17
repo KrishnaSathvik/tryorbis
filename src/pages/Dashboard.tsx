@@ -1,52 +1,58 @@
 import { useNavigate } from "react-router-dom";
 import { Lightbulb, ClipboardCheck, TrendingUp, CheckCircle, Archive } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { getStats, getGeneratorRuns, getValidationReports } from "@/lib/storage";
-import { useMemo } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { getMyGeneratorRuns, getMyValidationReports, getMyBacklog } from "@/lib/db";
+import { useEffect, useState } from "react";
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const stats = useMemo(() => getStats(), []);
-  const recentRuns = useMemo(() => getGeneratorRuns().slice(0, 3), []);
-  const recentReports = useMemo(() => getValidationReports().slice(0, 3), []);
+  const { profile } = useAuth();
+  const [stats, setStats] = useState({ ideasGenerated: 0, ideasValidated: 0, ideasInBacklog: 0 });
+  const [recentRuns, setRecentRuns] = useState<any[]>([]);
+  const [recentReports, setRecentReports] = useState<any[]>([]);
+
+  useEffect(() => {
+    Promise.all([getMyGeneratorRuns(), getMyValidationReports(), getMyBacklog()]).then(
+      ([runs, reports, backlog]) => {
+        setStats({
+          ideasGenerated: runs.reduce((s, r) => s + (Array.isArray(r.idea_suggestions) ? (r.idea_suggestions as any[]).length : 0), 0),
+          ideasValidated: reports.length,
+          ideasInBacklog: backlog.length,
+        });
+        setRecentRuns(runs.slice(0, 3));
+        setRecentReports(reports.slice(0, 3));
+      }
+    );
+  }, []);
 
   return (
     <div className="max-w-5xl mx-auto space-y-10">
-      {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Welcome to IdeaForge</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          Welcome{profile?.display_name ? `, ${profile.display_name}` : ""} 👋
+        </h1>
         <p className="text-muted-foreground mt-1">From problem discovery to product validation.</p>
       </div>
 
       {/* CTA Cards */}
       <div className="grid md:grid-cols-2 gap-6">
-        <Card
-          className="cursor-pointer group hover:shadow-lg hover:border-primary/30 transition-all duration-200 border-2 border-transparent"
-          onClick={() => navigate("/generate")}
-        >
+        <Card className="cursor-pointer group hover:shadow-lg hover:border-primary/30 transition-all duration-200 border-2 border-transparent" onClick={() => navigate("/generate")}>
           <CardContent className="p-8">
             <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-5 group-hover:bg-primary/20 transition-colors">
               <Lightbulb className="h-6 w-6 text-primary" />
             </div>
             <h2 className="text-xl font-semibold mb-2">Find Ideas to Build</h2>
-            <p className="text-muted-foreground text-sm leading-relaxed">
-              Discover real problems people are facing. Mine complaints, cluster pain points, and generate product ideas backed by evidence.
-            </p>
+            <p className="text-muted-foreground text-sm leading-relaxed">Discover real problems people are facing. Mine complaints, cluster pain points, and generate product ideas backed by evidence.</p>
           </CardContent>
         </Card>
-
-        <Card
-          className="cursor-pointer group hover:shadow-lg hover:border-primary/30 transition-all duration-200 border-2 border-transparent"
-          onClick={() => navigate("/validate")}
-        >
+        <Card className="cursor-pointer group hover:shadow-lg hover:border-primary/30 transition-all duration-200 border-2 border-transparent" onClick={() => navigate("/validate")}>
           <CardContent className="p-8">
             <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-5 group-hover:bg-primary/20 transition-colors">
               <ClipboardCheck className="h-6 w-6 text-primary" />
             </div>
             <h2 className="text-xl font-semibold mb-2">Validate My Idea</h2>
-            <p className="text-muted-foreground text-sm leading-relaxed">
-              Test if your idea is worth building. Get demand scores, competitor analysis, and a clear Build / Pivot / Skip verdict.
-            </p>
+            <p className="text-muted-foreground text-sm leading-relaxed">Test if your idea is worth building. Get demand scores, competitor analysis, and a clear Build / Pivot / Skip verdict.</p>
           </CardContent>
         </Card>
       </div>
@@ -77,37 +83,35 @@ export default function Dashboard() {
         <div>
           <h2 className="text-lg font-semibold mb-4">Recent Activity</h2>
           <div className="space-y-2">
-            {recentRuns.map((run) => (
+            {recentRuns.map((run: any) => (
               <Card key={run.id} className="border">
                 <CardContent className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Lightbulb className="h-4 w-4 text-primary" />
                     <div>
                       <p className="text-sm font-medium">Generated ideas for {run.persona} × {run.category}</p>
-                      <p className="text-xs text-muted-foreground">{new Date(run.createdAt).toLocaleDateString()}</p>
+                      <p className="text-xs text-muted-foreground">{new Date(run.created_at).toLocaleDateString()}</p>
                     </div>
                   </div>
-                  <span className="text-xs text-muted-foreground">{run.ideaSuggestions.length} ideas</span>
+                  <span className="text-xs text-muted-foreground">{Array.isArray(run.idea_suggestions) ? (run.idea_suggestions as any[]).length : 0} ideas</span>
                 </CardContent>
               </Card>
             ))}
-            {recentReports.map((report) => (
+            {recentReports.map((report: any) => (
               <Card key={report.id} className="border">
                 <CardContent className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <ClipboardCheck className="h-4 w-4 text-primary" />
                     <div>
-                      <p className="text-sm font-medium">Validated: {report.ideaText.slice(0, 60)}...</p>
-                      <p className="text-xs text-muted-foreground">{new Date(report.createdAt).toLocaleDateString()}</p>
+                      <p className="text-sm font-medium">Validated: {(report.idea_text || "").slice(0, 60)}...</p>
+                      <p className="text-xs text-muted-foreground">{new Date(report.created_at).toLocaleDateString()}</p>
                     </div>
                   </div>
                   <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
                     report.verdict === 'Build' ? 'bg-green-100 text-green-700' :
                     report.verdict === 'Pivot' ? 'bg-yellow-100 text-yellow-700' :
                     'bg-red-100 text-red-700'
-                  }`}>
-                    {report.verdict}
-                  </span>
+                  }`}>{report.verdict}</span>
                 </CardContent>
               </Card>
             ))}

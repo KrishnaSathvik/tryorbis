@@ -14,7 +14,156 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      backlog_items: {
+        Row: {
+          created_at: string
+          demand_score: number | null
+          id: string
+          idea_name: string
+          notes: Json
+          overall_score: number | null
+          source: string
+          source_id: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          demand_score?: number | null
+          id?: string
+          idea_name: string
+          notes?: Json
+          overall_score?: number | null
+          source: string
+          source_id?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          demand_score?: number | null
+          id?: string
+          idea_name?: string
+          notes?: Json
+          overall_score?: number | null
+          source?: string
+          source_id?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      generator_runs: {
+        Row: {
+          budget_scope: string | null
+          category: string
+          created_at: string
+          id: string
+          idea_suggestions: Json
+          persona: string
+          platform: string | null
+          problem_clusters: Json
+          region: string | null
+          user_id: string
+        }
+        Insert: {
+          budget_scope?: string | null
+          category: string
+          created_at?: string
+          id?: string
+          idea_suggestions?: Json
+          persona: string
+          platform?: string | null
+          problem_clusters?: Json
+          region?: string | null
+          user_id: string
+        }
+        Update: {
+          budget_scope?: string | null
+          category?: string
+          created_at?: string
+          id?: string
+          idea_suggestions?: Json
+          persona?: string
+          platform?: string | null
+          problem_clusters?: Json
+          region?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string
+          email: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string
+          email?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          email?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      validation_reports: {
+        Row: {
+          competitors: Json
+          cons: Json
+          created_at: string
+          evidence_links: Json
+          gap_opportunities: Json
+          id: string
+          idea_text: string
+          kill_test: string | null
+          mvp_wedge: string | null
+          pros: Json
+          scores: Json
+          user_id: string
+          verdict: string
+        }
+        Insert: {
+          competitors?: Json
+          cons?: Json
+          created_at?: string
+          evidence_links?: Json
+          gap_opportunities?: Json
+          id?: string
+          idea_text: string
+          kill_test?: string | null
+          mvp_wedge?: string | null
+          pros?: Json
+          scores?: Json
+          user_id: string
+          verdict: string
+        }
+        Update: {
+          competitors?: Json
+          cons?: Json
+          created_at?: string
+          evidence_links?: Json
+          gap_opportunities?: Json
+          id?: string
+          idea_text?: string
+          kill_test?: string | null
+          mvp_wedge?: string | null
+          pros?: Json
+          scores?: Json
+          user_id?: string
+          verdict?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
