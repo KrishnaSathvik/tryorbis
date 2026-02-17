@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 import { LandingCharts } from "@/components/landing/LandingCharts";
 import { LandingLeaderboard } from "@/components/landing/LandingLeaderboard";
+import { LandingTrends } from "@/components/landing/LandingTrends";
+import { LandingSuccessTracking } from "@/components/landing/LandingSuccessTracking";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import orbisLogo from "@/assets/orbis-logo.png";
 
@@ -225,7 +227,9 @@ export default function Landing() {
             </div>
             {hasData && (
               <div className="space-y-6">
-                <LandingCharts stats={stats} />
+              <LandingCharts stats={stats} />
+                {stats.trendData && <LandingTrends trendData={stats.trendData} />}
+                {stats.founderSuccess && <LandingSuccessTracking founderSuccess={stats.founderSuccess} />}
                 <LandingLeaderboard stats={stats} />
               </div>
             )}
