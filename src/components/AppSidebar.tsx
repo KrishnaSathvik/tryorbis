@@ -37,7 +37,7 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar className="border-r border-sidebar-border bg-white/50 backdrop-blur-sm">
+    <Sidebar className="border-r border-sidebar-border bg-sidebar backdrop-blur-sm">
       <div className="px-6 py-5">
         <div className="flex items-center gap-2">
           <img src={orbisLogo} alt="Orbis" className="h-7 w-7 dark-invert" />
@@ -72,24 +72,29 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <div className="mt-auto p-4 border-t border-sidebar-border space-y-2">
+      <div className="mt-auto border-t border-sidebar-border p-3 space-y-2">
         <GuestUpgradeBanner />
-        <div className="px-6 py-2 space-y-0.5">
-          <div className="flex items-center gap-2">
-            <Zap className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium">{credits} credits</span>
-            {isGuest && <span className="text-[10px] bg-warning/10 text-warning px-2 py-0.5 rounded-full font-medium">Guest</span>}
+        <div className="flex items-center gap-3 px-3 py-2">
+          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+            <span className="text-xs font-bold text-primary">
+              {(profile?.display_name || "?")[0].toUpperCase()}
+            </span>
           </div>
-          {profile?.email && (
-            <p className="text-[11px] text-muted-foreground truncate pl-6">{profile.email}</p>
-          )}
-          {profile?.display_name && (
-            <p className="text-[11px] text-muted-foreground truncate pl-6">{profile.display_name}</p>
-          )}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5">
+              <p className="text-sm font-medium truncate">{profile?.display_name || "User"}</p>
+              {isGuest && <span className="text-[9px] bg-warning/10 text-warning px-1.5 py-0.5 rounded-full font-semibold leading-none">Guest</span>}
+            </div>
+            <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+              <Zap className="h-3 w-3 text-primary" />
+              <span>{credits} credits</span>
+              {profile?.email && <span className="truncate ml-1">· {profile.email}</span>}
+            </div>
+          </div>
         </div>
         <button
           onClick={handleSignOut}
-          className="flex items-center gap-3 px-6 py-2.5 text-sm text-muted-foreground rounded-xl transition-all hover:text-foreground hover:bg-accent w-full"
+          className="flex items-center gap-3 px-3 py-2 text-sm text-muted-foreground rounded-xl transition-all hover:text-foreground hover:bg-accent w-full"
         >
           <LogOut className="h-4 w-4" />
           <span>Sign Out</span>
