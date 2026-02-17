@@ -123,7 +123,22 @@ RESEARCH METHODOLOGY — investigate each area systematically:
     - New regulations that could restrict or enable this category
     - Platform dependency risks (single API reliance)
 
-Return your findings as detailed unstructured text with all data points, quotes, competitor names, pricing, WTP signals, timing data, workarounds, feature gaps, platform risks, URLs. Do NOT format as JSON — give me the raw research.`;
+11. **GTM CHANNEL RESEARCH** (Phase 3 — new):
+    - How do competitors acquire customers? (SEO, paid, communities, marketplaces)
+    - Founder stories about early customer acquisition
+    - Which channels have organic discussion about this problem
+
+12. **PRICING BENCHMARK RESEARCH** (Phase 3 — new):
+    - Document exact pricing of ALL competitors (free, paid, enterprise)
+    - Pricing model patterns (per-seat, usage, flat-rate, freemium)
+    - Pricing complaints and value perception discussions
+
+13. **DEFENSIBILITY / MOAT SIGNALS** (Phase 3 — new):
+    - Network effects, data moats, community flywheels
+    - Integration ecosystems creating switching costs
+    - Technical moats, regulatory barriers
+
+Return your findings as detailed unstructured text with all data points, quotes, competitor names, pricing, WTP signals, timing data, workarounds, feature gaps, platform risks, GTM channels, pricing benchmarks, moat signals, URLs. Do NOT format as JSON — give me the raw research.`;
 
     console.log('Pass 1: Deep market research with sonar-pro...');
     const researchResponse = await fetch('https://api.perplexity.ai/chat/completions', {
@@ -135,7 +150,7 @@ Return your findings as detailed unstructured text with all data points, quotes,
       body: JSON.stringify({
         model: 'sonar-pro',
         messages: [
-          { role: 'system', content: 'You are a meticulous market research analyst specializing in startup validation. Find real, verifiable data — not assumptions. Cite sources. Be thorough and specific with numbers, pricing, willingness-to-pay signals, workaround evidence, feature gaps, platform risks, and competitor details.' },
+          { role: 'system', content: 'You are a meticulous market research analyst specializing in startup validation. Find real, verifiable data — not assumptions. Cite sources. Be thorough and specific with numbers, pricing, willingness-to-pay signals, workaround evidence, feature gaps, platform risks, GTM channels, pricing benchmarks, moat signals, and competitor details.' },
           { role: 'user', content: researchPrompt },
         ],
         temperature: 0.1,
@@ -254,85 +269,92 @@ Assess platform dependency:
 - Level: "low", "medium", "high", "critical"
 - Signal types: "bundling", "api_limitation", "roadmap_overlap", "regulation", "dependency"
 
+GTM STRATEGY ENGINE (Phase 3 — NEW):
+Recommend go-to-market approach:
+- 3-5 channels with viability: "high", "medium", "low"
+- Primary channel, founder-led sales viability, SEO viability
+- Consider: content, communities, marketplaces, paid, partnerships, outbound
+
+PRICING BENCHMARK ANALYSIS (Phase 3 — NEW):
+Market pricing benchmarks:
+- 3-6 competitor prices with tool, price, model, notes
+- Suggested range (low/mid/high) and recommended pricing model
+
+DEFENSIBILITY / MOAT ANALYSIS (Phase 3 — NEW):
+Long-term defensibility:
+- Overall strength: "strong", "moderate", "weak", "none"
+- Signal types: "data_network", "integrations", "lock_in", "community", "brand", "technical", "regulatory"
+- Time to moat estimate
+
 Return ONLY valid JSON:
 {
-  "scores": {
-    "demand": 72,
-    "pain": 65,
-    "competition": 55,
-    "mvpFeasibility": 80
-  },
-  "scoreJustifications": {
-    "demand": "Why this score",
-    "pain": "Why this score",
-    "competition": "Why this score",
-    "mvpFeasibility": "Why this score"
-  },
-  "marketSizing": {
-    "tam": "Total Addressable Market estimate",
-    "sam": "Serviceable Addressable Market",
-    "som": "Serviceable Obtainable Market",
-    "methodology": "Brief explanation"
-  },
+  "scores": {"demand": 72, "pain": 65, "competition": 55, "mvpFeasibility": 80},
+  "scoreJustifications": {"demand": "Why", "pain": "Why", "competition": "Why", "mvpFeasibility": "Why"},
+  "marketSizing": {"tam": "TAM", "sam": "SAM", "som": "SOM", "methodology": "Method"},
   "verdict": "Build",
-  "verdictReasoning": "2-3 sentences",
-  "pros": ["Pro 1", "Pro 2"],
-  "cons": ["Con 1", "Con 2"],
-  "gapOpportunities": ["Gap 1", "Gap 2"],
-  "mvpWedge": "Smallest version to build first",
-  "killTest": "Most important thing to test",
-  "competitors": [
-    {"name": "Real Competitor", "weakness": "Specific weakness", "pricing": "$X/mo"}
-  ],
+  "verdictReasoning": "Reasoning",
+  "pros": ["Pro 1"],
+  "cons": ["Con 1"],
+  "gapOpportunities": ["Gap 1"],
+  "mvpWedge": "MVP",
+  "killTest": "Test",
+  "competitors": [{"name": "Name", "weakness": "Weakness", "pricing": "$X/mo"}],
   "wtpSignals": {
     "strength": "strong",
-    "signals": [{"quote": "I'd pay $50/mo", "source": "Reddit", "context": "Context"}],
+    "signals": [{"quote": "Quote", "source": "Source", "context": "Context"}],
     "priceRange": {"low": 19, "mid": 49, "high": 99, "currency": "USD/mo"},
     "summary": "Summary"
   },
   "competitionDensity": {
-    "level": "fragmented",
-    "competitorCount": 8,
-    "totalFundingEstimate": "$45M",
-    "keyIncumbents": ["Competitor A"],
-    "switchingCosts": "low",
-    "summary": "Summary"
+    "level": "fragmented", "competitorCount": 8, "totalFundingEstimate": "$45M",
+    "keyIncumbents": ["A"], "switchingCosts": "low", "summary": "Summary"
   },
-  "marketTiming": {
-    "phase": "growing",
-    "signals": ["Signal 1"],
-    "summary": "Summary"
-  },
+  "marketTiming": {"phase": "growing", "signals": ["Signal"], "summary": "Summary"},
   "icp": {
-    "businessType": "B2B SaaS",
-    "companySize": "10-50 employees",
-    "revenueRange": "$500K-$5M ARR",
-    "industry": "SaaS",
-    "techStack": ["Stripe"],
-    "buyingTriggers": ["Trigger 1"],
-    "budgetRange": "$30-100/mo",
-    "summary": "Summary"
+    "businessType": "B2B SaaS", "companySize": "10-50", "revenueRange": "$500K-$5M",
+    "industry": "SaaS", "techStack": ["Stripe"], "buyingTriggers": ["Trigger"],
+    "budgetRange": "$30-100/mo", "summary": "Summary"
   },
   "workaroundDetection": {
     "severity": "strong",
-    "workarounds": [
-      {"description": "Custom spreadsheets for tracking", "source": "Reddit", "investmentLevel": "high"}
-    ],
-    "summary": "Strong workaround signals"
+    "workarounds": [{"description": "Desc", "source": "Source", "investmentLevel": "high"}],
+    "summary": "Summary"
   },
   "featureGapMap": {
-    "gaps": [
-      {"feature": "Exit surveys", "competitorCoverage": "weak", "opportunity": "high"}
-    ],
-    "topWedge": "Best entry feature",
-    "summary": "Key gaps identified"
+    "gaps": [{"feature": "Feature", "competitorCoverage": "weak", "opportunity": "high"}],
+    "topWedge": "Wedge", "summary": "Summary"
   },
   "platformRisk": {
     "level": "medium",
-    "signals": [
-      {"signal": "Platform launching similar features", "riskType": "bundling"}
+    "signals": [{"signal": "Signal", "riskType": "bundling"}],
+    "summary": "Summary"
+  },
+  "gtmStrategy": {
+    "primaryChannel": "Content marketing",
+    "channels": [
+      {"channel": "Content / SEO", "viability": "high", "reasoning": "Reason"},
+      {"channel": "Communities", "viability": "medium", "reasoning": "Reason"}
     ],
-    "summary": "Risk assessment"
+    "founderLedSales": true,
+    "seoViability": "strong",
+    "summary": "Summary"
+  },
+  "pricingBenchmarks": {
+    "benchmarks": [
+      {"tool": "Competitor A", "price": "$49/mo", "model": "per-seat", "notes": "Note"}
+    ],
+    "suggestedRange": {"low": "$19/mo", "mid": "$39/mo", "high": "$79/mo"},
+    "pricingModel": "Flat-rate",
+    "summary": "Summary"
+  },
+  "defensibility": {
+    "overallStrength": "moderate",
+    "signals": [
+      {"type": "data_network", "description": "Usage data improves over time", "strength": "moderate"},
+      {"type": "integrations", "description": "Deep integration creates switching costs", "strength": "strong"}
+    ],
+    "timeToMoat": "12-18 months",
+    "summary": "Summary"
   }
 }`;
 
@@ -345,7 +367,7 @@ Return ONLY valid JSON:
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [
-          { role: 'user', parts: [{ text: 'You are a brutally honest startup advisor. Your job is to save founders from wasting time on bad ideas AND to greenlight genuinely promising ones. Never be diplomatic at the expense of truth. Base every score and statement on the research evidence provided. Extract willingness-to-pay signals, competition density, market timing, ICP, workaround evidence, feature gaps, and platform risks from the data.\n\n' + analysisPrompt }] },
+          { role: 'user', parts: [{ text: 'You are a brutally honest startup advisor. Your job is to save founders from wasting time on bad ideas AND to greenlight genuinely promising ones. Never be diplomatic at the expense of truth. Base every score and statement on the research evidence provided. Extract all intelligence layers: WTP, competition density, market timing, ICP, workarounds, feature gaps, platform risks, GTM strategy, pricing benchmarks, and defensibility/moat.\n\n' + analysisPrompt }] },
         ],
         generationConfig: { temperature: 0.2 },
       }),
@@ -396,7 +418,7 @@ Return ONLY valid JSON:
     // Inject citations
     parsed.evidenceLinks = citations;
 
-    console.log(`Complete: Verdict=${parsed.verdict}, Demand=${scores.demand}, Pain=${scores.pain}, WTP=${parsed.wtpSignals?.strength || 'none'}, Timing=${parsed.marketTiming?.phase || 'unknown'}, Workarounds=${parsed.workaroundDetection?.severity || 'none'}, Gaps=${parsed.featureGapMap?.gaps?.length || 0}, PlatformRisk=${parsed.platformRisk?.level || 'unknown'}`);
+    console.log(`Complete: Verdict=${parsed.verdict}, Demand=${scores.demand}, Pain=${scores.pain}, WTP=${parsed.wtpSignals?.strength || 'none'}, GTM=${parsed.gtmStrategy?.primaryChannel || 'none'}, Moat=${parsed.defensibility?.overallStrength || 'unknown'}`);
 
     return new Response(JSON.stringify(parsed), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

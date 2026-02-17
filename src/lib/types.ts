@@ -101,6 +101,51 @@ export interface PlatformRisk {
   summary: string;
 }
 
+// ─── Phase 3 Intelligence Layers ───
+
+export interface GtmChannel {
+  channel: string;
+  viability: 'high' | 'medium' | 'low';
+  reasoning: string;
+}
+
+export interface GtmStrategy {
+  primaryChannel: string;
+  channels: GtmChannel[];
+  founderLedSales: boolean;
+  seoViability: 'strong' | 'moderate' | 'weak';
+  summary: string;
+}
+
+export interface PricingBenchmark {
+  tool: string;
+  price: string;
+  model: string;
+  notes?: string;
+}
+
+export interface PricingBenchmarks {
+  benchmarks: PricingBenchmark[];
+  suggestedRange: { low: string; mid: string; high: string };
+  pricingModel: string;
+  summary: string;
+}
+
+export type MoatStrength = 'strong' | 'moderate' | 'weak' | 'none';
+
+export interface MoatSignal {
+  type: 'data_network' | 'integrations' | 'lock_in' | 'community' | 'brand' | 'technical' | 'regulatory';
+  description: string;
+  strength: MoatStrength;
+}
+
+export interface DefensibilityAnalysis {
+  overallStrength: MoatStrength;
+  signals: MoatSignal[];
+  timeToMoat: string;
+  summary: string;
+}
+
 // ─── Existing types ───
 
 export interface GeneratorRun {

@@ -8,14 +8,14 @@ import { ResearchTrace } from "@/components/ResearchTrace";
 import { ScoreBar } from "@/components/ScoreBar";
 import { AIHandoff } from "@/components/AIHandoff";
 import { FollowUpChat } from "@/components/FollowUpChat";
-import { WtpSection, CompetitionDensitySection, MarketTimingSection, IcpSection, WorkaroundSection, FeatureGapSection, PlatformRiskSection } from "@/components/IntelligenceSections";
+import { WtpSection, CompetitionDensitySection, MarketTimingSection, IcpSection, WorkaroundSection, FeatureGapSection, PlatformRiskSection, GtmStrategySection, PricingBenchmarkSection, DefensibilitySection } from "@/components/IntelligenceSections";
 import { useCredits } from "@/hooks/useCredits";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, Bookmark, ClipboardCheck, Copy, Send, User, FolderOpen, Monitor, Globe, Rocket, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { saveGeneratorRunDb, addToBacklogDb } from "@/lib/db";
 import { toast } from "sonner";
-import type { WtpSignals, CompetitionDensity, MarketTiming, ICP, WorkaroundDetection, FeatureGapMap, PlatformRisk } from "@/lib/types";
+import type { WtpSignals, CompetitionDensity, MarketTiming, ICP, WorkaroundDetection, FeatureGapMap, PlatformRisk, GtmStrategy, PricingBenchmarks, DefensibilityAnalysis } from "@/lib/types";
 
 const researchSteps = [
   "Mining complaints from Reddit, forums & reviews...",
@@ -33,6 +33,7 @@ interface GeneratorResult {
   wtpSignals?: WtpSignals; competitionDensity?: CompetitionDensity;
   marketTiming?: MarketTiming; icp?: ICP;
   workaroundDetection?: WorkaroundDetection; featureGapMap?: FeatureGapMap; platformRisk?: PlatformRisk;
+  gtmStrategy?: GtmStrategy; pricingBenchmarks?: PricingBenchmarks; defensibility?: DefensibilityAnalysis;
 }
 
 export default function GenerateIdeas() {
@@ -105,6 +106,7 @@ export default function GenerateIdeas() {
         wtpSignals: data.wtpSignals || undefined, competitionDensity: data.competitionDensity || undefined,
         marketTiming: data.marketTiming || undefined, icp: data.icp || undefined,
         workaroundDetection: data.workaroundDetection || undefined, featureGapMap: data.featureGapMap || undefined, platformRisk: data.platformRisk || undefined,
+        gtmStrategy: data.gtmStrategy || undefined, pricingBenchmarks: data.pricingBenchmarks || undefined, defensibility: data.defensibility || undefined,
       };
       try { await saveGeneratorRunDb(run); } catch (e) { console.error("Failed to save:", e); }
       setResult(run); setPhase('results');
@@ -261,8 +263,8 @@ export default function GenerateIdeas() {
         </div>
       </div>
 
-      {/* ─── Phase 1 + Phase 2 Intelligence Layers ─── */}
-      {result && (result.wtpSignals || result.competitionDensity || result.marketTiming || result.icp || result.workaroundDetection || result.featureGapMap || result.platformRisk) && (
+      {/* ─── Intelligence Layers (Phase 1 + 2 + 3) ─── */}
+      {result && (result.wtpSignals || result.competitionDensity || result.marketTiming || result.icp || result.workaroundDetection || result.featureGapMap || result.platformRisk || result.gtmStrategy || result.pricingBenchmarks || result.defensibility) && (
         <div>
           <h2 className="text-lg font-semibold font-nunito mb-4">Market Intelligence</h2>
           <div className="grid md:grid-cols-2 gap-4">
@@ -273,13 +275,16 @@ export default function GenerateIdeas() {
             {result.workaroundDetection && <WorkaroundSection data={result.workaroundDetection} />}
             {result.featureGapMap && <FeatureGapSection data={result.featureGapMap} />}
             {result.platformRisk && <PlatformRiskSection data={result.platformRisk} />}
+            {result.gtmStrategy && <GtmStrategySection data={result.gtmStrategy} />}
+            {result.pricingBenchmarks && <PricingBenchmarkSection data={result.pricingBenchmarks} />}
+            {result.defensibility && <DefensibilitySection data={result.defensibility} />}
           </div>
         </div>
       )}
 
       {result && (
         <FollowUpChat
-          reportContext={`Generated ideas for ${result.persona} in ${result.category}:\n\nProblem Clusters:\n${result.problemClusters.map((c: any) => `- ${c.theme}: ${c.painSummary}`).join('\n')}\n\nIdeas:\n${result.ideaSuggestions.map((i: any) => `- ${i.name}: ${i.description} (Score: ${i.demandScore}/100, MVP: ${i.mvpScope})`).join('\n')}${result.wtpSignals ? `\n\nWillingness to Pay: ${result.wtpSignals.strength} — ${result.wtpSignals.summary}` : ''}${result.competitionDensity ? `\n\nCompetition: ${result.competitionDensity.level} — ${result.competitionDensity.summary}` : ''}${result.marketTiming ? `\n\nMarket Timing: ${result.marketTiming.phase} — ${result.marketTiming.summary}` : ''}${result.icp ? `\n\nICP: ${result.icp.summary}` : ''}${result.workaroundDetection ? `\n\nWorkarounds: ${result.workaroundDetection.severity} — ${result.workaroundDetection.summary}${result.workaroundDetection.workarounds?.length ? '\n' + result.workaroundDetection.workarounds.map((w: any) => `- [${w.investmentLevel}] ${w.description} (${w.source})`).join('\n') : ''}` : ''}${result.featureGapMap ? `\n\nFeature Gaps: ${result.featureGapMap.summary}\nTop Wedge: ${result.featureGapMap.topWedge}${result.featureGapMap.gaps?.length ? '\n' + result.featureGapMap.gaps.map((g: any) => `- ${g.feature}: coverage=${g.competitorCoverage}, opportunity=${g.opportunity}`).join('\n') : ''}` : ''}${result.platformRisk ? `\n\nPlatform Risk: ${result.platformRisk.level} — ${result.platformRisk.summary}${result.platformRisk.signals?.length ? '\n' + result.platformRisk.signals.map((s: any) => `- [${s.riskType}] ${s.signal}`).join('\n') : ''}` : ''}`}
+          reportContext={`Generated ideas for ${result.persona} in ${result.category}:\n\nProblem Clusters:\n${result.problemClusters.map((c: any) => `- ${c.theme}: ${c.painSummary}`).join('\n')}\n\nIdeas:\n${result.ideaSuggestions.map((i: any) => `- ${i.name}: ${i.description} (Score: ${i.demandScore}/100, MVP: ${i.mvpScope})`).join('\n')}${result.wtpSignals ? `\n\nWillingness to Pay: ${result.wtpSignals.strength} — ${result.wtpSignals.summary}` : ''}${result.competitionDensity ? `\n\nCompetition: ${result.competitionDensity.level} — ${result.competitionDensity.summary}` : ''}${result.marketTiming ? `\n\nMarket Timing: ${result.marketTiming.phase} — ${result.marketTiming.summary}` : ''}${result.icp ? `\n\nICP: ${result.icp.summary}` : ''}${result.workaroundDetection ? `\n\nWorkarounds: ${result.workaroundDetection.severity} — ${result.workaroundDetection.summary}` : ''}${result.featureGapMap ? `\n\nFeature Gaps: ${result.featureGapMap.summary}\nTop Wedge: ${result.featureGapMap.topWedge}` : ''}${result.platformRisk ? `\n\nPlatform Risk: ${result.platformRisk.level} — ${result.platformRisk.summary}` : ''}${result.gtmStrategy ? `\n\nGTM Strategy: ${result.gtmStrategy.primaryChannel} — ${result.gtmStrategy.summary}` : ''}${result.pricingBenchmarks ? `\n\nPricing Benchmarks: ${result.pricingBenchmarks.summary}\nSuggested: ${result.pricingBenchmarks.suggestedRange?.low}-${result.pricingBenchmarks.suggestedRange?.high}` : ''}${result.defensibility ? `\n\nDefensibility: ${result.defensibility.overallStrength} — ${result.defensibility.summary}\nTime to moat: ${result.defensibility.timeToMoat}` : ''}`}
           onRevalidate={(ideaText) => navigate(`/validate?idea=${encodeURIComponent(ideaText)}`)}
         />
       )}
