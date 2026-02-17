@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Lightbulb, ClipboardCheck, TrendingUp, CheckCircle, Archive } from "lucide-react";
+import { Lightbulb, ClipboardCheck, TrendingUp, CheckCircle, Archive, Hand } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { getMyGeneratorRuns, getMyValidationReports, getMyBacklog } from "@/lib/db";
@@ -26,8 +26,9 @@ export default function Dashboard() {
   return (
     <div className="max-w-5xl mx-auto space-y-10">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">
-          Welcome{profile?.display_name ? `, ${profile.display_name}` : ""} 👋
+        <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+          Welcome{profile?.display_name ? `, ${profile.display_name}` : ""}
+          <Hand className="h-7 w-7 text-primary" />
         </h1>
         <p className="text-muted-foreground mt-1">From problem discovery to product validation.</p>
       </div>

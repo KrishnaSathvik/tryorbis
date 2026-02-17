@@ -8,7 +8,7 @@ import { ScoreBar } from "@/components/ScoreBar";
 import { AIHandoff } from "@/components/AIHandoff";
 import { FollowUpChat } from "@/components/FollowUpChat";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, Bookmark, ClipboardCheck, Copy, Send } from "lucide-react";
+import { ChevronDown, Bookmark, ClipboardCheck, Copy, Send, User, FolderOpen, Monitor, Globe, Rocket, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { saveGeneratorRunDb, addToBacklogDb } from "@/lib/db";
 import { toast } from "sonner";
@@ -187,13 +187,13 @@ export default function GenerateIdeas() {
             <div className="bg-muted/50 border rounded-xl p-3 space-y-2">
               <p className="text-xs text-muted-foreground font-medium">I understood this from your idea:</p>
               <div className="flex flex-wrap gap-2">
-                <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-medium">👤 {generatingParams.persona}</span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-medium">📂 {generatingParams.category}</span>
-                {generatingParams.platform && <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-medium">💻 {generatingParams.platform}</span>}
-                {generatingParams.region && <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-medium">🌍 {generatingParams.region}</span>}
+                <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-medium"><User className="h-3 w-3" /> {generatingParams.persona}</span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-medium"><FolderOpen className="h-3 w-3" /> {generatingParams.category}</span>
+                {generatingParams.platform && <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-medium"><Monitor className="h-3 w-3" /> {generatingParams.platform}</span>}
+                {generatingParams.region && <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-medium"><Globe className="h-3 w-3" /> {generatingParams.region}</span>}
               </div>
               <Button className="w-full" size="sm" onClick={() => triggerGenerate(generatingParams)}>
-                🚀 Start Research
+                <Rocket className="h-3.5 w-3.5 mr-1" /> Start Research
               </Button>
             </div>
           )}
