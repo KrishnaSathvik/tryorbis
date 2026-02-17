@@ -17,7 +17,15 @@ serve(async (req) => {
 
     // GEMINI_API_KEY is fetched later in Pass 2
 
-    const { ideaText } = await req.json();
+    const body = await req.json();
+    const { ideaText } = body;
+
+    // Input validation
+    if (!ideaText || typeof ideaText !== 'string' || ideaText.length > 1000) {
+      return new Response(JSON.stringify({ error: "Invalid or missing 'ideaText' (max 1000 chars)" }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     // ─── PASS 1: Deep market research with Perplexity sonar-pro ───
     const researchPrompt = `Conduct thorough market research for this startup/product idea: "${ideaText}"

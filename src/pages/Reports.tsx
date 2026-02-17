@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -69,7 +70,27 @@ export default function Reports() {
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
 
-  if (loading) return <div className="text-center text-muted-foreground py-20">Loading...</div>;
+  if (loading) return (
+    <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
+      <div>
+        <Skeleton className="h-9 w-40" />
+        <Skeleton className="h-4 w-64 mt-2" />
+      </div>
+      <Skeleton className="h-10 w-56 rounded-xl" />
+      {Array.from({ length: 3 }).map((_, i) => (
+        <Card key={i} className="rounded-2xl border-border/50">
+          <CardContent className="p-5 flex items-center gap-3">
+            <Skeleton className="h-9 w-9 rounded-xl" />
+            <div className="space-y-2 flex-1">
+              <Skeleton className="h-4 w-48" />
+              <Skeleton className="h-3 w-24" />
+            </div>
+            <Skeleton className="h-5 w-16 rounded-full" />
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
