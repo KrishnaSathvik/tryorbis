@@ -1,11 +1,54 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { getMyValidationReports, getMyGeneratorRuns, getMyBacklog } from "@/lib/db";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from "recharts";
-import { TrendingUp, Target, BarChart3, PieChart as PieChartIcon } from "lucide-react";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, LineChart, Line, Legend,
+} from "recharts";
+import { TrendingUp, Target, BarChart3, Activity } from "lucide-react";
 import { VerdictBadge } from "@/components/VerdictBadge";
 
-const COLORS = ['hsl(220, 70%, 50%)', 'hsl(142, 72%, 40%)', 'hsl(38, 92%, 50%)', 'hsl(0, 72%, 51%)', 'hsl(262, 60%, 55%)'];
+const CHART_COLORS = {
+  primary: "hsl(220, 70%, 50%)",
+  success: "hsl(142, 72%, 40%)",
+  warning: "hsl(38, 92%, 50%)",
+  destructive: "hsl(0, 72%, 51%)",
+  accent: "hsl(262, 60%, 55%)",
+};
+
+const SCORE_COLORS = {
+  demand: CHART_COLORS.primary,
+  pain: CHART_COLORS.destructive,
+  competition: CHART_COLORS.warning,
+  feasibility: CHART_COLORS.success,
+};
+
+const VERDICT_COLORS: Record<string, string> = {
+  Build: CHART_COLORS.success,
+  Pivot: CHART_COLORS.warning,
+  Skip: CHART_COLORS.destructive,
+};
+
+const PALETTE = [CHART_COLORS.primary, CHART_COLORS.success, CHART_COLORS.warning, CHART_COLORS.destructive, CHART_COLORS.accent];
+
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-lg border border-border/60 bg-card px-3 py-2 shadow-lg">
+      {label && <p className="text-xs font-semibold text-foreground mb-1">{label}</p>}
+      {payload.map((p: any, i: number) => (
+        <p key={i} className="text-xs text-muted-foreground flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-full inline-block" style={{ background: p.color }} />
+          <span className="capitalize">{p.name || p.dataKey}:</span>
+          <span className="font-semibold text-foreground">{p.value}</span>
+        </p>
+      ))}
+    </div>
+  );
+};
+
+const axisStyle = { fontSize: 11, fill: "hsl(220, 10%, 46%)", fontFamily: "Inter" };
+const gridStyle = { stroke: "hsl(30, 10%, 90%)", strokeDasharray: "4 4" };
 
 export default function Analytics() {
   const [reports, setReports] = useState<any[]>([]);
@@ -26,7 +69,6 @@ export default function Analytics() {
     acc[r.verdict] = (acc[r.verdict] || 0) + 1; return acc;
   }, {});
   const verdictData = Object.entries(verdictCounts).map(([name, value]) => ({ name, value }));
-  const verdictColors: Record<string, string> = { Build: 'hsl(142, 72%, 40%)', Pivot: 'hsl(38, 92%, 50%)', Skip: 'hsl(0, 72%, 51%)' };
 
   // Scores over time
   const scoresOverTime = reports
@@ -40,30 +82,33 @@ export default function Analytics() {
       feasibility: (r.scores as any)?.mvpFeasibility || 0,
     }));
 
-  // Category breakdown from generator runs
+  // Category breakdown
   const categoryCounts = runs.reduce((acc: any, r: any) => {
     acc[r.category] = (acc[r.category] || 0) + 1; return acc;
   }, {});
   const categoryData = Object.entries(categoryCounts)
-    .map(([name, value]) => ({ name: name.length > 20 ? name.slice(0, 18) + '...' : name, value }))
+    .map(([name, value]) => ({ name: name.length > 24 ? name.slice(0, 22) + '…' : name, value }))
     .sort((a, b) => (b.value as number) - (a.value as number))
     .slice(0, 8);
 
   // Average scores
-  const avgScores = reports.length > 0 ? {
-    demand: Math.round(reports.reduce((s, r) => s + ((r.scores as any)?.demand || 0), 0) / reports.length),
-    pain: Math.round(reports.reduce((s, r) => s + ((r.scores as any)?.pain || 0), 0) / reports.length),
-    competition: Math.round(reports.reduce((s, r) => s + ((r.scores as any)?.competition || 0), 0) / reports.length),
-    feasibility: Math.round(reports.reduce((s, r) => s + ((r.scores as any)?.mvpFeasibility || 0), 0) / reports.length),
-  } : null;
+  const avgScores = reports.length > 0 ? [
+    { name: 'Demand', score: Math.round(reports.reduce((s, r) => s + ((r.scores as any)?.demand || 0), 0) / reports.length), fill: SCORE_COLORS.demand },
+    { name: 'Pain', score: Math.round(reports.reduce((s, r) => s + ((r.scores as any)?.pain || 0), 0) / reports.length), fill: SCORE_COLORS.pain },
+    { name: 'Competition', score: Math.round(reports.reduce((s, r) => s + ((r.scores as any)?.competition || 0), 0) / reports.length), fill: SCORE_COLORS.competition },
+    { name: 'Feasibility', score: Math.round(reports.reduce((s, r) => s + ((r.scores as any)?.mvpFeasibility || 0), 0) / reports.length), fill: SCORE_COLORS.feasibility },
+  ] : null;
 
-  // Backlog status distribution
+  // Backlog status
   const statusCounts = backlog.reduce((acc: any, b: any) => {
     acc[b.status] = (acc[b.status] || 0) + 1; return acc;
   }, {});
   const statusData = Object.entries(statusCounts).map(([name, value]) => ({ name, value }));
 
   const hasData = reports.length > 0 || runs.length > 0;
+
+  const totalIdeas = runs.reduce((s: number, r: any) => s + (Array.isArray(r.idea_suggestions) ? (r.idea_suggestions as any[]).length : 0), 0);
+  const buildRate = reports.length > 0 ? `${Math.round((verdictCounts['Build'] || 0) / reports.length * 100)}%` : '—';
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 animate-fade-in">
@@ -86,18 +131,18 @@ export default function Analytics() {
           {/* Summary stats */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {[
-              { label: "Validations", value: reports.length, icon: Target },
-              { label: "Ideas Generated", value: runs.reduce((s: number, r: any) => s + (Array.isArray(r.idea_suggestions) ? (r.idea_suggestions as any[]).length : 0), 0), icon: TrendingUp },
-              { label: "Saved Ideas", value: backlog.length, icon: BarChart3 },
-              { label: "Build Rate", value: reports.length > 0 ? `${Math.round((verdictCounts['Build'] || 0) / reports.length * 100)}%` : '—', icon: PieChartIcon },
+              { label: "Validations", value: reports.length, icon: Target, color: "text-primary" },
+              { label: "Ideas Generated", value: totalIdeas, icon: TrendingUp, color: "text-success" },
+              { label: "Saved Ideas", value: backlog.length, icon: BarChart3, color: "text-warning" },
+              { label: "Build Rate", value: buildRate, icon: Activity, color: "text-primary" },
             ].map(s => (
-              <Card key={s.label} className="rounded-xl bg-secondary border-0">
+              <Card key={s.label} className="rounded-xl border border-border/40 bg-card shadow-sm hover:shadow-md transition-shadow">
                 <CardContent className="p-4 flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-lg bg-card flex items-center justify-center shadow-sm">
-                    <s.icon className="h-4 w-4 text-muted-foreground" />
+                  <div className="h-10 w-10 rounded-xl bg-secondary flex items-center justify-center">
+                    <s.icon className={`h-5 w-5 ${s.color}`} />
                   </div>
                   <div>
-                    <p className="text-xl font-bold font-nunito">{s.value}</p>
+                    <p className="text-2xl font-bold font-nunito tracking-tight">{s.value}</p>
                     <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">{s.label}</p>
                   </div>
                 </CardContent>
@@ -108,40 +153,59 @@ export default function Analytics() {
           <div className="grid md:grid-cols-2 gap-6">
             {/* Verdict Distribution */}
             {verdictData.length > 0 && (
-              <Card className="rounded-2xl border-border/50">
-                <CardContent className="p-5">
-                  <h3 className="text-sm font-semibold font-nunito mb-4">Verdict Distribution</h3>
-                  <ResponsiveContainer width="100%" height={200}>
+              <Card className="rounded-2xl border border-border/40 bg-card shadow-sm">
+                <CardContent className="p-6">
+                  <h3 className="text-sm font-semibold font-nunito mb-1">Verdict Distribution</h3>
+                  <p className="text-xs text-muted-foreground mb-4">Breakdown of your validation outcomes</p>
+                  <ResponsiveContainer width="100%" height={220}>
                     <PieChart>
-                      <Pie data={verdictData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={4} dataKey="value" label={({ name, value }) => `${name} (${value})`}>
+                      <Pie
+                        data={verdictData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={55}
+                        outerRadius={85}
+                        paddingAngle={3}
+                        dataKey="value"
+                        strokeWidth={0}
+                      >
                         {verdictData.map((entry: any, i: number) => (
-                          <Cell key={i} fill={verdictColors[entry.name] || COLORS[i % COLORS.length]} />
+                          <Cell key={i} fill={VERDICT_COLORS[entry.name] || PALETTE[i % PALETTE.length]} />
                         ))}
                       </Pie>
-                      <Tooltip />
+                      <Tooltip content={<CustomTooltip />} />
                     </PieChart>
                   </ResponsiveContainer>
+                  <div className="flex items-center justify-center gap-4 mt-2">
+                    {verdictData.map((entry: any, i: number) => (
+                      <div key={i} className="flex items-center gap-1.5">
+                        <span className="h-2.5 w-2.5 rounded-full" style={{ background: VERDICT_COLORS[entry.name] || PALETTE[i] }} />
+                        <span className="text-xs text-muted-foreground font-medium">{entry.name}</span>
+                        <span className="text-xs font-semibold">{entry.value as number}</span>
+                      </div>
+                    ))}
+                  </div>
                 </CardContent>
               </Card>
             )}
 
             {/* Avg Scores */}
             {avgScores && (
-              <Card className="rounded-2xl border-border/50">
-                <CardContent className="p-5">
-                  <h3 className="text-sm font-semibold font-nunito mb-4">Average Scores</h3>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <BarChart data={[
-                      { name: 'Demand', score: avgScores.demand },
-                      { name: 'Pain', score: avgScores.pain },
-                      { name: 'Competition', score: avgScores.competition },
-                      { name: 'Feasibility', score: avgScores.feasibility },
-                    ]}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis dataKey="name" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-                      <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-                      <Tooltip />
-                      <Bar dataKey="score" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
+              <Card className="rounded-2xl border border-border/40 bg-card shadow-sm">
+                <CardContent className="p-6">
+                  <h3 className="text-sm font-semibold font-nunito mb-1">Average Scores</h3>
+                  <p className="text-xs text-muted-foreground mb-4">Mean scores across all validations</p>
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart data={avgScores} barCategoryGap="20%">
+                      <CartesianGrid vertical={false} {...gridStyle} />
+                      <XAxis dataKey="name" tick={axisStyle} axisLine={false} tickLine={false} />
+                      <YAxis domain={[0, 100]} tick={axisStyle} axisLine={false} tickLine={false} width={30} />
+                      <Tooltip content={<CustomTooltip />} cursor={{ fill: "hsl(30, 15%, 94%)", radius: 6 }} />
+                      <Bar dataKey="score" radius={[6, 6, 0, 0]}>
+                        {avgScores.map((entry, i) => (
+                          <Cell key={i} fill={entry.fill} />
+                        ))}
+                      </Bar>
                     </BarChart>
                   </ResponsiveContainer>
                 </CardContent>
@@ -151,20 +215,25 @@ export default function Analytics() {
 
           {/* Scores over time */}
           {scoresOverTime.length > 1 && (
-            <Card className="rounded-2xl border-border/50">
-              <CardContent className="p-5">
-                <h3 className="text-sm font-semibold font-nunito mb-4">Scores Over Time</h3>
-                <ResponsiveContainer width="100%" height={250}>
+            <Card className="rounded-2xl border border-border/40 bg-card shadow-sm">
+              <CardContent className="p-6">
+                <h3 className="text-sm font-semibold font-nunito mb-1">Scores Over Time</h3>
+                <p className="text-xs text-muted-foreground mb-4">How your validation scores trend across ideas</p>
+                <ResponsiveContainer width="100%" height={260}>
                   <LineChart data={scoresOverTime}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-                    <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-                    <Tooltip />
-                    <Legend />
-                    <Line type="monotone" dataKey="demand" stroke="hsl(220, 70%, 50%)" strokeWidth={2} dot={{ r: 3 }} />
-                    <Line type="monotone" dataKey="pain" stroke="hsl(0, 72%, 51%)" strokeWidth={2} dot={{ r: 3 }} />
-                    <Line type="monotone" dataKey="competition" stroke="hsl(38, 92%, 50%)" strokeWidth={2} dot={{ r: 3 }} />
-                    <Line type="monotone" dataKey="feasibility" stroke="hsl(142, 72%, 40%)" strokeWidth={2} dot={{ r: 3 }} />
+                    <CartesianGrid vertical={false} {...gridStyle} />
+                    <XAxis dataKey="label" tick={axisStyle} axisLine={false} tickLine={false} />
+                    <YAxis domain={[0, 100]} tick={axisStyle} axisLine={false} tickLine={false} width={30} />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend
+                      iconType="circle"
+                      iconSize={8}
+                      wrapperStyle={{ fontSize: 11, fontFamily: "Inter", paddingTop: 8 }}
+                    />
+                    <Line type="monotone" dataKey="demand" stroke={SCORE_COLORS.demand} strokeWidth={2.5} dot={{ r: 4, strokeWidth: 2, fill: "hsl(30, 25%, 98%)" }} activeDot={{ r: 6 }} />
+                    <Line type="monotone" dataKey="pain" stroke={SCORE_COLORS.pain} strokeWidth={2.5} dot={{ r: 4, strokeWidth: 2, fill: "hsl(30, 25%, 98%)" }} activeDot={{ r: 6 }} />
+                    <Line type="monotone" dataKey="competition" stroke={SCORE_COLORS.competition} strokeWidth={2.5} dot={{ r: 4, strokeWidth: 2, fill: "hsl(30, 25%, 98%)" }} activeDot={{ r: 6 }} />
+                    <Line type="monotone" dataKey="feasibility" stroke={SCORE_COLORS.feasibility} strokeWidth={2.5} dot={{ r: 4, strokeWidth: 2, fill: "hsl(30, 25%, 98%)" }} activeDot={{ r: 6 }} />
                   </LineChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -174,16 +243,17 @@ export default function Analytics() {
           <div className="grid md:grid-cols-2 gap-6">
             {/* Category Breakdown */}
             {categoryData.length > 0 && (
-              <Card className="rounded-2xl border-border/50">
-                <CardContent className="p-5">
-                  <h3 className="text-sm font-semibold font-nunito mb-4">Categories Explored</h3>
+              <Card className="rounded-2xl border border-border/40 bg-card shadow-sm">
+                <CardContent className="p-6">
+                  <h3 className="text-sm font-semibold font-nunito mb-1">Categories Explored</h3>
+                  <p className="text-xs text-muted-foreground mb-4">Market categories from your idea generations</p>
                   <ResponsiveContainer width="100%" height={200}>
-                    <BarChart data={categoryData} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis type="number" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-                      <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={120} stroke="hsl(var(--muted-foreground))" />
-                      <Tooltip />
-                      <Bar dataKey="value" fill="hsl(var(--primary))" radius={[0, 6, 6, 0]} />
+                    <BarChart data={categoryData} layout="vertical" barCategoryGap="16%">
+                      <CartesianGrid horizontal={false} {...gridStyle} />
+                      <XAxis type="number" tick={axisStyle} axisLine={false} tickLine={false} />
+                      <YAxis type="category" dataKey="name" tick={{ ...axisStyle, fontSize: 10 }} width={140} axisLine={false} tickLine={false} />
+                      <Tooltip content={<CustomTooltip />} cursor={{ fill: "hsl(30, 15%, 94%)", radius: 6 }} />
+                      <Bar dataKey="value" fill={CHART_COLORS.primary} radius={[0, 6, 6, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </CardContent>
@@ -192,19 +262,38 @@ export default function Analytics() {
 
             {/* Pipeline Status */}
             {statusData.length > 0 && (
-              <Card className="rounded-2xl border-border/50">
-                <CardContent className="p-5">
-                  <h3 className="text-sm font-semibold font-nunito mb-4">Idea Pipeline</h3>
+              <Card className="rounded-2xl border border-border/40 bg-card shadow-sm">
+                <CardContent className="p-6">
+                  <h3 className="text-sm font-semibold font-nunito mb-1">Idea Pipeline</h3>
+                  <p className="text-xs text-muted-foreground mb-4">Status of your saved ideas</p>
                   <ResponsiveContainer width="100%" height={200}>
                     <PieChart>
-                      <Pie data={statusData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={4} dataKey="value" label={({ name, value }) => `${name} (${value})`}>
+                      <Pie
+                        data={statusData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={50}
+                        outerRadius={80}
+                        paddingAngle={3}
+                        dataKey="value"
+                        strokeWidth={0}
+                      >
                         {statusData.map((_: any, i: number) => (
-                          <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                          <Cell key={i} fill={PALETTE[i % PALETTE.length]} />
                         ))}
                       </Pie>
-                      <Tooltip />
+                      <Tooltip content={<CustomTooltip />} />
                     </PieChart>
                   </ResponsiveContainer>
+                  <div className="flex items-center justify-center gap-4 mt-2">
+                    {statusData.map((entry: any, i: number) => (
+                      <div key={i} className="flex items-center gap-1.5">
+                        <span className="h-2.5 w-2.5 rounded-full" style={{ background: PALETTE[i % PALETTE.length] }} />
+                        <span className="text-xs text-muted-foreground font-medium">{entry.name}</span>
+                        <span className="text-xs font-semibold">{entry.value as number}</span>
+                      </div>
+                    ))}
+                  </div>
                 </CardContent>
               </Card>
             )}
@@ -216,16 +305,26 @@ export default function Analytics() {
               <h3 className="text-sm font-semibold font-nunito mb-3">Recent Validations</h3>
               <div className="space-y-2">
                 {reports.slice(0, 5).map((r: any) => (
-                  <Card key={r.id} className="rounded-xl border-border/50">
+                  <Card key={r.id} className="rounded-xl border border-border/40 bg-card shadow-sm hover:shadow-md transition-shadow">
                     <CardContent className="p-4 flex items-center justify-between">
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium truncate">{r.idea_text?.slice(0, 60)}{r.idea_text?.length > 60 ? '...' : ''}</p>
+                        <p className="text-sm font-medium truncate">{r.idea_text?.slice(0, 60)}{r.idea_text?.length > 60 ? '…' : ''}</p>
                         <p className="text-xs text-muted-foreground mt-0.5">{new Date(r.created_at).toLocaleDateString()}</p>
                       </div>
                       <div className="flex items-center gap-3 shrink-0">
-                        <span className="text-xs text-muted-foreground font-medium">
-                          D:{(r.scores as any)?.demand} P:{(r.scores as any)?.pain} C:{(r.scores as any)?.competition} F:{(r.scores as any)?.mvpFeasibility}
-                        </span>
+                        <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
+                          {[
+                            { key: 'D', val: (r.scores as any)?.demand, color: SCORE_COLORS.demand },
+                            { key: 'P', val: (r.scores as any)?.pain, color: SCORE_COLORS.pain },
+                            { key: 'C', val: (r.scores as any)?.competition, color: SCORE_COLORS.competition },
+                            { key: 'F', val: (r.scores as any)?.mvpFeasibility, color: SCORE_COLORS.feasibility },
+                          ].map(s => (
+                            <span key={s.key} className="flex items-center gap-0.5">
+                              <span className="h-1.5 w-1.5 rounded-full" style={{ background: s.color }} />
+                              <span className="font-mono font-medium">{s.val}</span>
+                            </span>
+                          ))}
+                        </div>
                         <VerdictBadge verdict={r.verdict} />
                       </div>
                     </CardContent>
