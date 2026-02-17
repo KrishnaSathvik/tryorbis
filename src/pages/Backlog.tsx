@@ -71,23 +71,23 @@ export default function Backlog() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight font-nunito">My Ideas</h1>
-          <p className="text-muted-foreground mt-1">{backlog.length} idea{backlog.length !== 1 ? 's' : ''} saved — track and manage your pipeline.</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" className="h-9 rounded-xl" onClick={() => setShowAddIdea(v => !v)}>
-            <Lightbulb className="h-4 w-4 mr-1.5" /> Add Idea
-          </Button>
-          <Filter className="h-4 w-4 text-muted-foreground" />
-          <Select value={filter} onValueChange={setFilter}>
-            <SelectTrigger className="w-[130px] h-9 rounded-xl"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="All">All</SelectItem>
-              {allStatuses.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-            </SelectContent>
-          </Select>
+      <div className="space-y-3">
+        <h1 className="text-3xl font-bold tracking-tight font-nunito">My Ideas</h1>
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-muted-foreground text-sm">{backlog.length} idea{backlog.length !== 1 ? 's' : ''} saved</p>
+          <div className="flex items-center gap-2 ml-auto">
+            <Button size="sm" variant="outline" className="h-9 rounded-xl" onClick={() => setShowAddIdea(v => !v)}>
+              <Lightbulb className="h-4 w-4 mr-1.5" /> Add Idea
+            </Button>
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <Select value={filter} onValueChange={setFilter}>
+              <SelectTrigger className="w-[110px] h-9 rounded-xl"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="All">All</SelectItem>
+                {allStatuses.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
