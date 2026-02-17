@@ -9,11 +9,13 @@ import { ScoreBar } from "@/components/ScoreBar";
 import { VerdictBadge } from "@/components/VerdictBadge";
 import { AIHandoff } from "@/components/AIHandoff";
 import { FollowUpChat } from "@/components/FollowUpChat";
+import { WtpSection, CompetitionDensitySection, MarketTimingSection, IcpSection } from "@/components/IntelligenceSections";
 import { useCredits } from "@/hooks/useCredits";
 import { supabase } from "@/integrations/supabase/client";
 import { saveValidationReportDb, addToBacklogDb } from "@/lib/db";
 import { toast } from "sonner";
 import { Bookmark, Lightbulb, ThumbsUp, ThumbsDown, Target, AlertTriangle, Send, Search, Globe } from "lucide-react";
+import type { WtpSignals, CompetitionDensity, MarketTiming, ICP } from "@/lib/types";
 
 const researchSteps = ["Deep-diving demand signals & market data...", "Scanning competitors, pricing & reviews...", "Analyzing pain severity & workarounds...", "AI strategist scoring & verdict...", "Cross-checking verdict consistency...", "Finalizing validation report..."];
 
@@ -27,6 +29,10 @@ interface Report {
   competitors: { name: string; weakness: string; pricing?: string }[];
   evidenceLinks: string[];
   marketSizing?: { tam: string; sam: string; som: string; methodology?: string };
+  wtpSignals?: WtpSignals;
+  competitionDensity?: CompetitionDensity;
+  marketTiming?: MarketTiming;
+  icp?: ICP;
 }
 
 export default function ValidateIdea() {
@@ -96,6 +102,10 @@ export default function ValidateIdea() {
         gapOpportunities: data.gapOpportunities || [], mvpWedge: data.mvpWedge || '', killTest: data.killTest || '',
         competitors: data.competitors || [], evidenceLinks: data.evidenceLinks || [],
         marketSizing: data.marketSizing || undefined,
+        wtpSignals: data.wtpSignals || undefined,
+        competitionDensity: data.competitionDensity || undefined,
+        marketTiming: data.marketTiming || undefined,
+        icp: data.icp || undefined,
       };
       try { await saveValidationReportDb(r); } catch (e) { console.error("Failed to save to DB:", e); }
       setReport(r); setPhase('results');
@@ -231,6 +241,19 @@ export default function ValidateIdea() {
           <h3 className="font-semibold text-sm">Suggested MVP Wedge</h3>
           <p className="text-sm text-muted-foreground">{report!.mvpWedge}</p>
         </CardContent></Card>
+      )}
+
+      {/* ─── Phase 1 Intelligence Layers ─── */}
+      {(report!.wtpSignals || report!.competitionDensity || report!.marketTiming || report!.icp) && (
+        <div>
+          <h2 className="text-lg font-semibold font-nunito mb-4">Market Intelligence</h2>
+          <div className="grid md:grid-cols-2 gap-4">
+            {report!.wtpSignals && <WtpSection data={report!.wtpSignals} />}
+            {report!.competitionDensity && <CompetitionDensitySection data={report!.competitionDensity} />}
+            {report!.marketTiming && <MarketTimingSection data={report!.marketTiming} />}
+            {report!.icp && <IcpSection data={report!.icp} />}
+          </div>
+        </div>
       )}
 
       {report!.marketSizing && (

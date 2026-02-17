@@ -90,7 +90,22 @@ RESEARCH METHODOLOGY — investigate each area systematically:
    - What adjacent markets exist?
    - Are there growing trends supporting this idea?
 
-Return your findings as detailed unstructured text with all data points, quotes, competitor names, pricing, URLs. Do NOT format as JSON — give me the raw research.`;
+6. **WILLINGNESS-TO-PAY SIGNALS** (CRITICAL — new):
+   - Search for "what tools do you pay for" related to this problem
+   - Find "I'd pay $X for..." or "too expensive at $X" statements
+   - Look for pricing complaints about existing tools
+   - Find budget discussions, tool switching reasons with price context
+   - Search "alternatives to [popular tool] pricing"
+   - Quote actual WTP statements with source
+
+7. **MARKET TIMING INDICATORS** (new):
+   - Google Trends trajectory for related search terms
+   - Recent VC funding rounds in this space (Crunchbase)
+   - New regulations or platform changes affecting this space
+   - Recent Product Hunt / YC companies in this category
+   - Technology enablers that are newly available
+
+Return your findings as detailed unstructured text with all data points, quotes, competitor names, pricing, WTP signals, timing data, URLs. Do NOT format as JSON — give me the raw research.`;
 
     console.log('Pass 1: Deep market research with sonar-pro...');
     const researchResponse = await fetch('https://api.perplexity.ai/chat/completions', {
@@ -102,7 +117,7 @@ Return your findings as detailed unstructured text with all data points, quotes,
       body: JSON.stringify({
         model: 'sonar-pro',
         messages: [
-          { role: 'system', content: 'You are a meticulous market research analyst specializing in startup validation. Find real, verifiable data — not assumptions. Cite sources. Be thorough and specific with numbers, pricing, and competitor details.' },
+          { role: 'system', content: 'You are a meticulous market research analyst specializing in startup validation. Find real, verifiable data — not assumptions. Cite sources. Be thorough and specific with numbers, pricing, willingness-to-pay signals, and competitor details.' },
           { role: 'user', content: researchPrompt },
         ],
         temperature: 0.1,
@@ -171,6 +186,38 @@ VERDICT RULES — apply AFTER scoring, based on the evidence:
 
 IMPORTANT: Your verdict MUST be consistent with your scores. If demand is 35, you cannot say "Build". Explain your reasoning.
 
+WILLINGNESS-TO-PAY EXTRACTION (NEW — CRITICAL):
+Extract real WTP signals from the research. Look for:
+- Direct price mentions ("I'd pay $X for this")
+- Pricing complaints about existing tools ("too expensive at $X/mo")
+- Budget discussions and tool switching due to price
+- Workaround investment (time/money spent on manual alternatives)
+Rate the overall WTP signal strength: "strong", "moderate", "weak", or "none"
+
+COMPETITION DENSITY ANALYSIS (NEW):
+Classify the competitive landscape beyond just a score:
+- "blue_ocean": Almost no competitors, wide open space
+- "fragmented": Several small players, no dominant leader
+- "crowded": Many competitors but room for differentiation
+- "winner_take_most": Dominated by 1-2 incumbents with network effects
+Include: number of competitors, total funding estimate, switching costs
+
+MARKET TIMING ASSESSMENT (NEW):
+Classify market timing:
+- "emerging": New category, early signals, few players
+- "growing": Category expanding, VC interest rising, search trends up
+- "saturated": Mature market, many players, innovation slowing
+- "declining": Interest waning, consolidation happening
+
+ICP (IDEAL CUSTOMER PROFILE) EXTRACTION (NEW):
+Define the ideal first customer:
+- Business type (B2B/B2C/B2B2C)
+- Company size / revenue range
+- Industry vertical
+- Current tech stack indicators
+- Key buying triggers
+- Budget range
+
 Return ONLY valid JSON:
 {
   "scores": {
@@ -186,21 +233,52 @@ Return ONLY valid JSON:
     "mvpFeasibility": "Why this score — what tech is needed"
   },
   "marketSizing": {
-    "tam": "Total Addressable Market — the entire revenue opportunity if 100% market share (e.g. '$4.2B — global restaurant management software market')",
-    "sam": "Serviceable Addressable Market — the segment you can realistically target (e.g. '$620M — US independent restaurants needing review management')",
-    "som": "Serviceable Obtainable Market — realistic first 2-3 year capture (e.g. '$12M — 5,000 independent restaurants at $200/mo')",
-    "methodology": "Brief explanation of how you arrived at these estimates, citing research data"
+    "tam": "Total Addressable Market estimate with context",
+    "sam": "Serviceable Addressable Market — your realistic segment",
+    "som": "Serviceable Obtainable Market — first 2-3 year capture",
+    "methodology": "Brief explanation of estimates"
   },
   "verdict": "Build",
   "verdictReasoning": "2-3 sentences explaining why this verdict follows from the scores and evidence",
   "pros": ["Specific evidence-backed pro 1", "Pro 2", "Pro 3"],
   "cons": ["Specific evidence-backed con 1", "Con 2"],
   "gapOpportunities": ["Specific gap competitors miss 1", "Gap 2"],
-  "mvpWedge": "The specific smallest version to build first, targeting the highest-pain cluster with the least competition",
-  "killTest": "The single most important thing to test before building — what evidence would definitively prove this idea won't work",
+  "mvpWedge": "The specific smallest version to build first",
+  "killTest": "The single most important thing to test before building",
   "competitors": [
-    {"name": "Real Competitor", "weakness": "Their specific weakness based on user reviews", "pricing": "$X/mo or free tier + $Y/mo"}
-  ]
+    {"name": "Real Competitor", "weakness": "Their specific weakness", "pricing": "$X/mo"}
+  ],
+  "wtpSignals": {
+    "strength": "strong",
+    "signals": [
+      {"quote": "I'd pay $50/mo for this easily", "source": "Reddit r/SaaS", "context": "User discussing the problem space"}
+    ],
+    "priceRange": {"low": 19, "mid": 49, "high": 99, "currency": "USD/mo"},
+    "summary": "Strong willingness to pay $30-60/mo based on multiple direct mentions"
+  },
+  "competitionDensity": {
+    "level": "fragmented",
+    "competitorCount": 8,
+    "totalFundingEstimate": "$45M",
+    "keyIncumbents": ["Competitor A ($20M raised)", "Competitor B (bootstrapped)"],
+    "switchingCosts": "low",
+    "summary": "Fragmented market with 8 players, none dominant."
+  },
+  "marketTiming": {
+    "phase": "growing",
+    "signals": ["VC funding up 40% YoY", "Google Trends showing growth"],
+    "summary": "Growing market with increasing VC interest."
+  },
+  "icp": {
+    "businessType": "B2B SaaS",
+    "companySize": "10-50 employees",
+    "revenueRange": "$500K-$5M ARR",
+    "industry": "SaaS / subscription businesses",
+    "techStack": ["Stripe", "Intercom"],
+    "buyingTriggers": ["Churn rate exceeds 5%", "Manual processes taking 10+ hrs/week"],
+    "budgetRange": "$30-100/mo",
+    "summary": "Early-stage B2B SaaS companies struggling with churn."
+  }
 }`;
 
     console.log('Pass 2: Analysis with Gemini...');
@@ -212,7 +290,7 @@ Return ONLY valid JSON:
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [
-          { role: 'user', parts: [{ text: 'You are a brutally honest startup advisor. Your job is to save founders from wasting time on bad ideas AND to greenlight genuinely promising ones. Never be diplomatic at the expense of truth. Base every score and statement on the research evidence provided.\n\n' + analysisPrompt }] },
+          { role: 'user', parts: [{ text: 'You are a brutally honest startup advisor. Your job is to save founders from wasting time on bad ideas AND to greenlight genuinely promising ones. Never be diplomatic at the expense of truth. Base every score and statement on the research evidence provided. Extract willingness-to-pay signals, competition density, market timing, and ICP from the data.\n\n' + analysisPrompt }] },
         ],
         generationConfig: { temperature: 0.2 },
       }),
@@ -263,7 +341,7 @@ Return ONLY valid JSON:
     // Inject citations
     parsed.evidenceLinks = citations;
 
-    console.log(`Complete: Verdict=${parsed.verdict}, Demand=${scores.demand}, Pain=${scores.pain}`);
+    console.log(`Complete: Verdict=${parsed.verdict}, Demand=${scores.demand}, Pain=${scores.pain}, WTP=${parsed.wtpSignals?.strength || 'none'}, Timing=${parsed.marketTiming?.phase || 'unknown'}`);
 
     return new Response(JSON.stringify(parsed), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

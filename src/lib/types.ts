@@ -17,6 +17,53 @@ export interface IdeaSuggestion {
   demandScore: number; // 0-100
 }
 
+// ─── Phase 1 Intelligence Layers ───
+
+export interface WtpSignal {
+  quote: string;
+  source: string;
+  context: string;
+}
+
+export interface WtpSignals {
+  strength: 'strong' | 'moderate' | 'weak' | 'none';
+  signals: WtpSignal[];
+  priceRange: { low: number; mid: number; high: number; currency: string };
+  summary: string;
+}
+
+export type CompetitionLevel = 'blue_ocean' | 'fragmented' | 'crowded' | 'winner_take_most';
+
+export interface CompetitionDensity {
+  level: CompetitionLevel;
+  competitorCount: number;
+  totalFundingEstimate: string;
+  keyIncumbents: string[];
+  switchingCosts: string;
+  summary: string;
+}
+
+export type MarketPhase = 'emerging' | 'growing' | 'saturated' | 'declining';
+
+export interface MarketTiming {
+  phase: MarketPhase;
+  signals: string[];
+  summary: string;
+}
+
+export interface ICP {
+  businessType: string;
+  companySize: string;
+  revenueRange: string;
+  industry: string;
+  techStack: string[];
+  buyingTriggers: string[];
+  budgetRange: string;
+  summary: string;
+}
+
+// ─── Existing types ───
+
 export interface GeneratorRun {
   id: string;
   persona: string;
