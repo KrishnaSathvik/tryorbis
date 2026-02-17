@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { getMyBacklog, updateBacklogStatusDb, removeFromBacklogDb, addNoteToBacklogDb, renameBacklogItemDb, updateNoteInBacklogDb } from "@/lib/db";
-import { Trash2, MessageSquarePlus, Archive, Filter, Pencil, Check, X, StickyNote, Plus } from "lucide-react";
+import { getMyBacklog, updateBacklogStatusDb, removeFromBacklogDb, addNoteToBacklogDb, renameBacklogItemDb, updateNoteInBacklogDb, addToBacklogDb } from "@/lib/db";
+import { Lightbulb, Trash2, MessageSquarePlus, Archive, Filter, Pencil, Check, X, StickyNote, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 type BacklogStatus = 'New' | 'Exploring' | 'Validated' | 'Building' | 'Archived';
@@ -29,6 +29,9 @@ export default function Backlog() {
   const [editName, setEditName] = useState("");
   const [editingNote, setEditingNote] = useState<{ itemId: string; index: number } | null>(null);
   const [editNoteText, setEditNoteText] = useState("");
+  const [showAddIdea, setShowAddIdea] = useState(false);
+  const [newIdeaName, setNewIdeaName] = useState("");
+  const [newIdeaNote, setNewIdeaNote] = useState("");
   const [loading, setLoading] = useState(true);
 
   const fetchBacklog = async () => {
@@ -89,6 +92,18 @@ export default function Backlog() {
     toast.success("Idea renamed");
   };
 
+  const handleAddIdea = async () => {
+    const name = newIdeaName.trim();
+    if (!name) return;
+    const notes = newIdeaNote.trim() ? [newIdeaNote.trim()] : [];
+    await addToBacklogDb({ ideaName: name, source: "Manual", notes });
+    setNewIdeaName("");
+    setNewIdeaNote("");
+    setShowAddIdea(false);
+    fetchBacklog();
+    toast.success("Idea added");
+  };
+
   if (loading) return <div className="text-center text-muted-foreground py-20">Loading...</div>;
 
   return (
@@ -99,6 +114,9 @@ export default function Backlog() {
           <p className="text-muted-foreground mt-1">{backlog.length} idea{backlog.length !== 1 ? 's' : ''} saved — track and manage your pipeline.</p>
         </div>
         <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" className="h-9" onClick={() => setShowAddIdea(v => !v)}>
+            <Lightbulb className="h-4 w-4 mr-1.5" /> Add Idea
+          </Button>
           <Filter className="h-4 w-4 text-muted-foreground" />
           <Select value={filter} onValueChange={setFilter}>
             <SelectTrigger className="w-[130px] h-9"><SelectValue /></SelectTrigger>
@@ -109,6 +127,33 @@ export default function Backlog() {
           </Select>
         </div>
       </div>
+
+      {showAddIdea && (
+        <Card className="border border-primary/20">
+          <CardContent className="p-5 space-y-3">
+            <p className="text-sm font-semibold">New Idea</p>
+            <Input
+              placeholder="What's your idea?"
+              value={newIdeaName}
+              onChange={e => setNewIdeaName(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && newIdeaName.trim()) handleAddIdea(); }}
+              autoFocus
+            />
+            <Textarea
+              placeholder="Add initial notes (optional)..."
+              value={newIdeaNote}
+              onChange={e => setNewIdeaNote(e.target.value)}
+              className="text-sm min-h-[60px] resize-y"
+            />
+            <div className="flex justify-end gap-2">
+              <Button size="sm" variant="ghost" onClick={() => { setShowAddIdea(false); setNewIdeaName(""); setNewIdeaNote(""); }}>Cancel</Button>
+              <Button size="sm" onClick={handleAddIdea} disabled={!newIdeaName.trim()}>
+                <Plus className="h-3.5 w-3.5 mr-1" /> Save Idea
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {filtered.length === 0 ? (
         <Card className="border">
