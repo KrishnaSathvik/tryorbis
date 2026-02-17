@@ -20,7 +20,6 @@ const navItems = [
   { title: "Validate Idea", url: "/validate", icon: ClipboardCheck },
   { title: "My Ideas", url: "/ideas", icon: Archive },
   { title: "History", url: "/history", icon: FileText },
-  
 ];
 
 export function AppSidebar() {
@@ -33,18 +32,18 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar className="border-r border-sidebar-border">
+    <Sidebar className="border-r border-sidebar-border bg-white/50 backdrop-blur-sm">
       <div className="px-6 py-5">
         <div className="flex items-center gap-2">
           <img src={orbisLogo} alt="Orbis" className="h-7 w-7" />
-          <h1 className="text-xl font-bold tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+          <h1 className="text-xl font-bold tracking-tight font-nunito text-gradient-primary">
             Orbis
           </h1>
         </div>
       </div>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="text-xs uppercase tracking-wider text-muted-foreground/60 px-6">
+          <SidebarGroupLabel className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/50 px-6">
             Menu
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -55,8 +54,8 @@ export function AppSidebar() {
                     <NavLink
                       to={item.url}
                       end={item.url === "/dashboard"}
-                      className="flex items-center gap-3 px-6 py-2.5 text-sm text-sidebar-foreground rounded-lg transition-colors hover:bg-sidebar-accent"
-                      activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                      className="flex items-center gap-3 px-6 py-2.5 text-sm text-muted-foreground rounded-xl transition-all hover:text-foreground hover:bg-accent"
+                      activeClassName="bg-accent text-foreground font-medium"
                     >
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
@@ -71,7 +70,7 @@ export function AppSidebar() {
       <div className="mt-auto p-4 border-t border-sidebar-border">
         <button
           onClick={handleSignOut}
-          className="flex items-center gap-3 px-6 py-2.5 text-sm text-sidebar-foreground rounded-lg transition-colors hover:bg-sidebar-accent w-full"
+          className="flex items-center gap-3 px-6 py-2.5 text-sm text-muted-foreground rounded-xl transition-all hover:text-foreground hover:bg-accent w-full"
         >
           <LogOut className="h-4 w-4" />
           <span>Sign Out</span>

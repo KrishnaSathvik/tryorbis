@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { Loader2, CheckCircle2 } from "lucide-react";
 
 interface ResearchTraceProps {
@@ -17,11 +16,11 @@ export function ResearchTrace({ steps, currentStep, isComplete }: ResearchTraceP
         return (
           <div key={i} className="flex items-center gap-3">
             {isDone ? (
-              <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
+              <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
             ) : isActive ? (
               <Loader2 className="h-5 w-5 text-primary animate-spin shrink-0" />
             ) : (
-              <div className="h-5 w-5 rounded-full border-2 border-border shrink-0" />
+              <div className="h-5 w-5 rounded-full border-2 border-accent shrink-0" />
             )}
             <span className={`text-sm ${isDone ? 'text-foreground' : isActive ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
               {step}

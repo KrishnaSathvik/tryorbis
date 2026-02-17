@@ -33,12 +33,12 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md border-2">
+      <Card className="w-full max-w-md rounded-[32px] border border-border/50 shadow-xl animate-slide-up">
         <CardContent className="p-8 space-y-6">
           <div className="text-center space-y-2">
             <img src={orbisLogo} alt="Orbis" className="h-14 w-14 mx-auto" />
-            <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-              Join <span className="text-primary">Orbis</span>
+            <h1 className="text-2xl font-bold tracking-tight font-nunito">
+              Join <span className="text-gradient-primary">Orbis</span>
             </h1>
             <p className="text-sm text-muted-foreground">
               Pick a name and start discovering product ideas instantly.
@@ -52,6 +52,7 @@ export default function Auth() {
                 value={name}
                 onChange={e => setName(e.target.value)}
                 placeholder="e.g. Alex"
+                className="rounded-xl"
                 autoFocus
               />
             </div>
@@ -64,10 +65,11 @@ export default function Auth() {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder="alex@example.com"
+                className="rounded-xl"
               />
               <p className="text-xs text-muted-foreground">Only used if you want to recover your account later.</p>
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full rounded-full bg-foreground text-background hover:bg-foreground/90" disabled={loading}>
               {loading ? "Creating account..." : "Start Exploring →"}
             </Button>
           </form>
