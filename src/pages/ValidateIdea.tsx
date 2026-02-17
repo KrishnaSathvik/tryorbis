@@ -8,8 +8,6 @@ import { ScoreBar } from "@/components/ScoreBar";
 import { VerdictBadge } from "@/components/VerdictBadge";
 import { AIHandoff } from "@/components/AIHandoff";
 import { FollowUpChat } from "@/components/FollowUpChat";
-import { Paywall } from "@/components/Paywall";
-import { useCredits } from "@/hooks/useCredits";
 import { supabase } from "@/integrations/supabase/client";
 import { saveValidationReportDb, addToBacklogDb } from "@/lib/db";
 import { toast } from "sonner";
@@ -34,8 +32,6 @@ export default function ValidateIdea() {
   const navigate = useNavigate();
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const { hasCredits, deductCredit, refreshCredits } = useCredits();
-  const [showPaywall, setShowPaywall] = useState(false);
 
   const prefilled = searchParams.get('idea') || "";
   const [inputValue, setInputValue] = useState(prefilled);
@@ -81,7 +77,6 @@ export default function ValidateIdea() {
   };
 
   const triggerValidation = useCallback(async (ideaText: string) => {
-    if (!hasCredits) { setShowPaywall(true); return; }
     setPhase('researching'); setCurrentStep(0);
     try {
       const stepInterval = setInterval(() => { setCurrentStep(prev => { if (prev >= researchSteps.length - 1) { clearInterval(stepInterval); return prev; } return prev + 1; }); }, 3500);
@@ -89,7 +84,6 @@ export default function ValidateIdea() {
       clearInterval(stepInterval); setCurrentStep(researchSteps.length);
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      await deductCredit();
       const r: Report = {
         ideaText, scores: data.scores || { demand: 0, pain: 0, competition: 0, mvpFeasibility: 0 },
         verdict: data.verdict || 'Skip', pros: data.pros || [], cons: data.cons || [],
@@ -100,7 +94,7 @@ export default function ValidateIdea() {
       try { await saveValidationReportDb(r); } catch (e) { console.error("Failed to save to DB:", e); }
       setReport(r); setPhase('results');
     } catch (err: any) { toast.error("Validation failed: " + (err.message || "Unknown error")); setPhase('chat'); }
-  }, [hasCredits, deductCredit]);
+  }, []);
 
   const handleAddToBacklog = async () => {
     if (!report) return;
@@ -117,8 +111,6 @@ export default function ValidateIdea() {
 
   if (phase === 'chat') {
     return (
-      <>
-      <Paywall open={showPaywall} onOpenChange={(open) => { setShowPaywall(open); if (!open) refreshCredits(); }} />
       <div className="max-w-2xl mx-auto flex flex-col h-[calc(100vh-6rem)] animate-fade-in">
         <div className="mb-4">
           <h1 className="text-3xl font-bold tracking-tight font-nunito">Validate an Idea</h1>
@@ -161,7 +153,6 @@ export default function ValidateIdea() {
           </div>
         </div>
       </div>
-      </>
     );
   }
 
