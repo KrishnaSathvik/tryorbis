@@ -12,21 +12,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { saveGeneratorRunDb, addToBacklogDb } from "@/lib/db";
 import { toast } from "sonner";
 
-const personas = ["Remote Workers", "Parents", "Students", "Founders", "ADHD", "Freelancers", "Seniors", "Gamers"];
-const categories = ["Finance", "Productivity", "Health", "Education", "Social", "E-commerce", "Entertainment", "Developer Tools"];
-const platforms = ["Web App", "Mobile App", "Browser Extension", "API/SaaS", "Desktop App", "Skip"];
-const regions = ["US", "Europe", "Asia", "Global", "Skip"];
-
-type ChatStep = 'initial' | 'persona' | 'category' | 'region' | 'platform' | 'ready';
-
-interface ChatMessage {
-  id: string;
-  role: 'user' | 'system';
-  text: string;
-  options?: string[];
-  step?: ChatStep;
-}
-
 const researchSteps = [
   "Searching for complaints and frustrations...",
   "Analyzing pain points and patterns...",
@@ -34,6 +19,12 @@ const researchSteps = [
   "Generating product ideas...",
   "Scoring opportunities...",
 ];
+
+interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  text: string;
+}
 
 interface GeneratorResult {
   persona: string;
@@ -50,75 +41,62 @@ export default function GenerateIdeas() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { id: '1', role: 'system', text: "What kind of product or problem area are you interested in? Tell me what's on your mind." },
+    { id: '1', role: 'assistant', text: "What kind of product or problem are you thinking about? Describe your idea and I'll find real problems and opportunities." },
   ]);
   const [inputValue, setInputValue] = useState("");
-  const [currentStep, setCurrentStep] = useState<ChatStep>('initial');
-  const [ideaContext, setIdeaContext] = useState("");
-  const [persona, setPersona] = useState("");
-  const [category, setCategory] = useState("");
-  const [region, setRegion] = useState("");
-  const [platform, setPlatform] = useState("");
   const [phase, setPhase] = useState<'chat' | 'researching' | 'results'>('chat');
   const [researchStep, setResearchStep] = useState(0);
   const [result, setResult] = useState<GeneratorResult | null>(null);
   const [isTyping, setIsTyping] = useState(false);
+  const [generatingParams, setGeneratingParams] = useState<any>(null);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  const addMessage = (msg: Omit<ChatMessage, 'id'>) => {
-    setIsTyping(false);
-    setMessages(prev => [...prev, { ...msg, id: crypto.randomUUID() }]);
-  };
-
-  const showTypingThenMessage = (msg: Omit<ChatMessage, 'id'>, delay = 800) => {
+  const sendToAI = useCallback(async (allMessages: ChatMessage[]) => {
     setIsTyping(true);
-    setTimeout(() => addMessage(msg), delay);
-  };
+    try {
+      const { data, error } = await supabase.functions.invoke('chat-generate', {
+        body: {
+          messages: allMessages.map(m => ({
+            role: m.role === 'assistant' ? 'assistant' : 'user',
+            content: m.text,
+          })),
+        },
+      });
+      if (error) throw error;
+
+      const aiMsg: ChatMessage = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        text: data.reply || "I'm ready to research this for you!",
+      };
+      setIsTyping(false);
+      setMessages(prev => [...prev, aiMsg]);
+
+      if (data.ready && data.params) {
+        setGeneratingParams(data.params);
+        // Auto-trigger after a brief pause
+        setTimeout(() => triggerGenerate(data.params), 1200);
+      }
+    } catch (err: any) {
+      setIsTyping(false);
+      toast.error("AI error: " + (err.message || "Unknown error"));
+    }
+  }, []);
 
   const handleUserInput = () => {
     const text = inputValue.trim();
-    if (!text) return;
+    if (!text || isTyping) return;
     setInputValue("");
-    addMessage({ role: 'user', text });
-    if (currentStep === 'initial') {
-      setIdeaContext(text);
-      setCurrentStep('persona');
-      showTypingThenMessage({ role: 'system', text: `Nice — "${text}". Now, who's the target audience for this?`, options: personas, step: 'persona' });
-    }
+    const userMsg: ChatMessage = { id: crypto.randomUUID(), role: 'user', text };
+    const updated = [...messages, userMsg];
+    setMessages(updated);
+    sendToAI(updated);
   };
 
-  const handleOptionSelect = (option: string, step: ChatStep) => {
-    addMessage({ role: 'user', text: option });
-    if (step === 'persona') {
-      setPersona(option);
-      setCurrentStep('category');
-      showTypingThenMessage({ role: 'system', text: "What industry or domain should I focus on?", options: categories, step: 'category' });
-    } else if (step === 'category') {
-      setCategory(option);
-      setCurrentStep('region');
-      showTypingThenMessage({ role: 'system', text: "Any specific region to focus on?", options: regions, step: 'region' });
-    } else if (step === 'region') {
-      setRegion(option === 'Skip' ? '' : option);
-      setCurrentStep('platform');
-      showTypingThenMessage({ role: 'system', text: "What platform do you prefer?", options: platforms, step: 'platform' });
-    } else if (step === 'platform') {
-      setPlatform(option === 'Skip' ? '' : option);
-      setCurrentStep('ready');
-      showTypingThenMessage({
-        role: 'system',
-        text: `Got it! I'll research opportunities for **${option === 'Skip' ? 'any platform' : option}** products targeting **${persona || 'your audience'}** in **${category || 'your domain'}**. Ready to go?`,
-        options: ['Generate Ideas ✨'],
-        step: 'ready',
-      });
-    } else if (step === 'ready') {
-      triggerGenerate();
-    }
-  };
-
-  const triggerGenerate = useCallback(async () => {
+  const triggerGenerate = useCallback(async (params: any) => {
     setPhase('researching');
     setResearchStep(0);
     try {
@@ -130,7 +108,13 @@ export default function GenerateIdeas() {
       }, 2000);
 
       const { data, error } = await supabase.functions.invoke('perplexity-generate', {
-        body: { persona, category, region: region || undefined, platform: platform || undefined, context: ideaContext || undefined },
+        body: {
+          persona: params.persona,
+          category: params.category,
+          region: params.region || undefined,
+          platform: params.platform || undefined,
+          context: params.context || undefined,
+        },
       });
 
       clearInterval(stepInterval);
@@ -138,20 +122,15 @@ export default function GenerateIdeas() {
       if (error) throw error;
 
       const run: GeneratorResult = {
-        persona,
-        category,
-        region: region || undefined,
-        platform: platform || undefined,
+        persona: params.persona,
+        category: params.category,
+        region: params.region || undefined,
+        platform: params.platform || undefined,
         problemClusters: data.problemClusters || [],
         ideaSuggestions: data.ideaSuggestions || [],
       };
 
-      // Save to DB
-      try {
-        await saveGeneratorRunDb(run);
-      } catch (e) {
-        console.error("Failed to save to DB:", e);
-      }
+      try { await saveGeneratorRunDb(run); } catch (e) { console.error("Failed to save:", e); }
 
       setResult(run);
       setPhase('results');
@@ -159,20 +138,13 @@ export default function GenerateIdeas() {
       toast.error("Generation failed: " + (err.message || "Unknown error"));
       setPhase('chat');
     }
-  }, [persona, category, region, platform, ideaContext]);
+  }, []);
 
   const handleAddToBacklog = async (idea: any) => {
     try {
-      await addToBacklogDb({
-        ideaName: idea.name,
-        source: 'Generated',
-        demandScore: idea.demandScore,
-        status: 'New',
-      });
+      await addToBacklogDb({ ideaName: idea.name, source: 'Generated', demandScore: idea.demandScore, status: 'New' });
       toast.success(`"${idea.name}" saved to My Ideas`);
-    } catch {
-      toast.error("Failed to save");
-    }
+    } catch { toast.error("Failed to save"); }
   };
 
   const handleValidate = (idea: any) => {
@@ -180,8 +152,8 @@ export default function GenerateIdeas() {
   };
 
   const resetChat = () => {
-    setMessages([{ id: '1', role: 'system', text: "What kind of product or problem area are you interested in? Tell me what's on your mind." }]);
-    setInputValue(""); setCurrentStep('initial'); setIdeaContext(""); setPersona(""); setCategory(""); setRegion(""); setPlatform(""); setPhase('chat'); setResult(null);
+    setMessages([{ id: '1', role: 'assistant', text: "What kind of product or problem are you thinking about? Describe your idea and I'll find real problems and opportunities." }]);
+    setInputValue(""); setPhase('chat'); setResult(null); setGeneratingParams(null);
   };
 
   if (phase === 'chat') {
@@ -196,13 +168,6 @@ export default function GenerateIdeas() {
             <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${msg.role === 'user' ? 'bg-primary text-primary-foreground rounded-br-md' : 'bg-muted text-foreground rounded-bl-md'}`}>
                 <p>{msg.text}</p>
-                {msg.options && (
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {msg.options.map((opt) => (
-                      <button key={opt} onClick={() => handleOptionSelect(opt, msg.step!)} className="px-3 py-1.5 text-xs font-medium rounded-full border border-border bg-background text-foreground hover:bg-accent hover:text-accent-foreground transition-colors">{opt}</button>
-                    ))}
-                  </div>
-                )}
               </div>
             </div>
           ))}
@@ -217,16 +182,14 @@ export default function GenerateIdeas() {
           )}
           <div ref={chatEndRef} />
         </div>
-        {currentStep === 'initial' && (
-          <div className="border-t pt-3 pb-2">
-            <div className="flex gap-2">
-              <Input ref={inputRef} value={inputValue} onChange={e => setInputValue(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleUserInput()} placeholder="e.g. I want to build something for freelancers who struggle with invoicing..." className="flex-1" autoFocus />
-              <Button size="icon" onClick={handleUserInput} disabled={!inputValue.trim()}>
-                <Send className="h-4 w-4" />
-              </Button>
-            </div>
+        <div className="border-t pt-3 pb-2">
+          <div className="flex gap-2">
+            <Input ref={inputRef} value={inputValue} onChange={e => setInputValue(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleUserInput()} placeholder="e.g. I want to build a SQL prompt buddy for devs..." className="flex-1" autoFocus disabled={isTyping} />
+            <Button size="icon" onClick={handleUserInput} disabled={!inputValue.trim() || isTyping}>
+              <Send className="h-4 w-4" />
+            </Button>
           </div>
-        )}
+        </div>
       </div>
     );
   }
@@ -236,7 +199,7 @@ export default function GenerateIdeas() {
       <div className="max-w-lg mx-auto mt-20">
         <Card><CardContent className="p-8">
           <h2 className="text-xl font-semibold mb-2">Researching...</h2>
-          <p className="text-sm text-muted-foreground mb-4">Mining real complaints and opportunities for {persona} in {category}.</p>
+          <p className="text-sm text-muted-foreground mb-4">Mining real complaints and opportunities{generatingParams ? ` for ${generatingParams.persona} in ${generatingParams.category}` : ''}.</p>
           <ResearchTrace steps={researchSteps} currentStep={researchStep} isComplete={false} />
         </CardContent></Card>
       </div>
@@ -248,7 +211,7 @@ export default function GenerateIdeas() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Results</h1>
-          <p className="text-muted-foreground mt-1">{persona} × {category} — {result?.ideaSuggestions.length} ideas found</p>
+          <p className="text-muted-foreground mt-1">{result?.persona} × {result?.category} — {result?.ideaSuggestions.length} ideas found</p>
         </div>
         <Button variant="outline" onClick={resetChat}>New Search</Button>
       </div>
@@ -325,7 +288,7 @@ export default function GenerateIdeas() {
       </div>
 
       {result && (
-        <AIHandoff context={`I discovered these product opportunities for ${persona} in ${category}:\n\n${result.ideaSuggestions.map((i: any) => `- ${i.name}: ${i.description} (Score: ${i.demandScore}/100)`).join('\n')}\n\nHelp me build an MVP for the top opportunity.`} />
+        <AIHandoff context={`I discovered these product opportunities for ${result.persona} in ${result.category}:\n\n${result.ideaSuggestions.map((i: any) => `- ${i.name}: ${i.description} (Score: ${i.demandScore}/100)`).join('\n')}\n\nHelp me build an MVP for the top opportunity.`} />
       )}
     </div>
   );
