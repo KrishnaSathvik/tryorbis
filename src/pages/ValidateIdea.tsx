@@ -55,6 +55,7 @@ export default function ValidateIdea() {
   const [phase, setPhase] = useState<'chat' | 'researching' | 'results'>('chat');
   const [currentStep, setCurrentStep] = useState(0);
   const [report, setReport] = useState<Report | null>(null);
+  const [validatingParams, setValidatingParams] = useState<{ ideaText: string } | null>(null);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -90,7 +91,7 @@ export default function ValidateIdea() {
       setMessages(prev => [...prev, aiMsg]);
 
       if (data.ready && data.params?.ideaText) {
-        setTimeout(() => triggerValidation(data.params.ideaText), 1200);
+        setValidatingParams(data.params);
       }
     } catch (err: any) {
       setIsTyping(false);
@@ -162,7 +163,7 @@ export default function ValidateIdea() {
 
   const resetChat = () => {
     setMessages([{ id: '1', role: 'assistant', text: "Describe your idea and I'll validate it — checking demand, competition, and feasibility." }]);
-    setInputValue(""); setPhase('chat'); setReport(null); setIsTyping(false);
+    setInputValue(""); setPhase('chat'); setReport(null); setIsTyping(false); setValidatingParams(null);
   };
 
   if (phase === 'chat') {
@@ -191,9 +192,20 @@ export default function ValidateIdea() {
           )}
           <div ref={chatEndRef} />
         </div>
-        <div className="border-t pt-3 pb-2">
+        <div className="border-t pt-3 pb-2 space-y-2">
+          {validatingParams && (
+            <div className="bg-muted/50 border rounded-xl p-3 space-y-2">
+              <p className="text-xs text-muted-foreground font-medium">I'll validate this idea:</p>
+              <div className="flex flex-wrap gap-2">
+                <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-medium">💡 {validatingParams.ideaText.length > 80 ? validatingParams.ideaText.slice(0, 80) + '...' : validatingParams.ideaText}</span>
+              </div>
+              <Button className="w-full" size="sm" onClick={() => triggerValidation(validatingParams.ideaText)}>
+                🔍 Start Validation
+              </Button>
+            </div>
+          )}
           <div className="flex gap-2">
-            <Input ref={inputRef} value={inputValue} onChange={e => setInputValue(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleUserInput()} placeholder="e.g. AI tool that tracks subscriptions and suggests ways to save money..." className="flex-1" autoFocus disabled={isTyping} />
+            <Input ref={inputRef} value={inputValue} onChange={e => setInputValue(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleUserInput()} placeholder={validatingParams ? "Add more context or hit Start Validation..." : "e.g. AI tool that tracks subscriptions and suggests ways to save money..."} className="flex-1" autoFocus disabled={isTyping} />
             <Button size="icon" onClick={() => handleUserInput()} disabled={!inputValue.trim() || isTyping}>
               <Send className="h-4 w-4" />
             </Button>
