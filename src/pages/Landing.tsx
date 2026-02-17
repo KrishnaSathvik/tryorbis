@@ -4,23 +4,27 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { getCommunityStats } from "@/lib/db";
 import { useAuth } from "@/contexts/AuthContext";
-import { Lightbulb, ClipboardCheck, TrendingUp, Users, Zap, BarChart3, Trophy, ArrowRight } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart as RePieChart, Pie, Cell } from "recharts";
-
-const VERDICT_COLORS: Record<string, string> = {
-  Build: "hsl(142, 72%, 40%)",
-  Pivot: "hsl(38, 92%, 50%)",
-  Skip: "hsl(0, 72%, 51%)",
-};
-
-const CHART_COLORS = [
-  "hsl(220, 70%, 50%)",
-  "hsl(142, 72%, 40%)",
-  "hsl(38, 92%, 50%)",
-  "hsl(0, 72%, 51%)",
-  "hsl(280, 60%, 50%)",
-  "hsl(180, 60%, 40%)",
-];
+import {
+  Lightbulb,
+  ClipboardCheck,
+  TrendingUp,
+  Users,
+  Zap,
+  BarChart3,
+  Trophy,
+  ArrowRight,
+  Search,
+  Target,
+  ShieldCheck,
+  Layers,
+  Globe,
+  Sparkles,
+  CheckCircle2,
+  MessageSquareText,
+  LineChart,
+} from "lucide-react";
+import { LandingCharts } from "@/components/landing/LandingCharts";
+import { LandingLeaderboard } from "@/components/landing/LandingLeaderboard";
 
 export default function Landing() {
   const navigate = useNavigate();
@@ -39,236 +43,285 @@ export default function Landing() {
     navigate(user ? "/dashboard" : "/auth");
   };
 
-  // Compute public trend data
-  const totalIdeas = stats?.runs.reduce((s, r) => {
-    const suggestions = Array.isArray(r.idea_suggestions) ? r.idea_suggestions : [];
-    return s + suggestions.length;
-  }, 0) ?? 0;
+  const totalIdeas =
+    stats?.runs.reduce((s, r) => {
+      const suggestions = Array.isArray(r.idea_suggestions)
+        ? r.idea_suggestions
+        : [];
+      return s + suggestions.length;
+    }, 0) ?? 0;
 
-  const personaData = (() => {
-    if (!stats) return [];
-    const counts: Record<string, number> = {};
-    stats.runs.forEach((r: any) => { counts[r.persona] = (counts[r.persona] || 0) + 1; });
-    return Object.entries(counts).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count).slice(0, 6);
-  })();
-
-  const categoryData = (() => {
-    if (!stats) return [];
-    const counts: Record<string, number> = {};
-    stats.runs.forEach((r: any) => { counts[r.category] = (counts[r.category] || 0) + 1; });
-    return Object.entries(counts).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count).slice(0, 6);
-  })();
-
-  const verdictData = (() => {
-    if (!stats) return [];
-    const counts: Record<string, number> = { Build: 0, Pivot: 0, Skip: 0 };
-    stats.reports.forEach((r: any) => { counts[r.verdict] = (counts[r.verdict] || 0) + 1; });
-    return Object.entries(counts).filter(([, v]) => v > 0).map(([name, value]) => ({ name, value }));
-  })();
-
-  // Top ideas leaderboard from all users
-  const leaderboard = (() => {
-    if (!stats) return [];
-    const ideas = stats.runs.flatMap((r: any) => {
-      const suggestions = Array.isArray(r.idea_suggestions) ? r.idea_suggestions : [];
-      return suggestions.map((idea: any) => ({
-        name: idea.name,
-        score: idea.demandScore || 0,
-        source: "Generated",
-      }));
-    });
-    const validated = stats.reports.map((r: any) => ({
-      name: (r.idea_text || "").slice(0, 60),
-      score: r.scores ? Math.round(((r.scores as any).demand + (r.scores as any).pain + (r.scores as any).mvpFeasibility) / 3) : 0,
-      source: "Validated",
-      verdict: r.verdict,
-    }));
-    return [...ideas, ...validated].sort((a, b) => b.score - a.score).slice(0, 10);
-  })();
-
-  const hasData = (stats?.runs.length ?? 0) > 0 || (stats?.reports.length ?? 0) > 0;
+  const hasData =
+    (stats?.runs.length ?? 0) > 0 || (stats?.reports.length ?? 0) > 0;
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Hero */}
-      <header className="border-b border-border">
+      {/* Nav */}
+      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
-          <h1 className="text-xl font-bold tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+          <h1 className="text-xl font-bold tracking-tight text-gradient-primary">
             Orbis
           </h1>
-          <Button onClick={handleCta} size="sm">
-            {user ? "Go to Dashboard" : "Get Started"}
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="sm" onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })}>
+              Features
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })}>
+              How It Works
+            </Button>
+            <Button onClick={handleCta} size="sm" className="gradient-primary text-primary-foreground border-0">
+              {user ? "Dashboard" : "Get Started"}
+            </Button>
+          </div>
         </div>
       </header>
 
-      <section className="max-w-4xl mx-auto text-center py-20 px-6 space-y-6">
-        <h2 className="text-4xl sm:text-5xl font-bold tracking-tight leading-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-          From Problem Discovery<br />to Product Validation
-        </h2>
-        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-          Orbis mines real complaints, clusters pain points, and validates your product ideas with AI-powered research. Stop guessing — start building what people actually need.
-        </p>
-        <div className="flex gap-3 justify-center">
-          <Button size="lg" onClick={handleCta} className="gap-2">
-            Try Now <ArrowRight className="h-4 w-4" />
-          </Button>
+      {/* Hero */}
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.08)_0%,transparent_60%)]" />
+        <div className="max-w-4xl mx-auto text-center py-24 sm:py-32 px-6 space-y-8 relative">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-sm text-primary font-medium">
+            <Sparkles className="h-3.5 w-3.5" />
+            AI-Powered Product Research
+          </div>
+          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1]">
+            Stop Guessing.
+            <br />
+            <span className="text-gradient-primary">Start Validating.</span>
+          </h2>
+          <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+            Orbis mines real complaints, clusters pain points, and validates
+            product ideas with AI-powered research — so you build what people
+            actually need.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+            <Button
+              size="lg"
+              onClick={handleCta}
+              className="gradient-primary text-primary-foreground border-0 gap-2 shadow-glow text-base px-8"
+            >
+              Try Free <ArrowRight className="h-4 w-4" />
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })}
+              className="text-base"
+            >
+              See How It Works
+            </Button>
+          </div>
         </div>
       </section>
 
-      {/* Features */}
-      <section className="max-w-5xl mx-auto px-6 pb-16">
-        <div className="grid md:grid-cols-3 gap-6">
-          {[
-            { icon: Lightbulb, title: "Find Ideas", desc: "Mine real complaints and frustrations to discover product opportunities backed by evidence." },
-            { icon: ClipboardCheck, title: "Validate Ideas", desc: "Get demand scores, competitor analysis, and a clear Build / Pivot / Skip verdict." },
-            { icon: TrendingUp, title: "Track Trends", desc: "See what the community is researching — trending personas, hot categories, and top ideas." },
-          ].map(f => (
-            <Card key={f.title} className="border">
-              <CardContent className="p-6 space-y-3">
-                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <f.icon className="h-5 w-5 text-primary" />
-                </div>
-                <h3 className="font-semibold">{f.title}</h3>
-                <p className="text-sm text-muted-foreground">{f.desc}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      {/* Community Stats */}
+      {/* Trusted stats strip */}
       {stats && (
-        <section className="bg-secondary/30 border-y border-border py-12">
-          <div className="max-w-5xl mx-auto px-6">
-            <h3 className="text-xl font-bold text-center mb-8" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-              Community Stats
-            </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <section className="border-y border-border bg-muted/40">
+          <div className="max-w-5xl mx-auto px-6 py-8">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
               {[
                 { label: "Researchers", value: stats.totalUsers, icon: Users },
                 { label: "Ideas Generated", value: totalIdeas, icon: Zap },
-                { label: "Validations Run", value: stats.reports.length, icon: BarChart3 },
+                { label: "Validations", value: stats.reports.length, icon: BarChart3 },
                 { label: "Research Runs", value: stats.runs.length, icon: Trophy },
-              ].map(s => (
-                <Card key={s.label} className="border">
-                  <CardContent className="p-4 flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <s.icon className="h-4 w-4 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-xl font-bold">{s.value}</p>
-                      <p className="text-xs text-muted-foreground">{s.label}</p>
-                    </div>
-                  </CardContent>
-                </Card>
+              ].map((s) => (
+                <div key={s.label} className="flex flex-col items-center gap-2">
+                  <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <s.icon className="h-5 w-5 text-primary" />
+                  </div>
+                  <p className="text-2xl font-bold">{s.value}</p>
+                  <p className="text-xs text-muted-foreground">{s.label}</p>
+                </div>
               ))}
             </div>
           </div>
         </section>
       )}
 
-      {/* Public Trends */}
-      {hasData && (
-        <section className="max-w-5xl mx-auto px-6 py-16 space-y-8">
-          <h3 className="text-xl font-bold text-center" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-            What the Community is Building
+      {/* Features */}
+      <section id="features" className="max-w-5xl mx-auto px-6 py-20 space-y-12">
+        <div className="text-center space-y-3">
+          <h3 className="text-3xl font-bold">
+            Everything You Need to{" "}
+            <span className="text-gradient-primary">Validate Ideas</span>
           </h3>
+          <p className="text-muted-foreground max-w-xl mx-auto">
+            From discovering real pain points to getting a clear build-or-skip
+            verdict, Orbis covers the full research pipeline.
+          </p>
+        </div>
 
-          <div className="grid md:grid-cols-2 gap-6">
-            {personaData.length > 0 && (
-              <Card className="border">
-                <CardContent className="p-5">
-                  <h4 className="text-sm font-semibold mb-4">Top Personas</h4>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <BarChart data={personaData} layout="vertical" margin={{ left: 0, right: 16 }}>
-                      <XAxis type="number" hide />
-                      <YAxis dataKey="name" type="category" width={90} tick={{ fontSize: 12 }} />
-                      <Tooltip />
-                      <Bar dataKey="count" fill="hsl(220, 70%, 50%)" radius={[0, 4, 4, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-            )}
+        <div className="grid md:grid-cols-3 gap-6">
+          {[
+            {
+              icon: Search,
+              title: "Problem Discovery",
+              desc: "Automatically mine real complaints from forums, reviews, and social media to find genuine frustrations worth solving.",
+            },
+            {
+              icon: Layers,
+              title: "Pain Point Clustering",
+              desc: "AI groups raw complaints into thematic clusters so you can spot patterns and high-frequency pain points instantly.",
+            },
+            {
+              icon: Lightbulb,
+              title: "Idea Generation",
+              desc: "Get actionable product ideas ranked by demand score, each backed by evidence from real user complaints.",
+            },
+            {
+              icon: Target,
+              title: "Demand Scoring",
+              desc: "Every idea is scored across demand, pain intensity, and MVP feasibility — no subjective guesswork.",
+            },
+            {
+              icon: ClipboardCheck,
+              title: "Full Validation Report",
+              desc: "Competitor analysis, pros & cons, evidence links, and a clear Build / Pivot / Skip verdict in one report.",
+            },
+            {
+              icon: MessageSquareText,
+              title: "AI Follow-Up Chat",
+              desc: "Ask follow-up questions about any report — dive deeper into competitors, pricing strategy, or go-to-market.",
+            },
+          ].map((f) => (
+            <Card
+              key={f.title}
+              className="group border hover:border-primary/30 transition-colors hover:shadow-glow/30"
+            >
+              <CardContent className="p-6 space-y-3">
+                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:gradient-primary group-hover:text-primary-foreground transition-colors">
+                  <f.icon className="h-5 w-5 text-primary group-hover:text-primary-foreground" />
+                </div>
+                <h4 className="font-semibold text-base">{f.title}</h4>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {f.desc}
+                </p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
 
-            {verdictData.length > 0 && (
-              <Card className="border">
-                <CardContent className="p-5">
-                  <h4 className="text-sm font-semibold mb-4">Verdict Distribution</h4>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <RePieChart>
-                      <Pie data={verdictData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={75}
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                        {verdictData.map(entry => (
-                          <Cell key={entry.name} fill={VERDICT_COLORS[entry.name] || CHART_COLORS[0]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </RePieChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-            )}
+      {/* How it works */}
+      <section
+        id="how-it-works"
+        className="bg-muted/30 border-y border-border py-20"
+      >
+        <div className="max-w-5xl mx-auto px-6 space-y-12">
+          <div className="text-center space-y-3">
+            <h3 className="text-3xl font-bold">
+              How <span className="text-gradient-primary">Orbis</span> Works
+            </h3>
+            <p className="text-muted-foreground max-w-lg mx-auto">
+              Three steps from zero to validated product idea.
+            </p>
           </div>
 
-          {categoryData.length > 0 && (
-            <Card className="border">
-              <CardContent className="p-5">
-                <h4 className="text-sm font-semibold mb-4">Categories Explored</h4>
-                <ResponsiveContainer width="100%" height={200}>
-                  <BarChart data={categoryData} margin={{ left: 0, right: 16 }}>
-                    <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                    <YAxis allowDecimals={false} hide />
-                    <Tooltip />
-                    <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                      {categoryData.map((_, i) => (
-                        <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Top Ideas Leaderboard */}
-          {leaderboard.length > 0 && (
-            <Card className="border">
-              <CardContent className="p-5">
-                <h4 className="text-sm font-semibold mb-4">🏆 Top Ideas Leaderboard</h4>
-                <div className="space-y-2">
-                  {leaderboard.map((item, i) => (
-                    <div key={i} className="flex items-center gap-3 py-2 border-b last:border-0">
-                      <span className="text-lg font-bold text-muted-foreground w-6 text-right shrink-0">{i + 1}</span>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium truncate">{item.name}</p>
-                        <p className="text-xs text-muted-foreground">{item.source}</p>
-                      </div>
-                      <span className="text-sm font-semibold tabular-nums">{item.score}</span>
-                    </div>
-                  ))}
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              {
+                step: "01",
+                icon: Globe,
+                title: "Choose Your Persona",
+                desc: "Pick a target persona and category — freelancers, teachers, developers, you name it. Orbis scans real complaints across the web.",
+              },
+              {
+                step: "02",
+                icon: LineChart,
+                title: "Generate & Score Ideas",
+                desc: "AI clusters pain points and generates product ideas with demand scores. Save favorites to your backlog for later.",
+              },
+              {
+                step: "03",
+                icon: ShieldCheck,
+                title: "Validate with Confidence",
+                desc: "Run a full validation: competitors, evidence links, risk factors, and a definitive Build / Pivot / Skip verdict.",
+              },
+            ].map((s) => (
+              <div key={s.step} className="relative space-y-4">
+                <span className="text-5xl font-bold text-primary/10">
+                  {s.step}
+                </span>
+                <div className="h-11 w-11 rounded-xl gradient-primary flex items-center justify-center">
+                  <s.icon className="h-5 w-5 text-primary-foreground" />
                 </div>
-              </CardContent>
-            </Card>
-          )}
+                <h4 className="font-semibold text-lg">{s.title}</h4>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {s.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Benefits */}
+      <section className="max-w-5xl mx-auto px-6 py-20 space-y-12">
+        <div className="text-center space-y-3">
+          <h3 className="text-3xl font-bold">Why Founders Choose Orbis</h3>
+        </div>
+        <div className="grid sm:grid-cols-2 gap-5 max-w-3xl mx-auto">
+          {[
+            "Evidence-backed ideas, not shower thoughts",
+            "Save weeks of manual market research",
+            "Clear Build / Pivot / Skip verdicts",
+            "Real complaint data, not survey bias",
+            "AI follow-up chat for deeper insights",
+            "Track trends across the community",
+          ].map((b) => (
+            <div key={b} className="flex items-start gap-3">
+              <CheckCircle2 className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+              <span className="text-sm">{b}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Community trends */}
+      {hasData && stats && (
+        <section className="bg-muted/30 border-y border-border py-20">
+          <div className="max-w-5xl mx-auto px-6 space-y-12">
+            <div className="text-center space-y-3">
+              <h3 className="text-3xl font-bold">
+                <TrendingUp className="inline h-7 w-7 text-primary mr-2 -mt-1" />
+                Community Trends
+              </h3>
+              <p className="text-muted-foreground max-w-lg mx-auto">
+                See what the community is researching right now.
+              </p>
+            </div>
+            <LandingCharts stats={stats} />
+            <LandingLeaderboard stats={stats} />
+          </div>
         </section>
       )}
 
       {/* Final CTA */}
-      <section className="border-t border-border py-16 text-center px-6">
-        <h3 className="text-2xl font-bold mb-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-          Ready to forge your next idea?
-        </h3>
-        <p className="text-muted-foreground mb-6">No email required. Jump in and start discovering.</p>
-        <Button size="lg" onClick={handleCta} className="gap-2">
-          Try Now <ArrowRight className="h-4 w-4" />
-        </Button>
+      <section className="relative py-24 text-center px-6 overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,hsl(var(--primary)/0.06)_0%,transparent_60%)]" />
+        <div className="relative space-y-6 max-w-xl mx-auto">
+          <h3 className="text-3xl sm:text-4xl font-bold">
+            Ready to Find Your Next
+            <br />
+            <span className="text-gradient-primary">Winning Idea?</span>
+          </h3>
+          <p className="text-muted-foreground">
+            No credit card. No email required. Jump in and start discovering.
+          </p>
+          <Button
+            size="lg"
+            onClick={handleCta}
+            className="gradient-primary text-primary-foreground border-0 gap-2 shadow-glow text-base px-8"
+          >
+            Get Started Free <ArrowRight className="h-4 w-4" />
+          </Button>
+        </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground">
-        Orbis — From problem discovery to product validation.
+      <footer className="border-t border-border py-8 text-center text-xs text-muted-foreground space-y-1">
+        <p className="font-medium text-foreground/60">Orbis</p>
+        <p>From problem discovery to product validation.</p>
       </footer>
     </div>
   );

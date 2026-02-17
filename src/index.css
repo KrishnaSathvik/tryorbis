@@ -50,6 +50,8 @@
     --sidebar-accent-foreground: 220 20% 10%;
     --sidebar-border: 220 13% 93%;
     --sidebar-ring: 220 70% 50%;
+
+    --primary-glow: 240 60% 60%;
   }
 
   .dark {
@@ -95,6 +97,8 @@
     --sidebar-accent-foreground: 220 14% 96%;
     --sidebar-border: 220 20% 14%;
     --sidebar-ring: 220 70% 55%;
+
+    --primary-glow: 240 50% 65%;
   }
 }
 
@@ -110,5 +114,20 @@
 
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Space Grotesk', 'Inter', sans-serif;
+  }
+}
+
+@layer utilities {
+  .gradient-primary {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
+  }
+  .text-gradient-primary {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .shadow-glow {
+    box-shadow: 0 0 40px -10px hsl(var(--primary) / 0.25);
   }
 }
