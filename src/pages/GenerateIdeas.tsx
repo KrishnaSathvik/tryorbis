@@ -86,7 +86,7 @@ export default function GenerateIdeas() {
     if (currentStep === 'initial') {
       setIdeaContext(text);
       setCurrentStep('persona');
-      showTypingThenMessage({ role: 'system', text: "Great! Who are you building this for?", options: personas, step: 'persona' });
+      showTypingThenMessage({ role: 'system', text: `Nice — "${text}". Now, who's the target audience for this?`, options: personas, step: 'persona' });
     }
   };
 
