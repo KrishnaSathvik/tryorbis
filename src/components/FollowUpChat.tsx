@@ -116,7 +116,7 @@ export function FollowUpChat({ reportContext, onRevalidate }: FollowUpChatProps)
           <Sparkles className="h-4 w-4 text-primary" />
         </div>
         <div>
-          <p className="text-sm font-semibold font-nunito">AI Advisor</p>
+          <p className="text-sm font-semibold font-nunito">Orbis AI</p>
           <p className="text-[11px] text-muted-foreground">Ask about pivots, positioning, or refine your idea</p>
         </div>
       </div>
