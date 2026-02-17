@@ -41,9 +41,6 @@ export function AppSidebar() {
             Orbis
           </h1>
         </div>
-        {profile?.display_name && (
-          <p className="text-xs text-muted-foreground mt-0.5">Hey, {profile.display_name}</p>
-        )}
       </div>
       <SidebarContent>
         <SidebarGroup>
