@@ -185,29 +185,6 @@ export default function Analytics() {
                 </CardContent>
               </Card>
             )}
-
-            {/* Avg Scores */}
-            {avgScores && (
-              <Card className="rounded-2xl border border-border/40 bg-card shadow-sm">
-                <CardContent className="p-6">
-                  <h3 className="text-sm font-semibold font-nunito mb-1">Average Scores</h3>
-                  <p className="text-xs text-muted-foreground mb-4">Mean scores across all validations</p>
-                  <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={avgScores} barCategoryGap="20%">
-                      <CartesianGrid vertical={false} {...gridStyle} />
-                      <XAxis dataKey="name" tick={axisStyle} axisLine={false} tickLine={false} />
-                      <YAxis domain={[0, 100]} tick={axisStyle} axisLine={false} tickLine={false} width={30} />
-                      <Tooltip content={<CustomTooltip />} cursor={{ fill: "hsl(30, 15%, 94%)", radius: 6 }} />
-                      <Bar dataKey="score" radius={[6, 6, 0, 0]}>
-                        {avgScores.map((entry, i) => (
-                          <Cell key={i} fill={entry.fill} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-            )}
           </div>
 
           {/* Scores Comparison - Grouped Bar */}
