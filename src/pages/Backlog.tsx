@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { getMyBacklog, updateBacklogStatusDb, removeFromBacklogDb, addNoteToBacklogDb, renameBacklogItemDb } from "@/lib/db";
 import { Trash2, MessageSquarePlus, Archive, Filter, Pencil, Check, X, ChevronDown, StickyNote } from "lucide-react";
@@ -171,17 +172,20 @@ export default function Backlog() {
                       </CollapsibleTrigger>
                       <CollapsibleContent>
                         <div className="mt-3 pt-3 border-t space-y-3">
-                          <div className="flex gap-2">
-                            <Input
-                              placeholder="Write a note and press Enter..."
+                          <div className="space-y-2">
+                            <Textarea
+                              placeholder="Paste or type your thoughts here..."
                               value={noteInputs[item.id] || ""}
                               onChange={e => setNoteInputs(prev => ({ ...prev, [item.id]: e.target.value }))}
-                              onKeyDown={e => e.key === 'Enter' && handleAddNote(item.id)}
-                              className="h-9 text-sm"
+                              onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleAddNote(item.id); }}
+                              className="text-sm min-h-[80px] resize-y"
                             />
-                            <Button size="sm" variant="outline" className="h-9 shrink-0" onClick={() => handleAddNote(item.id)}>
-                              <MessageSquarePlus className="h-3.5 w-3.5" />
-                            </Button>
+                            <div className="flex items-center justify-between">
+                              <p className="text-[10px] text-muted-foreground">⌘ + Enter to save</p>
+                              <Button size="sm" variant="outline" className="h-8" onClick={() => handleAddNote(item.id)} disabled={!noteInputs[item.id]?.trim()}>
+                                <MessageSquarePlus className="h-3.5 w-3.5 mr-1" /> Save Note
+                              </Button>
+                            </div>
                           </div>
                           {notes.length > 0 ? (
                             <div className="space-y-2">
