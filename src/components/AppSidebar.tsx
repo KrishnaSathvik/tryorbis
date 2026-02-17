@@ -1,4 +1,4 @@
-import { LayoutDashboard, Lightbulb, ClipboardCheck, Archive, FileText } from "lucide-react";
+import { LayoutDashboard, Lightbulb, ClipboardCheck, Archive, FileText, TrendingUp } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
@@ -17,6 +17,7 @@ const navItems = [
   { title: "Validate Idea", url: "/validate", icon: ClipboardCheck },
   { title: "My Backlog", url: "/backlog", icon: Archive },
   { title: "Reports", url: "/reports", icon: FileText },
+  { title: "Trends", url: "/trends", icon: TrendingUp },
 ];
 
 export function AppSidebar() {
