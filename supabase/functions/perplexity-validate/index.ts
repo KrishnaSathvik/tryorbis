@@ -15,8 +15,7 @@ serve(async (req) => {
     const PERPLEXITY_API_KEY = Deno.env.get('PERPLEXITY_API_KEY');
     if (!PERPLEXITY_API_KEY) throw new Error('PERPLEXITY_API_KEY not configured');
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
+    // GEMINI_API_KEY is fetched later in Pass 2
 
     const { ideaText } = await req.json();
 
@@ -166,20 +165,18 @@ Return ONLY valid JSON:
   ]
 }`;
 
-    console.log('Pass 2: Analysis with Gemini Pro...');
-    const analysisResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    console.log('Pass 2: Analysis with Gemini Flash...');
+    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+    if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not configured');
+
+    const analysisResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: 'You are a brutally honest startup advisor. Your job is to save founders from wasting time on bad ideas AND to greenlight genuinely promising ones. Never be diplomatic at the expense of truth. Base every score and statement on the research evidence provided.' },
-          { role: 'user', content: analysisPrompt },
+        contents: [
+          { role: 'user', parts: [{ text: 'You are a brutally honest startup advisor. Your job is to save founders from wasting time on bad ideas AND to greenlight genuinely promising ones. Never be diplomatic at the expense of truth. Base every score and statement on the research evidence provided.\n\n' + analysisPrompt }] },
         ],
-        temperature: 0.2,
+        generationConfig: { temperature: 0.2 },
       }),
     });
 
@@ -200,7 +197,7 @@ Return ONLY valid JSON:
     }
 
     const analysisData = await analysisResponse.json();
-    const analysisContent = analysisData.choices?.[0]?.message?.content || '';
+    const analysisContent = analysisData.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
     let parsed;
     try {

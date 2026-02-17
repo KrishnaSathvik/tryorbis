@@ -40,26 +40,32 @@ serve(async (req) => {
   }
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
+    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+    if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not configured');
 
     const { messages, reportContext } = await req.json();
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const fullPrompt = [
+      SYSTEM_PROMPT,
+      `\nHere is the full validation/generation report context:\n\n${reportContext}`,
+      `\nI've reviewed your full report. What would you like to explore — pivots, positioning, go-to-market, or something else?`,
+    ].join('\n');
+
+    const geminiMessages = [
+      { role: 'user', parts: [{ text: fullPrompt }] },
+      { role: 'model', parts: [{ text: "I've reviewed your full report. What would you like to explore — pivots, positioning, go-to-market, or something else?" }] },
+      ...messages.map((m: any) => ({
+        role: m.role === 'user' ? 'user' : 'model',
+        parts: [{ text: m.content }],
+      })),
+    ];
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'google/gemini-3-flash-preview',
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: `Here is the full validation/generation report context:\n\n${reportContext}` },
-          { role: 'assistant', content: 'I\'ve reviewed your full report. What would you like to explore — pivots, positioning, go-to-market, or something else?' },
-          ...messages,
-        ],
-        temperature: 0.6,
+        contents: geminiMessages,
+        generationConfig: { temperature: 0.6 },
       }),
     });
 
@@ -80,7 +86,7 @@ serve(async (req) => {
     }
 
     const apiData = await response.json();
-    const content = apiData.choices?.[0]?.message?.content || '';
+    const content = apiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
     const revalMatch = content.match(/\|\|\|REVALIDATE\|\|\|\s*(\{[\s\S]*?\})\s*\|\|\|END\|\|\|/);
     let revalidate = false;
