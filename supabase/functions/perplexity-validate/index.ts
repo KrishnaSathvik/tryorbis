@@ -73,234 +73,39 @@ serve(async (req) => {
       });
     }
 
-    // ─── PASS 1: Deep market research with Perplexity sonar-pro ───
-    const researchPrompt = `Conduct thorough market research for this startup/product idea: "${ideaText}"
+    // ─── SINGLE PASS: Research + Validation with sonar-pro ───
+    const prompt = `You are a brutally honest startup advisor and market research analyst. Validate this idea: "${ideaText}"
 
-RESEARCH METHODOLOGY — investigate each area systematically:
+RESEARCH these areas systematically using real web data:
 
-1. **DEMAND SIGNALS**:
-   - Search Reddit, Twitter, forums for people asking for this type of solution
-   - Look for "I wish there was..." or "why doesn't X exist" posts
-   - Check Google Trends data for related search terms
-   - Look for related Product Hunt launches and their traction
+1. **DEMAND SIGNALS**: Reddit, Twitter, forums for "I wish...", "why doesn't X exist" posts. Google Trends. Product Hunt launches.
+2. **COMPETITOR ANALYSIS**: Direct & indirect competitors. For EACH: name, what they do, pricing, weakest reviews, market position. Check G2, Capterra, Trustpilot.
+3. **PAIN SEVERITY**: How painful? How often? What workarounds exist? Time/money cost?
+4. **FEASIBILITY**: Technology needed, existing APIs/frameworks, realistic MVP scope.
+5. **MARKET SIZE**: Target audience size, adjacent markets, growth trends.
+6. **WILLINGNESS-TO-PAY**: "I'd pay $X", pricing complaints, budget discussions, tool switching reasons.
+7. **MARKET TIMING**: Google Trends trajectory, VC funding, regulations, recent launches.
+8. **WORKAROUNDS**: Spreadsheets, scripts, Zapier, "we built our own" mentions + investment level.
+9. **FEATURE GAPS**: "I wish [tool] had...", features that would make users switch.
+10. **PLATFORM RISKS**: Platforms building similar, API deprecations, regulation changes.
+11. **GTM CHANNELS**: How competitors acquire customers, organic discussion channels.
+12. **PRICING BENCHMARKS**: Exact pricing of ALL competitors found.
+13. **DEFENSIBILITY**: Network effects, integration ecosystems, switching costs, data moats.
 
-2. **COMPETITOR ANALYSIS** (find ALL relevant competitors):
-   - Direct competitors (same problem, same approach)
-   - Indirect competitors (same problem, different approach)
-   - Adjacent tools that could add this feature
-   - For EACH competitor: name, what they do, pricing, their weakest reviews, market position
-   - Check G2, Capterra, Trustpilot for their ratings and common complaints
+Then analyze and score honestly.
 
-3. **PAIN SEVERITY**:
-   - How painful is this problem? How often do people encounter it?
-   - What do people currently do as workarounds?
-   - How much time/money does this problem cost?
+SCORING RUBRIC (be strict, evidence-based):
+**Demand (0-100):** 85-100: thousands searching, 70-84: hundreds expressing need, 50-69: dozens mentioning, 30-49: few mentions, 0-29: no evidence
+**Pain (0-100):** 85-100: "nightmare"/"dealbreaker", 70-84: significant frustration, 50-69: annoying but tolerable, 30-49: minor, 0-29: not painful
+**Competition (0-100, HIGHER = harder):** 85-100: well-funded incumbents with moats, 70-84: established players with room, 50-69: mediocre competitors, 30-49: few small tools, 0-29: almost none
+**MVP Feasibility (0-100):** 85-100: 1-2 weeks MVP, 70-84: 2-4 weeks, 50-69: 1-2 months, 30-49: 3-6 months, 0-29: major challenges
 
-4. **FEASIBILITY INDICATORS**:
-   - What technology would be needed?
-   - Are there existing APIs, open-source tools, or frameworks that make this easier?
-   - What would a realistic MVP look like?
+VERDICT RULES (apply AFTER scoring):
+- **Build**: demand ≥ 65 AND pain ≥ 55 AND competition < 75 AND feasibility ≥ 55
+- **Pivot**: pain ≥ 45 but approach needs rethinking
+- **Skip**: demand < 40 OR pain < 35 OR (competition ≥ 80 AND no differentiator)
 
-5. **MARKET SIZE INDICATORS**:
-   - How large is the target audience?
-   - What adjacent markets exist?
-   - Are there growing trends supporting this idea?
-
-6. **WILLINGNESS-TO-PAY SIGNALS** (CRITICAL):
-   - Search for "what tools do you pay for" related to this problem
-   - Find "I'd pay $X for..." or "too expensive at $X" statements
-   - Look for pricing complaints about existing tools
-   - Find budget discussions, tool switching reasons with price context
-   - Search "alternatives to [popular tool] pricing"
-   - Quote actual WTP statements with source
-
-7. **MARKET TIMING INDICATORS**:
-   - Google Trends trajectory for related search terms
-   - Recent VC funding rounds in this space (Crunchbase)
-   - New regulations or platform changes affecting this space
-   - Recent Product Hunt / YC companies in this category
-   - Technology enablers that are newly available
-
-8. **WORKAROUND DETECTION** (Phase 2 — new):
-   - Search for manual solutions: spreadsheets, scripts, Zapier, internal tools
-   - Look for "we built our own", "I hacked together", "using spreadsheets"
-   - Note time/money investment in these workarounds
-   - These prove pain is real AND budget exists
-
-9. **FEATURE GAP ANALYSIS** (Phase 2 — new):
-   - For each competitor: which features they do well vs poorly
-   - "I wish [tool] had..." or "the one thing missing" posts
-   - Which features are commoditized vs differentiation opportunities
-   - Features that would make users switch tools
-
-10. **PLATFORM RISK SIGNALS** (Phase 2 — new):
-    - Major platforms building or announcing similar features
-    - API deprecation notices or rate-limit changes
-    - New regulations that could restrict or enable this category
-    - Platform dependency risks (single API reliance)
-
-11. **GTM CHANNEL RESEARCH** (Phase 3 — new):
-    - How do competitors acquire customers? (SEO, paid, communities, marketplaces)
-    - Founder stories about early customer acquisition
-    - Which channels have organic discussion about this problem
-
-12. **PRICING BENCHMARK RESEARCH** (Phase 3 — new):
-    - Document exact pricing of ALL competitors (free, paid, enterprise)
-    - Pricing model patterns (per-seat, usage, flat-rate, freemium)
-    - Pricing complaints and value perception discussions
-
-13. **DEFENSIBILITY / MOAT SIGNALS** (Phase 3 — new):
-    - Network effects, data moats, community flywheels
-    - Integration ecosystems creating switching costs
-    - Technical moats, regulatory barriers
-
-Return your findings as detailed unstructured text with all data points, quotes, competitor names, pricing, WTP signals, timing data, workarounds, feature gaps, platform risks, GTM channels, pricing benchmarks, moat signals, URLs. Do NOT format as JSON — give me the raw research.`;
-
-    console.log('Pass 1: Deep market research with sonar-pro...');
-    const researchResponse = await fetch('https://api.perplexity.ai/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'sonar-pro',
-        messages: [
-          { role: 'system', content: 'You are a meticulous market research analyst specializing in startup validation. Find real, verifiable data — not assumptions. Cite sources. Be thorough and specific with numbers, pricing, willingness-to-pay signals, workaround evidence, feature gaps, platform risks, GTM channels, pricing benchmarks, moat signals, and competitor details.' },
-          { role: 'user', content: researchPrompt },
-        ],
-        temperature: 0.1,
-      }),
-    });
-
-    if (!researchResponse.ok) {
-      const errBody = await researchResponse.text();
-      console.error('Perplexity Pass 1 error:', researchResponse.status, errBody);
-      if (researchResponse.status === 429) {
-        return new Response(JSON.stringify({ error: "Research rate limit reached. Please wait and try again." }), {
-          status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      throw new Error(`Research API error [${researchResponse.status}]`);
-    }
-
-    const researchData = await researchResponse.json();
-    const rawResearch = researchData.choices?.[0]?.message?.content || '';
-    const citations = researchData.citations || [];
-    console.log(`Pass 1 complete: ${rawResearch.length} chars, ${citations.length} citations`);
-
-    // ─── PASS 2: Analysis, scoring & verdict with Gemini Pro ───
-    const analysisPrompt = `You are a senior startup advisor analyzing real market research to validate this idea: "${ideaText}"
-
-RAW RESEARCH DATA:
-${rawResearch}
-
-CITATIONS/SOURCES:
-${citations.map((c: string, i: number) => `[${i + 1}] ${c}`).join('\n')}
-
-SCORING RUBRIC — be strict and evidence-based:
-
-**Demand Score (0-100):**
-- 85-100: Thousands of people actively searching for this, multiple "I wish this existed" posts with 100+ upvotes, growing search trends
-- 70-84: Hundreds of people expressing need, some "wish it existed" posts, stable or growing interest
-- 50-69: Dozens of people mentioning the problem, but not urgently seeking solutions
-- 30-49: Few mentions, problem exists but people cope fine with workarounds
-- 0-29: Almost no evidence of demand
-
-**Pain Score (0-100):**
-- 85-100: People describe the problem as "nightmare", "dealbreaker", lose hours/week or $1000+/mo to it
-- 70-84: Significant frustration, frequent complaints, costs meaningful time/money
-- 50-69: Annoying but tolerable, occasional complaints
-- 30-49: Minor inconvenience, rarely mentioned as a real problem
-- 0-29: Not really painful
-
-**Competition Score (0-100)** (HIGHER = MORE competitive = HARDER to enter):
-- 85-100: Dominated by well-funded incumbents (>$50M raised), strong network effects, high switching costs
-- 70-84: Several established competitors, but none dominant — room for differentiation
-- 50-69: Some competitors exist but they're mediocre or serving adjacent markets
-- 30-49: Few competitors, mostly small/indie tools with clear gaps
-- 0-29: Almost no competition (rare — be suspicious if you score this low)
-
-**MVP Feasibility Score (0-100):**
-- 85-100: Could build a working MVP in 1-2 weeks with existing APIs/tools, solo developer feasible
-- 70-84: 2-4 weeks for MVP, needs some custom logic but no deep tech
-- 50-69: 1-2 months, requires meaningful engineering or specialized knowledge
-- 30-49: 3-6 months, needs team or specialized expertise
-- 0-29: Major technical challenges, regulatory hurdles, or requires massive scale to work
-
-VERDICT RULES — apply AFTER scoring, based on the evidence:
-- **Build**: demand ≥ 65 AND pain ≥ 55 AND competition < 75 AND feasibility ≥ 55. Strong evidence that people want this and you can build it.
-- **Pivot**: The core problem is real (pain ≥ 45) but the specific approach needs rethinking — either too competitive, not enough demand for THIS solution, or feasibility concerns. Suggest what to pivot toward.
-- **Skip**: demand < 40 OR pain < 35 OR (competition ≥ 80 AND no clear differentiator). Not enough evidence to justify building.
-
-IMPORTANT: Your verdict MUST be consistent with your scores. If demand is 35, you cannot say "Build". Explain your reasoning.
-
-WILLINGNESS-TO-PAY EXTRACTION (NEW — CRITICAL):
-Extract real WTP signals from the research. Look for:
-- Direct price mentions ("I'd pay $X for this")
-- Pricing complaints about existing tools ("too expensive at $X/mo")
-- Budget discussions and tool switching due to price
-- Workaround investment (time/money spent on manual alternatives)
-Rate the overall WTP signal strength: "strong", "moderate", "weak", or "none"
-
-COMPETITION DENSITY ANALYSIS (NEW):
-Classify the competitive landscape beyond just a score:
-- "blue_ocean": Almost no competitors, wide open space
-- "fragmented": Several small players, no dominant leader
-- "crowded": Many competitors but room for differentiation
-- "winner_take_most": Dominated by 1-2 incumbents with network effects
-Include: number of competitors, total funding estimate, switching costs
-
-MARKET TIMING ASSESSMENT (NEW):
-Classify market timing:
-- "emerging": New category, early signals, few players
-- "growing": Category expanding, VC interest rising, search trends up
-- "saturated": Mature market, many players, innovation slowing
-- "declining": Interest waning, consolidation happening
-
-ICP (IDEAL CUSTOMER PROFILE) EXTRACTION:
-Define the ideal first customer:
-- Business type (B2B/B2C/B2B2C)
-- Company size / revenue range
-- Industry vertical
-- Current tech stack indicators
-- Key buying triggers
-- Budget range
-
-WORKAROUND DETECTION (Phase 2 — NEW):
-Extract workaround evidence:
-- Manual processes (spreadsheets, scripts, Zapier, internal tools)
-- Time/money investment level per workaround: "low", "medium", "high"
-- Overall severity: "strong" (many high-investment workarounds), "moderate", "weak", "none"
-
-FEATURE GAP MAPPING (Phase 2 — NEW):
-Build feature gap matrix:
-- 4-8 key features for this space
-- Competitor coverage: "none", "weak", "strong", "commodity"
-- Opportunity: "high", "medium", "low"
-- Identify single best "top wedge" feature to enter market
-
-PLATFORM RISK SCORING (Phase 2 — NEW):
-Assess platform dependency:
-- Level: "low", "medium", "high", "critical"
-- Signal types: "bundling", "api_limitation", "roadmap_overlap", "regulation", "dependency"
-
-GTM STRATEGY ENGINE (Phase 3 — NEW):
-Recommend go-to-market approach:
-- 3-5 channels with viability: "high", "medium", "low"
-- Primary channel, founder-led sales viability, SEO viability
-- Consider: content, communities, marketplaces, paid, partnerships, outbound
-
-PRICING BENCHMARK ANALYSIS (Phase 3 — NEW):
-Market pricing benchmarks:
-- 3-6 competitor prices with tool, price, model, notes
-- Suggested range (low/mid/high) and recommended pricing model
-
-DEFENSIBILITY / MOAT ANALYSIS (Phase 3 — NEW):
-Long-term defensibility:
-- Overall strength: "strong", "moderate", "weak", "none"
-- Signal types: "data_network", "integrations", "lock_in", "community", "brand", "technical", "regulatory"
-- Time to moat estimate
+Your verdict MUST be consistent with scores. If demand is 35, you cannot say "Build".
 
 Return ONLY valid JSON:
 {
@@ -312,8 +117,8 @@ Return ONLY valid JSON:
   "pros": ["Pro 1"],
   "cons": ["Con 1"],
   "gapOpportunities": ["Gap 1"],
-  "mvpWedge": "MVP",
-  "killTest": "Test",
+  "mvpWedge": "MVP description",
+  "killTest": "How to quickly validate/invalidate",
   "competitors": [{"name": "Name", "weakness": "Weakness", "pricing": "$X/mo"}],
   "wtpSignals": {
     "strength": "strong",
@@ -366,53 +171,56 @@ Return ONLY valid JSON:
   "defensibility": {
     "overallStrength": "moderate",
     "signals": [
-      {"type": "data_network", "description": "Usage data improves over time", "strength": "moderate"},
-      {"type": "integrations", "description": "Deep integration creates switching costs", "strength": "strong"}
+      {"type": "data_network", "description": "Description", "strength": "moderate"}
     ],
     "timeToMoat": "12-18 months",
     "summary": "Summary"
   }
 }`;
 
-    console.log('Pass 2: Analysis with Gemini...');
-    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
-    if (!GEMINI_API_KEY) throw new Error('API key not configured');
-
-    const analysisResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${GEMINI_API_KEY}`, {
+    console.log('Starting single-pass validation with sonar-pro...');
+    const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({
-        contents: [
-          { role: 'user', parts: [{ text: 'You are a brutally honest startup advisor. Your job is to save founders from wasting time on bad ideas AND to greenlight genuinely promising ones. Never be diplomatic at the expense of truth. Base every score and statement on the research evidence provided. Extract all intelligence layers: WTP, competition density, market timing, ICP, workarounds, feature gaps, platform risks, GTM strategy, pricing benchmarks, and defensibility/moat.\n\n' + analysisPrompt }] },
+        model: 'sonar-pro',
+        messages: [
+          { role: 'system', content: 'You are a brutally honest startup advisor and market research analyst. Research real data from the web, then analyze and score ideas. Never be diplomatic at the expense of truth. Base every score on evidence. Return structured JSON.' },
+          { role: 'user', content: prompt },
         ],
-        generationConfig: { temperature: 0.2 },
+        temperature: 0.1,
       }),
     });
 
-    if (!analysisResponse.ok) {
-      const errBody = await analysisResponse.text();
-      console.error('Gemini Pass 2 error:', analysisResponse.status, errBody);
-      if (analysisResponse.status === 429) {
-        return new Response(JSON.stringify({ error: "Analysis rate limit reached. Please try again shortly." }), {
+    if (!response.ok) {
+      const errBody = await response.text();
+      console.error('Perplexity error:', response.status, errBody);
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ error: "Rate limit reached. Please wait and try again." }), {
           status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      throw new Error(`Analysis API error [${analysisResponse.status}]`);
+      throw new Error(`API error [${response.status}]`);
     }
 
-    const analysisData = await analysisResponse.json();
-    const analysisContent = analysisData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content || '';
+    const citations = data.citations || [];
+    console.log(`Response: ${content.length} chars, ${citations.length} citations`);
 
     let parsed;
     try {
-      const jsonMatch = analysisContent.match(/\{[\s\S]*\}/);
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
       parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
     } catch {
-      console.error('Failed to parse output:', analysisContent.slice(0, 500));
+      console.error('Failed to parse output:', content.slice(0, 500));
       parsed = {};
     }
 
-    // ─── PASS 3: Verdict consistency check ───
+    // ─── Verdict consistency check ───
     const scores = parsed.scores || { demand: 0, pain: 0, competition: 0, mvpFeasibility: 0 };
     const verdict = parsed.verdict;
     
@@ -434,12 +242,12 @@ Return ONLY valid JSON:
     // Inject citations
     parsed.evidenceLinks = citations;
 
-    console.log(`Complete: Verdict=${parsed.verdict}, Demand=${scores.demand}, Pain=${scores.pain}, WTP=${parsed.wtpSignals?.strength || 'none'}, GTM=${parsed.gtmStrategy?.primaryChannel || 'none'}, Moat=${parsed.defensibility?.overallStrength || 'unknown'}`);
+    console.log(`Complete: Verdict=${parsed.verdict}, Demand=${scores.demand}, Pain=${scores.pain}, WTP=${parsed.wtpSignals?.strength || 'none'}, GTM=${parsed.gtmStrategy?.primaryChannel || 'none'}`);
 
     // ─── Log success ───
     await serviceClient.from('request_logs').insert({
       user_id: userId, function_name: 'perplexity-validate', status: 'success',
-      latency_ms: Date.now() - startTime, provider: 'perplexity+gemini',
+      latency_ms: Date.now() - startTime, provider: 'perplexity-sonar-pro',
     });
 
     return new Response(JSON.stringify(parsed), {
