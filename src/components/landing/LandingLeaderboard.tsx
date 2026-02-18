@@ -3,7 +3,7 @@ import { Trophy } from "lucide-react";
 
 interface Props {
   stats: {
-    leaderboard: { name: string; score: number; source: string; verdict?: string }[];
+    leaderboard: { name: string; score: number; source: string; verdict?: string; description?: string }[];
   };
 }
 
@@ -26,7 +26,10 @@ export function LandingLeaderboard({ stats }: Props) {
               </span>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium truncate">{item.name}</p>
-                <p className="text-xs text-muted-foreground">{item.source}</p>
+                {item.description && (
+                  <p className="text-xs text-muted-foreground line-clamp-1">{item.description}</p>
+                )}
+                <p className="text-xs text-muted-foreground/60">{item.source}</p>
               </div>
               <span className="text-sm font-semibold tabular-nums">{item.score}</span>
             </div>
