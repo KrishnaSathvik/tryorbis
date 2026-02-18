@@ -279,30 +279,37 @@ export default function Landing() {
 
       {/* Footer */}
       <footer className="border-t border-border/50 py-10">
-        <div className="max-w-5xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <a href="/" className="flex items-center gap-2">
-            <img src={orbisLogo} alt="Orbis" className="h-6 w-6 dark-invert" />
-            <span className="font-bold font-nunito text-gradient-primary">Orbis</span>
-            <span className="text-xs text-muted-foreground ml-1">From problem discovery to product validation.</span>
-          </a>
-          <div className="flex items-center gap-4 flex-wrap">
-            <button onClick={() => navigate("/examples")} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-              Examples & Changelog
-            </button>
-            <FeedbackDrawer />
+        <div className="max-w-5xl mx-auto px-6 space-y-6">
+          {/* Top row: brand + nav links */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <a href="/" className="flex items-center gap-2">
+              <img src={orbisLogo} alt="Orbis" className="h-6 w-6 dark-invert" />
+              <span className="font-bold font-nunito text-gradient-primary">Orbis</span>
+              <span className="text-xs text-muted-foreground ml-1 hidden sm:inline">From problem discovery to product validation.</span>
+            </a>
+            <div className="flex items-center gap-4">
+              <button onClick={() => navigate("/examples")} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                Examples & Changelog
+              </button>
+              <FeedbackDrawer />
+            </div>
+          </div>
+          {/* Bottom row: PH badge + copyright */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-border/30">
             <a
               href="https://www.producthunt.com/products/orbis-ai-product-research-validation?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-orbis-ai-product-research-validation"
               target="_blank"
               rel="noopener noreferrer"
             >
               <img
-                alt="Orbis — AI Product Research & Validation - Stop guessing. Start validating product ideas | Product Hunt"
+                alt="Orbis on Product Hunt"
                 width="250"
                 height="54"
                 src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1081806&theme=light&t=1771453111564"
+                className="h-[44px] w-auto"
               />
             </a>
-            <span className="text-xs text-muted-foreground">© {new Date().getFullYear()} Orbis</span>
+            <span className="text-xs text-muted-foreground">© {new Date().getFullYear()} Orbis. All rights reserved.</span>
           </div>
         </div>
       </footer>
