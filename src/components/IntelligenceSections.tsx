@@ -4,6 +4,17 @@ import { DollarSign, Shield, Clock, Users, TrendingUp, TrendingDown, Minus, Quot
 
 import type { WtpSignals, CompetitionDensity, MarketTiming, ICP, WorkaroundDetection, FeatureGapMap, PlatformRisk, GtmStrategy, PricingBenchmarks, DefensibilityAnalysis } from "@/lib/types";
 
+const CARD_CLASS = "rounded-2xl border-border/50 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300";
+const CONTENT_CLASS = "p-6 space-y-4";
+const HEADER_CLASS = "flex items-center justify-between";
+const TITLE_ROW_CLASS = "flex items-center gap-2";
+const TITLE_CLASS = "font-semibold font-nunito";
+const SUMMARY_CLASS = "text-sm text-muted-foreground leading-relaxed";
+const DETAIL_LABEL_CLASS = "font-medium text-foreground";
+const DETAIL_VALUE_CLASS = "text-muted-foreground";
+const PILL_CLASS = "bg-secondary px-3 py-1 rounded-full text-xs font-medium";
+const PILL_PRIMARY_CLASS = "bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-medium";
+
 const wtpColors: Record<string, string> = {
   strong: "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20",
   moderate: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20",
@@ -40,33 +51,33 @@ const TimingIcon = ({ phase }: { phase: string }) => {
 
 export function WtpSection({ data }: { data: WtpSignals }) {
   return (
-    <Card className="rounded-2xl border-border/50 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
-      <CardContent className="p-5 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+    <Card className={CARD_CLASS}>
+      <CardContent className={CONTENT_CLASS}>
+        <div className={HEADER_CLASS}>
+          <div className={TITLE_ROW_CLASS}>
             <DollarSign className="h-4 w-4 text-primary shrink-0" />
-            <h3 className="font-semibold text-sm font-nunito">Willingness to Pay</h3>
+            <h3 className={TITLE_CLASS}>Willingness to Pay</h3>
           </div>
           <Badge variant="outline" className={`text-xs capitalize ${wtpColors[data.strength] || wtpColors.none}`}>
             {data.strength}
           </Badge>
         </div>
-        <p className="text-sm text-muted-foreground">{data.summary}</p>
+        <p className={SUMMARY_CLASS}>{data.summary}</p>
         {data.priceRange && (
-          <div className="flex gap-3 text-xs">
-            <span className="bg-secondary px-2.5 py-1 rounded-full font-medium">Low: ${data.priceRange.low}</span>
-            <span className="bg-primary/10 text-primary px-2.5 py-1 rounded-full font-medium">Mid: ${data.priceRange.mid}</span>
-            <span className="bg-secondary px-2.5 py-1 rounded-full font-medium">High: ${data.priceRange.high}</span>
+          <div className="flex flex-wrap gap-2">
+            <span className={PILL_CLASS}>Low: ${data.priceRange.low}</span>
+            <span className={PILL_PRIMARY_CLASS}>Mid: ${data.priceRange.mid}</span>
+            <span className={PILL_CLASS}>High: ${data.priceRange.high}</span>
           </div>
         )}
         {data.signals?.length > 0 && (
-          <div className="space-y-2 pt-1">
-            {data.signals.slice(0, 3).map((s, i) => (
-              <div key={i} className="flex gap-2 text-xs">
-                <Quote className="h-3 w-3 text-muted-foreground shrink-0 mt-0.5" />
+          <div className="space-y-3 pt-1">
+            {data.signals.slice(0, 2).map((s, i) => (
+              <div key={i} className="flex gap-2.5 text-sm">
+                <Quote className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-1" />
                 <div>
-                  <p className="text-muted-foreground italic">"{s.quote}"</p>
-                  <p className="text-muted-foreground/60 mt-0.5">— {s.source}</p>
+                  <p className="text-muted-foreground italic leading-relaxed">"{s.quote}"</p>
+                  <p className="text-muted-foreground/60 text-xs mt-1">— {s.source}</p>
                 </div>
               </div>
             ))}
@@ -79,26 +90,27 @@ export function WtpSection({ data }: { data: WtpSignals }) {
 
 export function CompetitionDensitySection({ data }: { data: CompetitionDensity }) {
   return (
-    <Card className="rounded-2xl border-border/50 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
-      <CardContent className="p-5 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+    <Card className={CARD_CLASS}>
+      <CardContent className={CONTENT_CLASS}>
+        <div className={HEADER_CLASS}>
+          <div className={TITLE_ROW_CLASS}>
             <Shield className="h-4 w-4 text-primary shrink-0" />
-            <h3 className="font-semibold text-sm font-nunito">Competition Density</h3>
+            <h3 className={TITLE_CLASS}>Competition Density</h3>
           </div>
           <Badge variant="outline" className={`text-xs ${competitionColors[data.level] || ''}`}>
             {competitionLabels[data.level] || data.level}
           </Badge>
         </div>
-        <p className="text-sm text-muted-foreground">{data.summary}</p>
-        <div className="flex flex-wrap gap-2 text-xs">
-          <span className="bg-secondary px-2.5 py-1 rounded-full">{data.competitorCount} competitors</span>
-          {data.totalFundingEstimate && <span className="bg-secondary px-2.5 py-1 rounded-full">~{data.totalFundingEstimate} funded</span>}
-          <span className="bg-secondary px-2.5 py-1 rounded-full">Switching: {data.switchingCosts}</span>
+        <p className={SUMMARY_CLASS}>{data.summary}</p>
+        <div className="flex flex-wrap gap-2">
+          <span className={PILL_CLASS}>{data.competitorCount} competitors</span>
+          {data.totalFundingEstimate && <span className={PILL_CLASS}>~{data.totalFundingEstimate} funded</span>}
+          <span className={PILL_CLASS}>Switching: {data.switchingCosts}</span>
         </div>
         {data.keyIncumbents?.length > 0 && (
-          <div className="text-xs text-muted-foreground">
-            <span className="font-medium text-foreground">Key players:</span> {data.keyIncumbents.join(', ')}
+          <div className="text-sm">
+            <span className={DETAIL_LABEL_CLASS}>Key players:</span>{' '}
+            <span className={DETAIL_VALUE_CLASS}>{data.keyIncumbents.join(', ')}</span>
           </div>
         )}
       </CardContent>
@@ -108,23 +120,23 @@ export function CompetitionDensitySection({ data }: { data: CompetitionDensity }
 
 export function MarketTimingSection({ data }: { data: MarketTiming }) {
   return (
-    <Card className="rounded-2xl border-border/50 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
-      <CardContent className="p-5 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+    <Card className={CARD_CLASS}>
+      <CardContent className={CONTENT_CLASS}>
+        <div className={HEADER_CLASS}>
+          <div className={TITLE_ROW_CLASS}>
             <Clock className="h-4 w-4 text-primary shrink-0" />
-            <h3 className="font-semibold text-sm font-nunito">Market Timing</h3>
+            <h3 className={TITLE_CLASS}>Market Timing</h3>
           </div>
           <Badge variant="outline" className={`text-xs capitalize flex items-center gap-1 ${timingColors[data.phase] || ''}`}>
             <TimingIcon phase={data.phase} />
             {data.phase}
           </Badge>
         </div>
-        <p className="text-sm text-muted-foreground">{data.summary}</p>
+        <p className={SUMMARY_CLASS}>{data.summary}</p>
         {data.signals?.length > 0 && (
-          <ul className="space-y-1">
+          <ul className="space-y-1.5">
             {data.signals.map((s, i) => (
-              <li key={i} className="text-xs text-muted-foreground">• {s}</li>
+              <li key={i} className="text-sm text-muted-foreground">• {s}</li>
             ))}
           </ul>
         )}
@@ -135,34 +147,34 @@ export function MarketTimingSection({ data }: { data: MarketTiming }) {
 
 export function IcpSection({ data }: { data: ICP }) {
   return (
-    <Card className="rounded-2xl border-border/50 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
-      <CardContent className="p-5 space-y-3">
-        <div className="flex items-center gap-2">
+    <Card className={CARD_CLASS}>
+      <CardContent className={CONTENT_CLASS}>
+        <div className={TITLE_ROW_CLASS}>
           <Users className="h-4 w-4 text-primary shrink-0" />
-          <h3 className="font-semibold text-sm font-nunito">Ideal Customer Profile</h3>
+          <h3 className={TITLE_CLASS}>Ideal Customer Profile</h3>
         </div>
-        <p className="text-sm text-muted-foreground">{data.summary}</p>
-        <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
-          <div><span className="font-medium text-foreground">Type:</span> <span className="text-muted-foreground">{data.businessType}</span></div>
-          <div><span className="font-medium text-foreground">Size:</span> <span className="text-muted-foreground">{data.companySize}</span></div>
-          <div><span className="font-medium text-foreground">Revenue:</span> <span className="text-muted-foreground">{data.revenueRange}</span></div>
-          <div><span className="font-medium text-foreground">Budget:</span> <span className="text-muted-foreground">{data.budgetRange}</span></div>
-          <div className="col-span-2"><span className="font-medium text-foreground">Industry:</span> <span className="text-muted-foreground">{data.industry}</span></div>
+        <p className={SUMMARY_CLASS}>{data.summary}</p>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 text-sm">
+          <div><span className={DETAIL_LABEL_CLASS}>Type:</span> <span className={DETAIL_VALUE_CLASS}>{data.businessType}</span></div>
+          <div><span className={DETAIL_LABEL_CLASS}>Size:</span> <span className={DETAIL_VALUE_CLASS}>{data.companySize}</span></div>
+          <div><span className={DETAIL_LABEL_CLASS}>Revenue:</span> <span className={DETAIL_VALUE_CLASS}>{data.revenueRange}</span></div>
+          <div><span className={DETAIL_LABEL_CLASS}>Budget:</span> <span className={DETAIL_VALUE_CLASS}>{data.budgetRange}</span></div>
+          <div className="col-span-2"><span className={DETAIL_LABEL_CLASS}>Industry:</span> <span className={DETAIL_VALUE_CLASS}>{data.industry}</span></div>
         </div>
         {data.buyingTriggers?.length > 0 && (
-          <div className="text-xs">
-            <span className="font-medium text-foreground">Buying triggers:</span>
-            <ul className="mt-1 space-y-0.5">
+          <div className="text-sm">
+            <span className={DETAIL_LABEL_CLASS}>Buying triggers:</span>
+            <ul className="mt-1.5 space-y-1">
               {data.buyingTriggers.map((t, i) => (
-                <li key={i} className="text-muted-foreground">• {t}</li>
+                <li key={i} className={DETAIL_VALUE_CLASS}>• {t}</li>
               ))}
             </ul>
           </div>
         )}
         {data.techStack?.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 pt-1">
+          <div className="flex flex-wrap gap-2 pt-1">
             {data.techStack.map((t, i) => (
-              <span key={i} className="bg-secondary text-xs px-2 py-0.5 rounded-full">{t}</span>
+              <span key={i} className={PILL_CLASS}>{t}</span>
             ))}
           </div>
         )}
@@ -214,28 +226,28 @@ const riskTypeLabels: Record<string, string> = {
 
 export function WorkaroundSection({ data }: { data: WorkaroundDetection }) {
   return (
-    <Card className="rounded-2xl border-border/50 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
-      <CardContent className="p-5 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+    <Card className={CARD_CLASS}>
+      <CardContent className={CONTENT_CLASS}>
+        <div className={HEADER_CLASS}>
+          <div className={TITLE_ROW_CLASS}>
             <Wrench className="h-4 w-4 text-primary shrink-0" />
-            <h3 className="font-semibold text-sm font-nunito">Workaround Detection</h3>
+            <h3 className={TITLE_CLASS}>Workaround Detection</h3>
           </div>
           <Badge variant="outline" className={`text-xs capitalize ${severityColors[data.severity] || severityColors.none}`}>
             {data.severity} signal
           </Badge>
         </div>
-        <p className="text-sm text-muted-foreground">{data.summary}</p>
+        <p className={SUMMARY_CLASS}>{data.summary}</p>
         {data.workarounds?.length > 0 && (
-          <div className="space-y-2 pt-1">
-            {data.workarounds.slice(0, 4).map((w, i) => (
-              <div key={i} className="flex items-start gap-2 text-xs">
+          <div className="space-y-3 pt-1">
+            {data.workarounds.slice(0, 3).map((w, i) => (
+              <div key={i} className="flex items-start gap-2.5 text-sm">
                 <Badge variant="outline" className={`text-[10px] capitalize shrink-0 mt-0.5 ${investmentColors[w.investmentLevel] || ''}`}>
                   {w.investmentLevel}
                 </Badge>
                 <div>
-                  <p className="text-muted-foreground">{w.description}</p>
-                  <p className="text-muted-foreground/60 mt-0.5">— {w.source}</p>
+                  <p className={DETAIL_VALUE_CLASS}>{w.description}</p>
+                  <p className="text-muted-foreground/60 text-xs mt-1">— {w.source}</p>
                 </div>
               </div>
             ))}
@@ -248,20 +260,20 @@ export function WorkaroundSection({ data }: { data: WorkaroundDetection }) {
 
 export function FeatureGapSection({ data }: { data: FeatureGapMap }) {
   return (
-    <Card className="rounded-2xl border-border/50 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
-      <CardContent className="p-5 space-y-3">
-        <div className="flex items-center gap-2">
+    <Card className={CARD_CLASS}>
+      <CardContent className={CONTENT_CLASS}>
+        <div className={TITLE_ROW_CLASS}>
           <Layers className="h-4 w-4 text-primary shrink-0" />
-          <h3 className="font-semibold text-sm font-nunito">Feature Gap Map</h3>
+          <h3 className={TITLE_CLASS}>Feature Gap Map</h3>
         </div>
-        <p className="text-sm text-muted-foreground">{data.summary}</p>
+        <p className={SUMMARY_CLASS}>{data.summary}</p>
         {data.gaps?.length > 0 && (
-          <div className="space-y-1.5 pt-1">
-            {data.gaps.slice(0, 6).map((g, i) => (
-              <div key={i} className="flex items-center justify-between text-xs">
-                <span className="text-foreground font-medium truncate mr-2">{g.feature}</span>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-muted-foreground">{coverageLabels[g.competitorCoverage] || g.competitorCoverage}</span>
+          <div className="space-y-2 pt-1">
+            {data.gaps.slice(0, 5).map((g, i) => (
+              <div key={i} className="flex items-center justify-between text-sm">
+                <span className={`${DETAIL_LABEL_CLASS} truncate mr-3`}>{g.feature}</span>
+                <div className="flex items-center gap-3 shrink-0">
+                  <span className={DETAIL_VALUE_CLASS}>{coverageLabels[g.competitorCoverage] || g.competitorCoverage}</span>
                   <span className={`font-medium capitalize ${opportunityColors[g.opportunity] || ''}`}>
                     {g.opportunity === 'high' ? '★ High' : g.opportunity === 'medium' ? '◆ Med' : '○ Low'}
                   </span>
@@ -271,9 +283,9 @@ export function FeatureGapSection({ data }: { data: FeatureGapMap }) {
           </div>
         )}
         {data.topWedge && (
-          <div className="bg-primary/5 border border-primary/10 rounded-lg p-2.5 text-xs">
+          <div className="bg-primary/5 border border-primary/10 rounded-xl p-3 text-sm">
             <span className="font-medium text-primary">Top wedge:</span>{' '}
-            <span className="text-muted-foreground">{data.topWedge}</span>
+            <span className={DETAIL_VALUE_CLASS}>{data.topWedge}</span>
           </div>
         )}
       </CardContent>
@@ -283,26 +295,26 @@ export function FeatureGapSection({ data }: { data: FeatureGapMap }) {
 
 export function PlatformRiskSection({ data }: { data: PlatformRisk }) {
   return (
-    <Card className="rounded-2xl border-border/50 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
-      <CardContent className="p-5 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+    <Card className={CARD_CLASS}>
+      <CardContent className={CONTENT_CLASS}>
+        <div className={HEADER_CLASS}>
+          <div className={TITLE_ROW_CLASS}>
             <AlertOctagon className="h-4 w-4 text-primary shrink-0" />
-            <h3 className="font-semibold text-sm font-nunito">Platform Risk</h3>
+            <h3 className={TITLE_CLASS}>Platform Risk</h3>
           </div>
           <Badge variant="outline" className={`text-xs capitalize ${platformRiskColors[data.level] || ''}`}>
             {data.level}
           </Badge>
         </div>
-        <p className="text-sm text-muted-foreground">{data.summary}</p>
+        <p className={SUMMARY_CLASS}>{data.summary}</p>
         {data.signals?.length > 0 && (
-          <div className="space-y-1.5 pt-1">
+          <div className="space-y-2.5 pt-1">
             {data.signals.map((s, i) => (
-              <div key={i} className="flex items-start gap-2 text-xs">
+              <div key={i} className="flex items-start gap-2.5 text-sm">
                 <Badge variant="outline" className="text-[10px] shrink-0 mt-0.5">
                   {riskTypeLabels[s.riskType] || s.riskType}
                 </Badge>
-                <p className="text-muted-foreground">{s.signal}</p>
+                <p className={DETAIL_VALUE_CLASS}>{s.signal}</p>
               </div>
             ))}
           </div>
@@ -337,23 +349,23 @@ const moatTypeLabels: Record<string, string> = {
 
 export function GtmStrategySection({ data }: { data: GtmStrategy }) {
   return (
-    <Card className="rounded-2xl border-border/50 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
-      <CardContent className="p-5 space-y-3">
-        <div className="flex items-center gap-2">
+    <Card className={CARD_CLASS}>
+      <CardContent className={CONTENT_CLASS}>
+        <div className={TITLE_ROW_CLASS}>
           <Megaphone className="h-4 w-4 text-primary shrink-0" />
-          <h3 className="font-semibold text-sm font-nunito">Go-To-Market Strategy</h3>
+          <h3 className={TITLE_CLASS}>Go-To-Market Strategy</h3>
         </div>
-        <p className="text-sm text-muted-foreground">{data.summary}</p>
-        <div className="flex flex-wrap gap-2 text-xs">
-          <span className="bg-primary/10 text-primary px-2.5 py-1 rounded-full font-medium">Primary: {data.primaryChannel}</span>
-          {data.founderLedSales && <span className="bg-secondary px-2.5 py-1 rounded-full">Founder-led sales ✓</span>}
-          <span className="bg-secondary px-2.5 py-1 rounded-full">SEO: {data.seoViability}</span>
+        <p className={SUMMARY_CLASS}>{data.summary}</p>
+        <div className="flex flex-wrap gap-2">
+          <span className={PILL_PRIMARY_CLASS}>Primary: {data.primaryChannel}</span>
+          {data.founderLedSales && <span className={PILL_CLASS}>Founder-led sales ✓</span>}
+          <span className={PILL_CLASS}>SEO: {data.seoViability}</span>
         </div>
         {data.channels?.length > 0 && (
-          <div className="space-y-1.5 pt-1">
-            {data.channels.slice(0, 5).map((ch, i) => (
-              <div key={i} className="flex items-center justify-between text-xs">
-                <span className="text-foreground font-medium">{ch.channel}</span>
+          <div className="space-y-2 pt-1">
+            {data.channels.slice(0, 4).map((ch, i) => (
+              <div key={i} className="flex items-center justify-between text-sm">
+                <span className={DETAIL_LABEL_CLASS}>{ch.channel}</span>
                 <Badge variant="outline" className={`text-[10px] capitalize ${channelViabilityColors[ch.viability] || ''}`}>
                   {ch.viability}
                 </Badge>
@@ -368,31 +380,34 @@ export function GtmStrategySection({ data }: { data: GtmStrategy }) {
 
 export function PricingBenchmarkSection({ data }: { data: PricingBenchmarks }) {
   return (
-    <Card className="rounded-2xl border-border/50 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
-      <CardContent className="p-5 space-y-3">
-        <div className="flex items-center gap-2">
+    <Card className={CARD_CLASS}>
+      <CardContent className={CONTENT_CLASS}>
+        <div className={TITLE_ROW_CLASS}>
           <Tag className="h-4 w-4 text-primary shrink-0" />
-          <h3 className="font-semibold text-sm font-nunito">Pricing Benchmarks</h3>
+          <h3 className={TITLE_CLASS}>Pricing Benchmarks</h3>
         </div>
-        <p className="text-sm text-muted-foreground">{data.summary}</p>
+        <p className={SUMMARY_CLASS}>{data.summary}</p>
         {data.suggestedRange && (
-          <div className="flex gap-3 text-xs">
-            <span className="bg-secondary px-2.5 py-1 rounded-full font-medium">Low: {data.suggestedRange.low}</span>
-            <span className="bg-primary/10 text-primary px-2.5 py-1 rounded-full font-medium">Mid: {data.suggestedRange.mid}</span>
-            <span className="bg-secondary px-2.5 py-1 rounded-full font-medium">High: {data.suggestedRange.high}</span>
+          <div className="flex flex-wrap gap-2">
+            <span className={PILL_CLASS}>Low: {data.suggestedRange.low}</span>
+            <span className={PILL_PRIMARY_CLASS}>Mid: {data.suggestedRange.mid}</span>
+            <span className={PILL_CLASS}>High: {data.suggestedRange.high}</span>
           </div>
         )}
         {data.pricingModel && (
-          <div className="text-xs"><span className="font-medium text-foreground">Model:</span> <span className="text-muted-foreground">{data.pricingModel}</span></div>
+          <div className="text-sm">
+            <span className={DETAIL_LABEL_CLASS}>Model:</span>{' '}
+            <span className={DETAIL_VALUE_CLASS}>{data.pricingModel}</span>
+          </div>
         )}
         {data.benchmarks?.length > 0 && (
-          <div className="space-y-1.5 pt-1">
-            {data.benchmarks.slice(0, 5).map((b, i) => (
-              <div key={i} className="flex items-center justify-between text-xs">
-                <span className="text-foreground font-medium truncate mr-2">{b.tool}</span>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-muted-foreground">{b.price}</span>
-                  <span className="text-muted-foreground/60">{b.model}</span>
+          <div className="space-y-2 pt-1">
+            {data.benchmarks.slice(0, 4).map((b, i) => (
+              <div key={i} className="flex items-center justify-between text-sm">
+                <span className={`${DETAIL_LABEL_CLASS} truncate mr-3`}>{b.tool}</span>
+                <div className="flex items-center gap-3 shrink-0">
+                  <span className={DETAIL_VALUE_CLASS}>{b.price}</span>
+                  <span className="text-muted-foreground/60 text-xs">{b.model}</span>
                 </div>
               </div>
             ))}
@@ -405,29 +420,32 @@ export function PricingBenchmarkSection({ data }: { data: PricingBenchmarks }) {
 
 export function DefensibilitySection({ data }: { data: DefensibilityAnalysis }) {
   return (
-    <Card className="rounded-2xl border-border/50 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
-      <CardContent className="p-5 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+    <Card className={CARD_CLASS}>
+      <CardContent className={CONTENT_CLASS}>
+        <div className={HEADER_CLASS}>
+          <div className={TITLE_ROW_CLASS}>
             <Castle className="h-4 w-4 text-primary shrink-0" />
-            <h3 className="font-semibold text-sm font-nunito">Defensibility & Moat</h3>
+            <h3 className={TITLE_CLASS}>Defensibility & Moat</h3>
           </div>
           <Badge variant="outline" className={`text-xs capitalize ${moatStrengthColors[data.overallStrength] || moatStrengthColors.none}`}>
             {data.overallStrength}
           </Badge>
         </div>
-        <p className="text-sm text-muted-foreground">{data.summary}</p>
+        <p className={SUMMARY_CLASS}>{data.summary}</p>
         {data.timeToMoat && (
-          <div className="text-xs"><span className="font-medium text-foreground">Time to moat:</span> <span className="text-muted-foreground">{data.timeToMoat}</span></div>
+          <div className="text-sm">
+            <span className={DETAIL_LABEL_CLASS}>Time to moat:</span>{' '}
+            <span className={DETAIL_VALUE_CLASS}>{data.timeToMoat}</span>
+          </div>
         )}
         {data.signals?.length > 0 && (
-          <div className="space-y-1.5 pt-1">
+          <div className="space-y-2.5 pt-1">
             {data.signals.map((s, i) => (
-              <div key={i} className="flex items-start gap-2 text-xs">
+              <div key={i} className="flex items-start gap-2.5 text-sm">
                 <Badge variant="outline" className={`text-[10px] shrink-0 mt-0.5 capitalize ${moatStrengthColors[s.strength] || ''}`}>
                   {moatTypeLabels[s.type] || s.type}
                 </Badge>
-                <p className="text-muted-foreground">{s.description}</p>
+                <p className={DETAIL_VALUE_CLASS}>{s.description}</p>
               </div>
             ))}
           </div>
