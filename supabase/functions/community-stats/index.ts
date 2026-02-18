@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
     }
 
     // ─── Leaderboard ───
-    const allIdeas: { name: string; score: number; source: string; verdict?: string; description?: string }[] = [];
+    const allIdeas: { name: string; score: number; source: string; description?: string }[] = [];
     for (const run of runs) {
       const suggestions = Array.isArray(run.idea_suggestions) ? run.idea_suggestions : [];
       for (const idea of suggestions) {
@@ -61,14 +61,6 @@ Deno.serve(async (req) => {
           allIdeas.push({ name: idea.name, score: idea.demandScore || 0, source: "Generated", description: desc });
         }
       }
-    }
-    for (const r of reports) {
-      const raw = (r.idea_text || "").trim();
-      const shortName = raw.includes(":") ? raw.split(":")[0].trim() : raw.slice(0, 60);
-      const desc = raw.includes(":") ? raw.split(":").slice(1).join(":").trim().slice(0, 80) : undefined;
-      const scores = r.scores as any;
-      const score = scores ? Math.round(((scores.demand || 0) + (scores.pain || 0) + (scores.mvpFeasibility || 0)) / 3) : 0;
-      allIdeas.push({ name: shortName, score, source: "Validated", verdict: r.verdict, description: desc });
     }
 
     const seen = new Map<string, typeof allIdeas[0]>();
