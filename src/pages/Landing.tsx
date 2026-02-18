@@ -13,6 +13,7 @@ import { LandingCharts } from "@/components/landing/LandingCharts";
 import { LandingLeaderboard } from "@/components/landing/LandingLeaderboard";
 import { LandingTrends } from "@/components/landing/LandingTrends";
 import { LandingSuccessTracking } from "@/components/landing/LandingSuccessTracking";
+import { LandingComparison } from "@/components/landing/LandingComparison";
 import { LandingTicker } from "@/components/landing/LandingTicker";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { FeedbackDrawer } from "@/components/FeedbackDrawer";
@@ -207,6 +208,9 @@ export default function Landing() {
           ))}
         </div>
       </section>
+
+      {/* Competitive Comparison */}
+      <LandingComparison />
 
       {/* Community trends */}
       {stats && (
