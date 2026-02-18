@@ -267,6 +267,60 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Pipeline Diagram */}
+      <section className="border-t border-border/50 py-16">
+        <div className="max-w-4xl mx-auto px-6 space-y-8">
+          <div className="text-center space-y-2">
+            <p className="text-xs font-bold tracking-widest uppercase text-muted-foreground">Your Research Pipeline</p>
+            <h3 className="text-2xl sm:text-3xl font-bold font-nunito">
+              From <span className="text-gradient-primary">Zero</span> to <span className="text-gradient-primary">Validated</span>
+            </h3>
+          </div>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-0">
+            {/* Step 1 */}
+            <div className="flex flex-col items-center text-center space-y-2 px-4 max-w-[180px]">
+              <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center">
+                <Lightbulb className="h-6 w-6 text-primary" />
+              </div>
+              <p className="text-sm font-semibold font-nunito">Generate</p>
+              <p className="text-[11px] text-muted-foreground leading-snug">Mine real complaints & discover product ideas</p>
+            </div>
+            {/* Arrow */}
+            <div className="hidden sm:flex items-center text-muted-foreground/40 px-2">
+              <div className="w-8 h-px bg-border" />
+              <ArrowRight className="h-4 w-4 -ml-1" />
+            </div>
+            <div className="sm:hidden text-muted-foreground/40">
+              <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 3a1 1 0 011 1v10.586l3.293-3.293a1 1 0 111.414 1.414l-5 5a1 1 0 01-1.414 0l-5-5a1 1 0 111.414-1.414L9 14.586V4a1 1 0 011-1z" clipRule="evenodd" /></svg>
+            </div>
+            {/* Step 2 */}
+            <div className="flex flex-col items-center text-center space-y-2 px-4 max-w-[180px]">
+              <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center">
+                <ShieldCheck className="h-6 w-6 text-primary" />
+              </div>
+              <p className="text-sm font-semibold font-nunito">Validate</p>
+              <p className="text-[11px] text-muted-foreground leading-snug">Score demand, competition & get a Build/Pivot/Skip verdict</p>
+            </div>
+            {/* Arrow */}
+            <div className="hidden sm:flex items-center text-muted-foreground/40 px-2">
+              <div className="w-8 h-px bg-border" />
+              <ArrowRight className="h-4 w-4 -ml-1" />
+            </div>
+            <div className="sm:hidden text-muted-foreground/40">
+              <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 3a1 1 0 011 1v10.586l3.293-3.293a1 1 0 111.414 1.414l-5 5a1 1 0 01-1.414 0l-5-5a1 1 0 111.414-1.414L9 14.586V4a1 1 0 011-1z" clipRule="evenodd" /></svg>
+            </div>
+            {/* Step 3 */}
+            <div className="flex flex-col items-center text-center space-y-2 px-4 max-w-[180px]">
+              <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center">
+                <Sparkles className="h-6 w-6 text-primary" />
+              </div>
+              <p className="text-sm font-semibold font-nunito">Chat</p>
+              <p className="text-[11px] text-muted-foreground leading-snug">Discuss strategy & refine your approach with AI</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="border-t border-border/50 py-10">
         <div className="max-w-5xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
