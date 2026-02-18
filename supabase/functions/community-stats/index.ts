@@ -59,10 +59,17 @@ Deno.serve(async (req) => {
         if (idea?.name) {
           let desc: string | undefined = undefined;
           if (idea.description) {
-            // Extract just the first complete sentence
             const text = String(idea.description);
-            const firstSentence = text.match(/^[^.!?]+[.!?]/);
-            desc = firstSentence ? firstSentence[0].trim() : text.split(',')[0].trim() + '.';
+            // Take first clause up to ~60 chars, ending at a natural break
+            let short = text.slice(0, 60);
+            const lastBreak = short.search(/[.,;:!?—]/);
+            if (lastBreak > 15) {
+              short = short.slice(0, lastBreak + 1).trim();
+            } else {
+              const wordEnd = short.lastIndexOf(' ');
+              short = short.slice(0, wordEnd > 15 ? wordEnd : 60).trim() + '.';
+            }
+            desc = short;
           }
           allIdeas.push({ name: idea.name, score: idea.demandScore || 0, source: "Generated", description: desc });
         }
