@@ -40,12 +40,12 @@ const TimingIcon = ({ phase }: { phase: string }) => {
 
 export function WtpSection({ data }: { data: WtpSignals }) {
   return (
-    <Card className="rounded-2xl border-border/50">
+    <Card className="rounded-2xl border-border/50 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
       <CardContent className="p-5 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <DollarSign className="h-4 w-4 text-primary shrink-0" />
-            <h3 className="font-semibold text-sm">Willingness to Pay</h3>
+            <h3 className="font-semibold text-sm font-nunito">Willingness to Pay</h3>
           </div>
           <Badge variant="outline" className={`text-xs capitalize ${wtpColors[data.strength] || wtpColors.none}`}>
             {data.strength}
@@ -79,12 +79,12 @@ export function WtpSection({ data }: { data: WtpSignals }) {
 
 export function CompetitionDensitySection({ data }: { data: CompetitionDensity }) {
   return (
-    <Card className="rounded-2xl border-border/50">
+    <Card className="rounded-2xl border-border/50 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
       <CardContent className="p-5 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Shield className="h-4 w-4 text-primary shrink-0" />
-            <h3 className="font-semibold text-sm">Competition Density</h3>
+            <h3 className="font-semibold text-sm font-nunito">Competition Density</h3>
           </div>
           <Badge variant="outline" className={`text-xs ${competitionColors[data.level] || ''}`}>
             {competitionLabels[data.level] || data.level}
@@ -108,12 +108,12 @@ export function CompetitionDensitySection({ data }: { data: CompetitionDensity }
 
 export function MarketTimingSection({ data }: { data: MarketTiming }) {
   return (
-    <Card className="rounded-2xl border-border/50">
+    <Card className="rounded-2xl border-border/50 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
       <CardContent className="p-5 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4 text-primary shrink-0" />
-            <h3 className="font-semibold text-sm">Market Timing</h3>
+            <h3 className="font-semibold text-sm font-nunito">Market Timing</h3>
           </div>
           <Badge variant="outline" className={`text-xs capitalize flex items-center gap-1 ${timingColors[data.phase] || ''}`}>
             <TimingIcon phase={data.phase} />
@@ -135,11 +135,11 @@ export function MarketTimingSection({ data }: { data: MarketTiming }) {
 
 export function IcpSection({ data }: { data: ICP }) {
   return (
-    <Card className="rounded-2xl border-border/50">
+    <Card className="rounded-2xl border-border/50 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
       <CardContent className="p-5 space-y-3">
         <div className="flex items-center gap-2">
           <Users className="h-4 w-4 text-primary shrink-0" />
-          <h3 className="font-semibold text-sm">Ideal Customer Profile</h3>
+          <h3 className="font-semibold text-sm font-nunito">Ideal Customer Profile</h3>
         </div>
         <p className="text-sm text-muted-foreground">{data.summary}</p>
         <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
@@ -214,12 +214,12 @@ const riskTypeLabels: Record<string, string> = {
 
 export function WorkaroundSection({ data }: { data: WorkaroundDetection }) {
   return (
-    <Card className="rounded-2xl border-border/50">
+    <Card className="rounded-2xl border-border/50 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
       <CardContent className="p-5 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Wrench className="h-4 w-4 text-primary shrink-0" />
-            <h3 className="font-semibold text-sm">Workaround Detection</h3>
+            <h3 className="font-semibold text-sm font-nunito">Workaround Detection</h3>
           </div>
           <Badge variant="outline" className={`text-xs capitalize ${severityColors[data.severity] || severityColors.none}`}>
             {data.severity} signal
@@ -248,11 +248,11 @@ export function WorkaroundSection({ data }: { data: WorkaroundDetection }) {
 
 export function FeatureGapSection({ data }: { data: FeatureGapMap }) {
   return (
-    <Card className="rounded-2xl border-border/50">
+    <Card className="rounded-2xl border-border/50 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
       <CardContent className="p-5 space-y-3">
         <div className="flex items-center gap-2">
           <Layers className="h-4 w-4 text-primary shrink-0" />
-          <h3 className="font-semibold text-sm">Feature Gap Map</h3>
+          <h3 className="font-semibold text-sm font-nunito">Feature Gap Map</h3>
         </div>
         <p className="text-sm text-muted-foreground">{data.summary}</p>
         {data.gaps?.length > 0 && (
@@ -283,12 +283,12 @@ export function FeatureGapSection({ data }: { data: FeatureGapMap }) {
 
 export function PlatformRiskSection({ data }: { data: PlatformRisk }) {
   return (
-    <Card className="rounded-2xl border-border/50">
+    <Card className="rounded-2xl border-border/50 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
       <CardContent className="p-5 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <AlertOctagon className="h-4 w-4 text-primary shrink-0" />
-            <h3 className="font-semibold text-sm">Platform Risk</h3>
+            <h3 className="font-semibold text-sm font-nunito">Platform Risk</h3>
           </div>
           <Badge variant="outline" className={`text-xs capitalize ${platformRiskColors[data.level] || ''}`}>
             {data.level}
@@ -337,11 +337,11 @@ const moatTypeLabels: Record<string, string> = {
 
 export function GtmStrategySection({ data }: { data: GtmStrategy }) {
   return (
-    <Card className="rounded-2xl border-border/50">
+    <Card className="rounded-2xl border-border/50 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
       <CardContent className="p-5 space-y-3">
         <div className="flex items-center gap-2">
           <Megaphone className="h-4 w-4 text-primary shrink-0" />
-          <h3 className="font-semibold text-sm">Go-To-Market Strategy</h3>
+          <h3 className="font-semibold text-sm font-nunito">Go-To-Market Strategy</h3>
         </div>
         <p className="text-sm text-muted-foreground">{data.summary}</p>
         <div className="flex flex-wrap gap-2 text-xs">
@@ -368,11 +368,11 @@ export function GtmStrategySection({ data }: { data: GtmStrategy }) {
 
 export function PricingBenchmarkSection({ data }: { data: PricingBenchmarks }) {
   return (
-    <Card className="rounded-2xl border-border/50">
+    <Card className="rounded-2xl border-border/50 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
       <CardContent className="p-5 space-y-3">
         <div className="flex items-center gap-2">
           <Tag className="h-4 w-4 text-primary shrink-0" />
-          <h3 className="font-semibold text-sm">Pricing Benchmarks</h3>
+          <h3 className="font-semibold text-sm font-nunito">Pricing Benchmarks</h3>
         </div>
         <p className="text-sm text-muted-foreground">{data.summary}</p>
         {data.suggestedRange && (
@@ -405,12 +405,12 @@ export function PricingBenchmarkSection({ data }: { data: PricingBenchmarks }) {
 
 export function DefensibilitySection({ data }: { data: DefensibilityAnalysis }) {
   return (
-    <Card className="rounded-2xl border-border/50">
+    <Card className="rounded-2xl border-border/50 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
       <CardContent className="p-5 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Castle className="h-4 w-4 text-primary shrink-0" />
-            <h3 className="font-semibold text-sm">Defensibility & Moat</h3>
+            <h3 className="font-semibold text-sm font-nunito">Defensibility & Moat</h3>
           </div>
           <Badge variant="outline" className={`text-xs capitalize ${moatStrengthColors[data.overallStrength] || moatStrengthColors.none}`}>
             {data.overallStrength}
