@@ -291,12 +291,16 @@ export default function Landing() {
             </button>
             <FeedbackDrawer />
             <a
-              href="https://www.producthunt.com/products/orbis-ai-product-research-validation?embed=true&utm_source=embed&utm_medium=post_embed"
+              href="https://www.producthunt.com/products/orbis-ai-product-research-validation?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-orbis-ai-product-research-validation"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#ff6154] hover:bg-[#e5564a] text-white text-xs font-semibold transition-colors"
             >
-              🚀 Support us on Product Hunt
+              <img
+                alt="Orbis — AI Product Research & Validation - Stop guessing. Start validating product ideas | Product Hunt"
+                width="250"
+                height="54"
+                src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1081806&theme=light&t=1771453111564"
+              />
             </a>
             <span className="text-xs text-muted-foreground">© {new Date().getFullYear()} Orbis</span>
           </div>
