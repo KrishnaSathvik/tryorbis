@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/AppLayout";
 import { OnboardingTour } from "@/components/OnboardingTour";
+import { ScrollToTop } from "@/components/ScrollToTop";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -29,6 +30,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 const AppRoutes = () => (
   <>
+    <ScrollToTop />
     <OnboardingTour />
     <Routes>
       <Route path="/" element={<Landing />} />
