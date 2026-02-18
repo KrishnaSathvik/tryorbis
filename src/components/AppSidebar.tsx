@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCredits } from "@/hooks/useCredits";
 import { useNavigate } from "react-router-dom";
 import { GuestUpgradeBanner } from "@/components/GuestUpgradeBanner";
+import { useIsMobile } from "@/hooks/use-mobile";
 import orbisLogo from "@/assets/orbis-logo.png";
 import {
   Sidebar,
@@ -14,6 +15,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 
 const navItems = [
@@ -30,10 +32,18 @@ export function AppSidebar() {
   const { profile, signOut, isGuest } = useAuth();
   const { credits } = useCredits();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
+  const { setOpenMobile } = useSidebar();
 
   const handleSignOut = async () => {
     await signOut();
     navigate("/");
+  };
+
+  const handleNavClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
   };
 
   return (
@@ -61,6 +71,7 @@ export function AppSidebar() {
                       end={item.url === "/dashboard"}
                       className="flex items-center gap-3 px-6 py-2.5 text-sm text-muted-foreground rounded-xl transition-all hover:text-foreground hover:bg-accent"
                       activeClassName="bg-accent text-foreground font-medium"
+                      onClick={handleNavClick}
                     >
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
