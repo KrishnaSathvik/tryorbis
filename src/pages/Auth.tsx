@@ -67,7 +67,6 @@ export default function Auth() {
     setLoading(true);
     try {
       await signInAsGuest(guestName.trim());
-      toast.success("Welcome! You have 5 free credits as a guest.");
       navigate("/dashboard");
     } catch (err: any) {
       toast.error(err.message || "Something went wrong");
@@ -100,7 +99,7 @@ export default function Auth() {
                 <Input value={guestName} onChange={e => setGuestName(e.target.value)} placeholder="e.g. Explorer" className="rounded-xl" autoFocus />
               </div>
               <Button type="submit" className="w-full rounded-full bg-foreground text-background hover:bg-foreground/90" disabled={loading}>
-                {loading ? "Starting..." : "Start instantly with 5 credits →"}
+                {loading ? "Creating your guest workspace…" : "Start instantly with 5 credits →"}
               </Button>
               <p className="text-center text-[11px] text-muted-foreground">Upgrade later to save your research.</p>
             </form>

@@ -102,9 +102,14 @@ export function AppSidebar() {
                 <span>{credits} credits</span>
                 {profile?.email && <span className="truncate ml-1">· {profile.email}</span>}
               </div>
-              {timeLeft && credits === 0 && (
+              {credits === 0 && timeLeft && (
                 <span className="text-[10px] text-warning font-medium mt-0.5">
                   Resets in {timeLeft}
+                </span>
+              )}
+              {credits === 0 && isGuest && (
+                <span className="text-[10px] text-primary font-medium mt-0.5">
+                  Save your research. <button onClick={() => navigate("/auth")} className="underline hover:no-underline">Create free account →</button>
                 </span>
               )}
             </div>

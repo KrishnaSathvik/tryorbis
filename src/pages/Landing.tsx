@@ -101,6 +101,7 @@ export default function Landing() {
               See How It Works
             </Button>
           </div>
+          <p className="text-xs text-muted-foreground animate-fade-in" style={{ animationDelay: "0.6s" }}>Start instantly. No signup required.</p>
         </div>
       </section>
 
