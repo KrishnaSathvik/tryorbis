@@ -49,12 +49,12 @@ export function AppSidebar() {
   return (
     <Sidebar className="border-r border-sidebar-border bg-sidebar backdrop-blur-sm">
       <div className="px-6 py-5">
-        <div className="flex items-center gap-2">
+        <a href="/" className="flex items-center gap-2 cursor-pointer">
           <img src={orbisLogo} alt="Orbis" className="h-7 w-7 dark-invert" />
           <h1 className="text-xl font-bold tracking-tight font-nunito text-gradient-primary">
             Orbis
           </h1>
-        </div>
+        </a>
       </div>
       <SidebarContent>
         <SidebarGroup>

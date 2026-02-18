@@ -77,9 +77,9 @@ export default function Auth() {
       <Card className="w-full max-w-md rounded-[32px] border border-border/50 shadow-xl animate-slide-up">
         <CardContent className="p-8 space-y-6">
           <div className="text-center space-y-2">
-            <img src={orbisLogo} alt="Orbis" className="h-14 w-14 mx-auto dark-invert" />
+            <a href="/" className="cursor-pointer"><img src={orbisLogo} alt="Orbis" className="h-14 w-14 mx-auto dark-invert" /></a>
             <h1 className="text-2xl font-bold tracking-tight font-nunito">
-              Welcome to <span className="text-gradient-primary">Orbis</span>
+              Welcome to <a href="/" className="text-gradient-primary hover:opacity-80 transition-opacity">Orbis</a>
             </h1>
             <p className="text-sm text-muted-foreground">
               AI-powered product research & validation
