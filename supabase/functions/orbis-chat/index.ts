@@ -125,6 +125,41 @@ serve(async (req) => {
     }
     // Orbis Chat is free — no credit deduction
 
+    // ─── Fetch user context for personalized guidance ───
+    const [profileRes, backlogRes, generatorRes, validationRes] = await Promise.all([
+      serviceClient.from("profiles").select("credits, max_credits, credits_reset_at, display_name, email").eq("user_id", userId).single(),
+      serviceClient.from("backlog_items").select("id", { count: "exact", head: true }).eq("user_id", userId),
+      serviceClient.from("generator_runs").select("id", { count: "exact", head: true }).eq("user_id", userId),
+      serviceClient.from("validation_reports").select("id", { count: "exact", head: true }).eq("user_id", userId),
+    ]);
+
+    const profile = profileRes.data;
+    const savedIdeasCount = backlogRes.count ?? 0;
+    const generatorRunsCount = generatorRes.count ?? 0;
+    const validationRunsCount = validationRes.count ?? 0;
+    const isGuest = !profile?.email;
+
+    let userContext = `\n\n## CURRENT USER CONTEXT (use this to personalize your advice)\n`;
+    userContext += `- Name: ${profile?.display_name || "Unknown"}\n`;
+    userContext += `- Account type: ${isGuest ? "Guest (not signed up yet)" : "Registered user"}\n`;
+    userContext += `- Credits remaining: ${profile?.credits ?? "unknown"} / ${profile?.max_credits ?? "unknown"}\n`;
+    if (profile?.credits_reset_at) {
+      userContext += `- Credits reset scheduled: ${profile.credits_reset_at}\n`;
+    }
+    userContext += `- Saved ideas in backlog: ${savedIdeasCount}\n`;
+    userContext += `- Past Generate Ideas runs: ${generatorRunsCount}\n`;
+    userContext += `- Past Validate Idea runs: ${validationRunsCount}\n`;
+    userContext += `- Total research runs: ${generatorRunsCount + validationRunsCount}\n`;
+    if (isGuest) {
+      userContext += `\nSince this is a guest user, gently encourage signing up to save research and get more credits when contextually appropriate (don't force it).\n`;
+    }
+    if ((profile?.credits ?? 0) <= 1) {
+      userContext += `\nThis user is low on credits. Be mindful of suggesting credit-consuming actions. Mention they can wait for the 24h auto-refill.\n`;
+    }
+    if (savedIdeasCount === 0 && generatorRunsCount > 0) {
+      userContext += `\nThis user has run research but hasn't saved any ideas yet. If relevant, remind them they can save ideas to My Ideas.\n`;
+    }
+
     const startTime = Date.now();
 
     const { messages } = await req.json();
@@ -133,7 +168,7 @@ serve(async (req) => {
 
     // Convert messages to Gemini format
     const geminiMessages = [
-      { role: "user", parts: [{ text: SYSTEM_PROMPT }] },
+      { role: "user", parts: [{ text: SYSTEM_PROMPT + userContext }] },
       { role: "model", parts: [{ text: "Understood. I'm Orbis, ready to help you build something great. What's on your mind?" }] },
       ...messages.map((m: any) => ({
         role: m.role === "user" ? "user" : "model",
