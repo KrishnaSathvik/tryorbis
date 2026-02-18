@@ -15,6 +15,8 @@ import { ChevronDown, Bookmark, ClipboardCheck, Copy, Send, User, FolderOpen, Mo
 import { supabase } from "@/integrations/supabase/client";
 import { saveGeneratorRunDb, addToBacklogDb } from "@/lib/db";
 import { toast } from "sonner";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Info } from "lucide-react";
 import type { WtpSignals, CompetitionDensity, MarketTiming, ICP, WorkaroundDetection, FeatureGapMap, PlatformRisk, GtmStrategy, PricingBenchmarks, DefensibilityAnalysis } from "@/lib/types";
 
 const researchSteps = [
@@ -209,7 +211,17 @@ export default function GenerateIdeas() {
                       <p className="text-xs text-muted-foreground mt-0.5">{cluster.painSummary}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground">{cluster.complaintCount} signals</span>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="text-xs text-muted-foreground flex items-center gap-1 cursor-help">
+                            {cluster.complaintCount} signals
+                            <Info className="h-3 w-3" />
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-[220px]">
+                          <p className="text-xs">Number of real complaints, posts, and reviews found online that relate to this problem theme.</p>
+                        </TooltipContent>
+                      </Tooltip>
                       <ChevronDown className="h-4 w-4 text-muted-foreground" />
                     </div>
                   </CardContent>
