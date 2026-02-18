@@ -236,10 +236,11 @@ export default function GenerateIdeas() {
                       <div className="space-y-1 mt-2">
                         {cluster.evidenceLinks.map((link: string, i: number) => {
                           let displayUrl = link;
-                          try { const u = new URL(link); displayUrl = u.hostname.replace('www.', '') + (u.pathname !== '/' ? u.pathname : ''); if (displayUrl.length > 60) displayUrl = displayUrl.slice(0, 57) + '...'; } catch {}
+                          let hostname = '';
+                          try { const u = new URL(link); hostname = u.hostname; displayUrl = hostname.replace('www.', '') + (u.pathname !== '/' ? u.pathname : ''); if (displayUrl.length > 60) displayUrl = displayUrl.slice(0, 57) + '...'; } catch { return null; }
                           return (
                             <div key={i} className="flex items-center gap-1.5">
-                              <img src={`https://www.google.com/s2/favicons?domain=${new URL(link).hostname}&sz=16`} alt="" className="h-3.5 w-3.5 rounded-sm shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                              <img src={`https://www.google.com/s2/favicons?domain=${hostname}&sz=16`} alt="" className="h-3.5 w-3.5 rounded-sm shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                               <a href={link} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline truncate">{displayUrl}</a>
                             </div>
                           );
