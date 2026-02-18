@@ -162,7 +162,7 @@ Return your findings as detailed, unstructured text. Include all quotes, sources
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'sonar',
+        model: 'sonar-pro',
         messages: [
           { role: 'system', content: 'You are a meticulous market research analyst. Find real, specific, verifiable complaints, willingness-to-pay signals, market timing indicators, workaround evidence, feature gaps, platform risks, GTM channels, pricing benchmarks, and moat signals. Always cite where you found information. Be thorough — quality and specificity matter more than speed.' },
           { role: 'user', content: searchPrompt },
@@ -396,7 +396,7 @@ Return ONLY valid JSON:
     const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
     if (!GEMINI_API_KEY) throw new Error('API key not configured');
 
-    const analysisResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+    const analysisResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
