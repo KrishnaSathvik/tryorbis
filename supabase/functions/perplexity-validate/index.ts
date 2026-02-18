@@ -140,7 +140,7 @@ Verdict: "Build" if demand≥65 AND pain≥55 AND competition<75 AND feasibility
                     methodology: { type: 'string' },
                   },
                 },
-                verdict: { type: 'string' },
+                verdict: { type: 'string', enum: ['Build', 'Pivot', 'Skip'] },
                 verdictReasoning: { type: 'string' },
                 pros: { type: 'array', items: { type: 'string' } },
                 cons: { type: 'array', items: { type: 'string' } },
@@ -161,7 +161,7 @@ Verdict: "Build" if demand≥65 AND pain≥55 AND competition<75 AND feasibility
                 wtpSignals: {
                   type: 'object',
                   properties: {
-                    strength: { type: 'string' },
+                    strength: { type: 'string', enum: ['strong', 'moderate', 'weak', 'none'] },
                     signals: { type: 'array', items: { type: 'object', properties: { quote: { type: 'string' }, source: { type: 'string' }, context: { type: 'string' } } } },
                     priceRange: { type: 'object', properties: { low: { type: 'number' }, mid: { type: 'number' }, high: { type: 'number' }, currency: { type: 'string' } } },
                     summary: { type: 'string' },
@@ -170,7 +170,7 @@ Verdict: "Build" if demand≥65 AND pain≥55 AND competition<75 AND feasibility
                 competitionDensity: {
                   type: 'object',
                   properties: {
-                    level: { type: 'string' },
+                    level: { type: 'string', enum: ['blue_ocean', 'fragmented', 'crowded', 'winner_take_most'] },
                     competitorCount: { type: 'number' },
                     totalFundingEstimate: { type: 'string' },
                     keyIncumbents: { type: 'array', items: { type: 'string' } },
@@ -181,7 +181,7 @@ Verdict: "Build" if demand≥65 AND pain≥55 AND competition<75 AND feasibility
                 marketTiming: {
                   type: 'object',
                   properties: {
-                    phase: { type: 'string' },
+                    phase: { type: 'string', enum: ['emerging', 'growing', 'saturated', 'declining'] },
                     signals: { type: 'array', items: { type: 'string' } },
                     summary: { type: 'string' },
                   },
@@ -202,15 +202,15 @@ Verdict: "Build" if demand≥65 AND pain≥55 AND competition<75 AND feasibility
                 workaroundDetection: {
                   type: 'object',
                   properties: {
-                    severity: { type: 'string' },
-                    workarounds: { type: 'array', items: { type: 'object', properties: { description: { type: 'string' }, source: { type: 'string' }, investmentLevel: { type: 'string' } } } },
+                    severity: { type: 'string', enum: ['strong', 'moderate', 'weak', 'none'] },
+                    workarounds: { type: 'array', items: { type: 'object', properties: { description: { type: 'string' }, source: { type: 'string' }, investmentLevel: { type: 'string', enum: ['low', 'medium', 'high'] } } } },
                     summary: { type: 'string' },
                   },
                 },
                 featureGapMap: {
                   type: 'object',
                   properties: {
-                    gaps: { type: 'array', items: { type: 'object', properties: { feature: { type: 'string' }, competitorCoverage: { type: 'string' }, opportunity: { type: 'string' } } } },
+                    gaps: { type: 'array', items: { type: 'object', properties: { feature: { type: 'string' }, competitorCoverage: { type: 'string', enum: ['none', 'weak', 'strong', 'commodity'] }, opportunity: { type: 'string', enum: ['high', 'medium', 'low'] } } } },
                     topWedge: { type: 'string' },
                     summary: { type: 'string' },
                   },
@@ -218,8 +218,8 @@ Verdict: "Build" if demand≥65 AND pain≥55 AND competition<75 AND feasibility
                 platformRisk: {
                   type: 'object',
                   properties: {
-                    level: { type: 'string' },
-                    signals: { type: 'array', items: { type: 'object', properties: { signal: { type: 'string' }, riskType: { type: 'string' } } } },
+                    level: { type: 'string', enum: ['low', 'medium', 'high', 'critical'] },
+                    signals: { type: 'array', items: { type: 'object', properties: { signal: { type: 'string' }, riskType: { type: 'string', enum: ['bundling', 'api_limitation', 'roadmap_overlap', 'regulation', 'dependency', 'incumbent_improvement', 'platform_consolidation'] } } } },
                     summary: { type: 'string' },
                   },
                 },
@@ -227,7 +227,7 @@ Verdict: "Build" if demand≥65 AND pain≥55 AND competition<75 AND feasibility
                   type: 'object',
                   properties: {
                     primaryChannel: { type: 'string' },
-                    channels: { type: 'array', items: { type: 'object', properties: { channel: { type: 'string' }, viability: { type: 'string' }, reasoning: { type: 'string' } } } },
+                    channels: { type: 'array', items: { type: 'object', properties: { channel: { type: 'string' }, viability: { type: 'string', enum: ['high', 'medium', 'low'] }, reasoning: { type: 'string' } } } },
                     founderLedSales: { type: 'boolean' },
                     seoViability: { type: 'string' },
                     summary: { type: 'string' },
@@ -245,8 +245,8 @@ Verdict: "Build" if demand≥65 AND pain≥55 AND competition<75 AND feasibility
                 defensibility: {
                   type: 'object',
                   properties: {
-                    overallStrength: { type: 'string' },
-                    signals: { type: 'array', items: { type: 'object', properties: { type: { type: 'string' }, description: { type: 'string' }, strength: { type: 'string' } } } },
+                    overallStrength: { type: 'string', enum: ['strong', 'moderate', 'weak', 'none'] },
+                    signals: { type: 'array', items: { type: 'object', properties: { type: { type: 'string' }, description: { type: 'string' }, strength: { type: 'string', enum: ['strong', 'moderate', 'weak', 'none'] } } } },
                     timeToMoat: { type: 'string' },
                     summary: { type: 'string' },
                   },
