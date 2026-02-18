@@ -179,11 +179,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .eq("user_id", user.id)
         .single();
       const currentCredits = profile?.credits ?? 0;
+      const newCredits = Math.min(currentCredits + 20, 20);
       await supabase
         .from("profiles")
         .update({ 
           email, 
-          credits: currentCredits + 20, 
+          credits: newCredits, 
           max_credits: 20, 
           credits_reset_at: null 
         })
