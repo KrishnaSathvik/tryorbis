@@ -12,7 +12,7 @@ import {
 import { LandingCharts } from "@/components/landing/LandingCharts";
 import { LandingLeaderboard } from "@/components/landing/LandingLeaderboard";
 import { LandingTrends } from "@/components/landing/LandingTrends";
-import { LandingSuccessTracking } from "@/components/landing/LandingSuccessTracking";
+
 import { LandingComparison } from "@/components/landing/LandingComparison";
 import { LandingTicker } from "@/components/landing/LandingTicker";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -251,7 +251,7 @@ export default function Landing() {
               <div className="space-y-6">
                 <LandingCharts stats={stats} />
                 {stats.trendData && <LandingTrends trendData={stats.trendData} />}
-                {stats.founderSuccess && <LandingSuccessTracking founderSuccess={stats.founderSuccess} />}
+                {/* Founder Success Tracking removed — cleaner landing page */}
                 <LandingLeaderboard stats={stats} />
               </div>
             )}

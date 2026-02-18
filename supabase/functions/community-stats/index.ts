@@ -118,37 +118,6 @@ Deno.serve(async (req) => {
         validated: weeklyValidations[week] || 0,
       }));
 
-    // ─── Phase 4: Founder Success Tracking ───
-    const statusOrder = ["New", "Exploring", "Validated", "Building", "Archived"];
-    const statusCounts: Record<string, number> = {};
-    for (const item of backlogItems) {
-      statusCounts[item.status] = (statusCounts[item.status] || 0) + 1;
-    }
-
-    const totalBacklog = backlogItems.length;
-    const funnelData = statusOrder.map(status => ({
-      status,
-      count: statusCounts[status] || 0,
-      pct: totalBacklog > 0 ? Math.round(((statusCounts[status] || 0) / totalBacklog) * 100) : 0,
-    }));
-
-    // Progression rate: % of ideas that moved beyond "New"
-    const progressed = totalBacklog - (statusCounts["New"] || 0);
-    const progressionRate = totalBacklog > 0 ? Math.round((progressed / totalBacklog) * 100) : 0;
-
-    // Build rate: % of validations with "Build" verdict
-    const buildRate = reports.length > 0 ? Math.round(((verdictCounts["Build"] || 0) / reports.length) * 100) : 0;
-
-    // Active builders: ideas in "Building" status
-    const activeBuilders = statusCounts["Building"] || 0;
-
-    const founderSuccess = {
-      totalSaved: totalBacklog,
-      progressionRate,
-      buildRate,
-      activeBuilders,
-      funnelData,
-    };
 
     // ─── Helpers ───
     const titleCase = (s: string) => s.replace(/\b\w/g, c => c.toUpperCase());
@@ -208,7 +177,7 @@ Deno.serve(async (req) => {
         .map(([name, value]) => ({ name, value })),
       leaderboard,
       trendData,
-      founderSuccess,
+      
       trendingNow,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
