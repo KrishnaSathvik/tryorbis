@@ -37,14 +37,6 @@ export async function getMyGeneratorRuns() {
   return data || [];
 }
 
-export async function getAllGeneratorRuns() {
-  const { data } = await supabase
-    .from("generator_runs")
-    .select("*")
-    .order("created_at", { ascending: false });
-  return data || [];
-}
-
 // ─── Validation Reports ───
 
 export async function saveValidationReportDb(report: {
@@ -85,14 +77,6 @@ export async function getMyValidationReports() {
     .from("validation_reports")
     .select("*")
     .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
-  return data || [];
-}
-
-export async function getAllValidationReports() {
-  const { data } = await supabase
-    .from("validation_reports")
-    .select("*")
     .order("created_at", { ascending: false });
   return data || [];
 }
