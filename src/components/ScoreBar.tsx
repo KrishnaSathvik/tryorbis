@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { DataSourceBadge } from "@/components/DataSourceBadge";
+
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Info } from "lucide-react";
 
@@ -36,7 +36,7 @@ export function ScoreBar({ label, value, className }: ScoreBarProps) {
               </TooltipContent>
             </Tooltip>
           )}
-          <DataSourceBadge type="estimated" />
+          
         </div>
         <span className="text-sm text-muted-foreground font-semibold">{value}/100</span>
       </div>

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScoreBar } from "@/components/ScoreBar";
 import { VerdictBadge } from "@/components/VerdictBadge";
-import { DataSourceBadge } from "@/components/DataSourceBadge";
+
 import { ArrowLeft, Sparkles, Zap, Clock, CheckCircle2 } from "lucide-react";
 import orbisLogo from "@/assets/orbis-logo.png";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -182,7 +182,7 @@ export default function Examples() {
                         <div key={m.label} className="flex items-center gap-2 bg-secondary/60 rounded-full px-3 py-1.5">
                           <span className="text-[10px] font-bold text-primary">{m.label}</span>
                           <span className="text-xs font-medium">{m.value}</span>
-                          <DataSourceBadge type="estimated" />
+                          
                         </div>
                       ))}
                     </div>
