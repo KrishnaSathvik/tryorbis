@@ -4,6 +4,10 @@ import { DollarSign, Shield, Clock, Users, TrendingUp, TrendingDown, Minus, Quot
 
 import type { WtpSignals, CompetitionDensity, MarketTiming, ICP, WorkaroundDetection, FeatureGapMap, PlatformRisk, GtmStrategy, PricingBenchmarks, DefensibilityAnalysis } from "@/lib/types";
 
+/** Converts snake_case or camelCase keys into readable labels */
+const formatLabel = (key: string): string =>
+  key.replace(/[_-]/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/\b\w/g, c => c.toUpperCase());
+
 const CARD_CLASS = "rounded-2xl border-border/50 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300";
 const CONTENT_CLASS = "p-6 space-y-4";
 const HEADER_CLASS = "flex items-center justify-between";
@@ -98,7 +102,7 @@ export function CompetitionDensitySection({ data }: { data: CompetitionDensity }
             <h3 className={TITLE_CLASS}>Competition Density</h3>
           </div>
           <Badge variant="outline" className={`text-xs ${competitionColors[data.level] || ''}`}>
-            {competitionLabels[data.level] || data.level}
+            {competitionLabels[data.level] || formatLabel(data.level)}
           </Badge>
         </div>
         <p className={SUMMARY_CLASS}>{data.summary}</p>
@@ -222,6 +226,11 @@ const riskTypeLabels: Record<string, string> = {
   roadmap_overlap: "Roadmap",
   regulation: "Regulation",
   dependency: "Dependency",
+  incumbent_improvement: "Incumbent",
+  platform_consolidation: "Consolidation",
+  pricing_pressure: "Pricing",
+  talent_acquisition: "Talent",
+  data_advantage: "Data Edge",
 };
 
 export function WorkaroundSection({ data }: { data: WorkaroundDetection }) {
@@ -273,7 +282,7 @@ export function FeatureGapSection({ data }: { data: FeatureGapMap }) {
               <div key={i} className="flex items-center justify-between text-sm">
                 <span className={`${DETAIL_LABEL_CLASS} truncate mr-3`}>{g.feature}</span>
                 <div className="flex items-center gap-3 shrink-0">
-                  <span className={DETAIL_VALUE_CLASS}>{coverageLabels[g.competitorCoverage] || g.competitorCoverage}</span>
+                  <span className={DETAIL_VALUE_CLASS}>{coverageLabels[g.competitorCoverage] || formatLabel(g.competitorCoverage)}</span>
                   <span className={`font-medium capitalize ${opportunityColors[g.opportunity] || ''}`}>
                     {g.opportunity === 'high' ? '★ High' : g.opportunity === 'medium' ? '◆ Med' : '○ Low'}
                   </span>
@@ -312,7 +321,7 @@ export function PlatformRiskSection({ data }: { data: PlatformRisk }) {
             {data.signals.map((s, i) => (
               <div key={i} className="flex items-start gap-2.5 text-sm">
                 <Badge variant="outline" className="text-[10px] shrink-0 mt-0.5">
-                  {riskTypeLabels[s.riskType] || s.riskType}
+                  {riskTypeLabels[s.riskType] || formatLabel(s.riskType)}
                 </Badge>
                 <p className={DETAIL_VALUE_CLASS}>{s.signal}</p>
               </div>
@@ -345,6 +354,12 @@ const moatTypeLabels: Record<string, string> = {
   brand: "Brand",
   technical: "Technical",
   regulatory: "Regulatory",
+  switching_costs: "Switching Costs",
+  brand_trust: "Brand Trust",
+  data_moat: "Data Moat",
+  integration_ecosystem: "Integrations",
+  network_effects: "Network Effects",
+  ip_patents: "IP / Patents",
 };
 
 export function GtmStrategySection({ data }: { data: GtmStrategy }) {
@@ -443,7 +458,7 @@ export function DefensibilitySection({ data }: { data: DefensibilityAnalysis }) 
             {data.signals.map((s, i) => (
               <div key={i} className="flex items-start gap-2.5 text-sm">
                 <Badge variant="outline" className={`text-[10px] shrink-0 mt-0.5 capitalize ${moatStrengthColors[s.strength] || ''}`}>
-                  {moatTypeLabels[s.type] || s.type}
+                  {moatTypeLabels[s.type] || formatLabel(s.type)}
                 </Badge>
                 <p className={DETAIL_VALUE_CLASS}>{s.description}</p>
               </div>
