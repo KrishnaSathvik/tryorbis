@@ -140,10 +140,10 @@ export default function Landing() {
           {[
             { icon: Search, title: "Problem Discovery", desc: "Automatically mine real complaints from forums, reviews, and social media to find genuine frustrations worth solving." },
             { icon: Layers, title: "Pain Point Clustering", desc: "AI groups raw complaints into thematic clusters so you can spot patterns and high-frequency pain points instantly." },
-            { icon: Lightbulb, title: "Idea Generation", desc: "Get actionable product ideas ranked by demand score, each backed by evidence from real user complaints." },
-            { icon: Target, title: "Demand Scoring", desc: "Every idea is scored across demand, pain intensity, and MVP feasibility — no subjective guesswork." },
+            { icon: Lightbulb, title: "Idea Generation", desc: "Get actionable product ideas ranked by opportunity score, each backed by evidence. Toggle Deep Research for thorough analysis." },
+            { icon: Target, title: "10-Dimension Intelligence", desc: "Every run scores WTP, competition density, market timing, ICP, feature gaps, platform risk, GTM strategy, pricing, and defensibility." },
             { icon: ClipboardCheck, title: "Full Validation Report", desc: "Competitor analysis, pros & cons, evidence links, and a clear Build / Pivot / Skip verdict in one report." },
-            { icon: Sparkles, title: "Orbis AI Advisor", desc: "Your always-on startup advisor. Brainstorm ideas, discuss strategy, get go-to-market advice, or refine your pitch — all in a dedicated AI chat.", highlight: true },
+            { icon: Sparkles, title: "Personalized AI Advisor", desc: "Orbis AI knows your credits, saved ideas, and research history — giving you tailored strategic advice, not generic tips.", highlight: true },
           ].map((f: any) => (
             <Card key={f.title} className={`group card-warm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ${f.highlight ? 'ring-1 ring-primary/20 bg-gradient-to-br from-primary/[0.03] to-transparent' : ''}`}>
               <CardContent className="p-8 space-y-4">
@@ -152,7 +152,7 @@ export default function Landing() {
                 </div>
                 <div className="flex items-center gap-2">
                   <h3 className="font-semibold text-base font-nunito">{f.title}</h3>
-                  {f.highlight && <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-full">New</span>}
+                  {f.highlight && <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-full">Smart</span>}
                 </div>
                 <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
               </CardContent>
@@ -199,9 +199,9 @@ export default function Landing() {
             "Evidence-backed ideas, not shower thoughts",
             "Save weeks of manual market research",
             "Clear Build / Pivot / Skip verdicts",
-            "Real complaint data, not survey bias",
-            "Orbis AI advisor for strategy & brainstorming",
-            "See what the community is researching",
+            "10-dimension market intelligence per run",
+            "Personalized AI advisor that knows your progress",
+            "Free to start — no signup required",
           ].map((b) => (
             <div key={b} className="flex items-start gap-3">
               <CheckCircle2 className="h-5 w-5 text-primary mt-0.5 shrink-0" />
