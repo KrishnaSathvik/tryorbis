@@ -3,6 +3,14 @@ import { CheckCircle2, X, Minus } from "lucide-react";
 
 type Support = "yes" | "no" | "partial";
 
+const TOOL_LINKS: Record<string, string> = {
+  IdeaBuddy: "https://ideabuddy.com",
+  "Validator AI": "https://validator.ai",
+  DimeADozen: "https://www.dimeadozen.ai",
+  Informly: "https://validator.informly.ai",
+  IdeaProof: "https://ideaproof.io",
+};
+
 interface Tool {
   name: string;
   features: Support[];
@@ -64,7 +72,11 @@ export function LandingComparison() {
                           : "text-muted-foreground"
                       }`}
                     >
-                      {tool.name}
+                      {TOOL_LINKS[tool.name] ? (
+                        <a href={TOOL_LINKS[tool.name]} target="_blank" rel="noopener noreferrer" className="underline decoration-muted-foreground/30 underline-offset-2 hover:text-foreground transition-colors">
+                          {tool.name}
+                        </a>
+                      ) : tool.name}
                     </th>
                   ))}
                 </tr>
