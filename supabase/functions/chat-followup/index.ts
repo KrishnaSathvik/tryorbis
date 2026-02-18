@@ -62,6 +62,21 @@ serve(async (req) => {
         status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    const userId = claimsData.claims.sub;
+
+    // ─── Rate limiting (10 req/min) ───
+    const serviceClient = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+    const { data: allowed } = await serviceClient.rpc('check_rate_limit', {
+      p_user_id: userId, p_function_name: 'chat-followup',
+    });
+    if (!allowed) {
+      return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please wait a minute.' }), {
+        status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     // Follow-up chat is free — no credit deduction
 
     const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
