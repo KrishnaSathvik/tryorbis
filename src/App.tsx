@@ -36,6 +36,7 @@ const AppRoutes = () => (
       <Route path="/" element={<Landing />} />
       <Route path="/examples" element={<Examples />} />
       <Route path="/auth" element={<Auth />} />
+      <Route path="/try" element={<Navigate to="/auth?mode=guest" replace />} />
       <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/chat" element={<OrbisChat />} />
