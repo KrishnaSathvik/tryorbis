@@ -14,7 +14,8 @@ import { useCredits } from "@/hooks/useCredits";
 import { supabase } from "@/integrations/supabase/client";
 import { saveValidationReportDb, addToBacklogDb } from "@/lib/db";
 import { toast } from "sonner";
-import { Bookmark, Lightbulb, ThumbsUp, ThumbsDown, Target, AlertTriangle, Send, Search, Globe } from "lucide-react";
+import { Bookmark, Lightbulb, ThumbsUp, ThumbsDown, Target, AlertTriangle, Send, Search, Globe, Rocket, RefreshCw, XOctagon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 import type { WtpSignals, CompetitionDensity, MarketTiming, ICP, WorkaroundDetection, FeatureGapMap, PlatformRisk, GtmStrategy, PricingBenchmarks, DefensibilityAnalysis } from "@/lib/types";
 
@@ -208,10 +209,36 @@ export default function ValidateIdea() {
       </div>
 
       <div className="grid md:grid-cols-3 gap-4">
-        <Card className="md:col-span-1 rounded-2xl bg-secondary border-0">
-          <CardContent className="p-5 flex flex-col items-center justify-center text-center space-y-3">
-            <p className="text-sm text-muted-foreground font-semibold uppercase tracking-wider">Verdict</p>
-            <VerdictBadge verdict={report!.verdict} size="lg" />
+        <Card className={cn(
+          "md:col-span-1 rounded-2xl border-0 overflow-hidden relative",
+          report!.verdict === 'Build' && "bg-gradient-to-br from-emerald-500/15 via-emerald-400/5 to-transparent border border-emerald-200/30",
+          report!.verdict === 'Pivot' && "bg-gradient-to-br from-amber-500/15 via-amber-400/5 to-transparent border border-amber-200/30",
+          report!.verdict === 'Skip' && "bg-gradient-to-br from-rose-500/15 via-rose-400/5 to-transparent border border-rose-200/30",
+        )}>
+          <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-3 relative z-10">
+            <div className={cn(
+              "h-14 w-14 rounded-full flex items-center justify-center",
+              report!.verdict === 'Build' && "bg-emerald-500/15 text-emerald-600",
+              report!.verdict === 'Pivot' && "bg-amber-500/15 text-amber-600",
+              report!.verdict === 'Skip' && "bg-rose-500/15 text-rose-600",
+            )}>
+              {report!.verdict === 'Build' && <Rocket className="h-7 w-7" />}
+              {report!.verdict === 'Pivot' && <RefreshCw className="h-7 w-7" />}
+              {report!.verdict === 'Skip' && <XOctagon className="h-7 w-7" />}
+            </div>
+            <div>
+              <p className={cn(
+                "text-2xl font-bold tracking-tight",
+                report!.verdict === 'Build' && "text-emerald-700 dark:text-emerald-400",
+                report!.verdict === 'Pivot' && "text-amber-700 dark:text-amber-400",
+                report!.verdict === 'Skip' && "text-rose-700 dark:text-rose-400",
+              )}>{report!.verdict}</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {report!.verdict === 'Build' && "Strong signals — worth pursuing"}
+                {report!.verdict === 'Pivot' && "Potential exists — rethink approach"}
+                {report!.verdict === 'Skip' && "Weak signals — move on"}
+              </p>
+            </div>
           </CardContent>
         </Card>
         <Card className="md:col-span-2 rounded-2xl border-border/50">
