@@ -60,9 +60,11 @@ export default function OrbisChat() {
     if (cId && cId !== activeConvoId) setActiveConvoId(cId);
   }, [searchParams]);
 
-  // Load messages for active conversation
+  // Load messages for active conversation (skip if we already have optimistic messages)
+  const skipNextLoad = useRef(false);
   useEffect(() => {
     if (!activeConvoId) { setMessages([]); return; }
+    if (skipNextLoad.current) { skipNextLoad.current = false; return; }
     (async () => {
       const { data } = await supabase
         .from("chat_messages")
@@ -97,7 +99,7 @@ export default function OrbisChat() {
     setInput("");
 
     let convoId = activeConvoId;
-    if (!convoId) { convoId = await createConversation(text); if (!convoId) return; }
+    if (!convoId) { skipNextLoad.current = true; convoId = await createConversation(text); if (!convoId) return; }
 
     const userMsg: ChatMsg = { role: "user", content: text };
     const allMessages = [...messages, userMsg];
