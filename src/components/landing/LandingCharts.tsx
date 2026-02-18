@@ -2,6 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart as RePieChart, Pie, Cell, CartesianGrid,
+  Treemap,
 } from "recharts";
 import { Users, PieChart, FolderOpen } from "lucide-react";
 
@@ -26,6 +27,27 @@ const tooltipStyle = {
   },
   itemStyle: { color: "hsl(220 20% 10%)" },
 };
+
+function TreemapCell(props: any) {
+  const { x, y, width, height, name, fill, categoryData } = props;
+  if (!width || !height || width < 2 || height < 2) return null;
+  const showLabel = width > 50 && height > 36;
+  return (
+    <g>
+      <rect x={x} y={y} width={width} height={height} rx={6} fill={fill} fillOpacity={0.85} stroke="hsl(0 0% 100%)" strokeWidth={2} />
+      {showLabel && (
+        <>
+          <text x={x + width / 2} y={y + height / 2 - 6} textAnchor="middle" dominantBaseline="central" fill="white" fontSize={Math.min(13, width / 8)} fontWeight={600}>
+            {String(name).length > 18 ? String(name).slice(0, 16) + "…" : name}
+          </text>
+          <text x={x + width / 2} y={y + height / 2 + 12} textAnchor="middle" dominantBaseline="central" fill="hsl(0 0% 100% / 0.8)" fontSize={11}>
+            {categoryData?.find((c: any) => c.name === name)?.count ?? ""}
+          </text>
+        </>
+      )}
+    </g>
+  );
+}
 
 interface Props {
   stats: {
@@ -110,18 +132,16 @@ export function LandingCharts({ stats }: Props) {
               <FolderOpen className="h-4 w-4 text-primary" />
               Categories Explored
             </h4>
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={categoryData} margin={{ left: 0, right: 16, top: 8, bottom: 4 }}>
-                <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(220 13% 91%)" />
-                <XAxis dataKey="name" tick={{ fontSize: 11, fill: "hsl(220 10% 46%)" }} axisLine={false} tickLine={false} />
-                <YAxis allowDecimals={false} hide />
-                <Tooltip {...tooltipStyle} cursor={{ fill: "hsl(220 70% 50% / 0.06)" }} />
-                <Bar dataKey="count" radius={[6, 6, 0, 0]} barSize={36}>
-                  {categoryData.map((_, i) => (
-                    <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} fillOpacity={0.85} />
-                  ))}
-                </Bar>
-              </BarChart>
+            <ResponsiveContainer width="100%" height={280}>
+              <Treemap
+                data={categoryData.map((d, i) => ({ ...d, fill: CHART_COLORS[i % CHART_COLORS.length] }))}
+                dataKey="count"
+                nameKey="name"
+                stroke="hsl(0 0% 100%)"
+                content={<TreemapCell categoryData={categoryData} />}
+              >
+                <Tooltip {...tooltipStyle} />
+              </Treemap>
             </ResponsiveContainer>
           </CardContent>
         </Card>
