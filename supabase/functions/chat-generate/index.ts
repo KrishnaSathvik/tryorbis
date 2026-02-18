@@ -87,6 +87,8 @@ serve(async (req) => {
     }
     // Chat step is free — credit deducted when research runs
 
+    const startTime = Date.now();
+
     const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
     if (!GEMINI_API_KEY) throw new Error('API key not configured');
 
@@ -139,11 +141,24 @@ serve(async (req) => {
       displayText = content.replace(/\|\|\|READY\|\|\|[\s\S]*?\|\|\|END\|\|\|/, '').trim();
     }
 
+    // ─── Log success ───
+    await serviceClient.from('request_logs').insert({
+      user_id: userId, function_name: 'chat-generate', status: 'success',
+      latency_ms: Date.now() - startTime, provider: 'gemini',
+    });
+
     return new Response(JSON.stringify({ reply: displayText, ready, params }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error: any) {
     console.error('chat-generate error:', error);
+    try {
+      const svc = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+      await svc.from('request_logs').insert({
+        user_id: 'unknown', function_name: 'chat-generate', status: 'error',
+        latency_ms: 0, error_type: 'api_error', error_message: (error.message || '').slice(0, 500),
+      });
+    } catch {}
     return new Response(JSON.stringify({ error: 'An error occurred processing your request' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
