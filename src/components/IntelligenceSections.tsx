@@ -1,5 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DollarSign, Shield, Clock, Users, TrendingUp, TrendingDown, Minus, Quote, Wrench, Layers, AlertOctagon, Megaphone, Tag, Castle } from "lucide-react";
 
 import type { WtpSignals, CompetitionDensity, MarketTiming, ICP, WorkaroundDetection, FeatureGapMap, PlatformRisk, GtmStrategy, PricingBenchmarks, DefensibilityAnalysis } from "@/lib/types";
@@ -38,6 +39,13 @@ const competitionLabels: Record<string, string> = {
   fragmented: "Fragmented",
   crowded: "Crowded",
   winner_take_most: "Winner-Take-Most",
+};
+
+const competitionTooltips: Record<string, string> = {
+  blue_ocean: "Very few or no direct competitors — wide open opportunity",
+  fragmented: "Many small players, no clear leader — room to differentiate",
+  crowded: "Established competitors with significant market share",
+  winner_take_most: "One or two dominant players control the market",
 };
 
 const timingColors: Record<string, string> = {
@@ -101,9 +109,18 @@ export function CompetitionDensitySection({ data }: { data: CompetitionDensity }
             <Shield className="h-4 w-4 text-primary shrink-0" />
             <h3 className={TITLE_CLASS}>Competition Density</h3>
           </div>
-          <Badge variant="outline" className={`text-xs ${competitionColors[data.level] || ''}`}>
-            {competitionLabels[data.level] || formatLabel(data.level)}
-          </Badge>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge variant="outline" className={`text-xs cursor-help ${competitionColors[data.level] || ''}`}>
+                  {competitionLabels[data.level] || formatLabel(data.level)}
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-[220px] text-xs">
+                {competitionTooltips[data.level] || formatLabel(data.level)}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
         <p className={SUMMARY_CLASS}>{data.summary}</p>
         <div className="flex flex-wrap gap-2">
