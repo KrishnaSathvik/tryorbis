@@ -49,13 +49,13 @@ export function LandingCharts({ stats }: Props) {
                 <Users className="h-4 w-4 text-primary" />
                 Top Personas Explored
               </h4>
-              <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={personaData} layout="vertical" margin={{ left: 4, right: 20, top: 4, bottom: 4 }}>
+              <ResponsiveContainer width="100%" height={Math.max(260, personaData.length * 48)}>
+                <BarChart data={personaData} layout="vertical" margin={{ left: 8, right: 24, top: 8, bottom: 8 }}>
                   <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke="hsl(220 13% 91%)" />
                   <XAxis type="number" hide />
-                  <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 11, fill: "hsl(220 10% 46%)" }} axisLine={false} tickLine={false} />
+                  <YAxis dataKey="name" type="category" width={130} tick={{ fontSize: 12, fill: "hsl(220 10% 46%)" }} axisLine={false} tickLine={false} />
                   <Tooltip {...tooltipStyle} cursor={{ fill: "hsl(220 70% 50% / 0.06)" }} />
-                  <Bar dataKey="count" radius={[0, 6, 6, 0]} barSize={20}>
+                  <Bar dataKey="count" radius={[0, 6, 6, 0]} barSize={24}>
                     {personaData.map((_, i) => (
                       <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} fillOpacity={0.85} />
                     ))}
