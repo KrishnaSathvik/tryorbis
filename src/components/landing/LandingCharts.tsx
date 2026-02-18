@@ -31,19 +31,17 @@ const tooltipStyle = {
 function TreemapCell(props: any) {
   const { x, y, width, height, name, fill, categoryData } = props;
   if (!width || !height || width < 2 || height < 2) return null;
-  const showLabel = width > 30 && height > 24;
-  const fontSize = Math.max(11, Math.min(15, width / 7));
-  const count = categoryData?.find((c: any) => c.name === name)?.count ?? "";
+  const showLabel = width > 50 && height > 36;
   return (
     <g>
-      <rect x={x} y={y} width={width} height={height} rx={6} fill={fill} fillOpacity={0.9} stroke="hsl(0 0% 100%)" strokeWidth={2} />
+      <rect x={x} y={y} width={width} height={height} rx={6} fill={fill} fillOpacity={0.85} stroke="hsl(0 0% 100%)" strokeWidth={2} />
       {showLabel && (
         <>
-          <text x={x + width / 2} y={y + height / 2 - 8} textAnchor="middle" dominantBaseline="central" fill="white" fontSize={fontSize} fontWeight={700} style={{ textShadow: "0 1px 3px rgba(0,0,0,0.4)" }}>
-            {String(name).length > Math.floor(width / 8) ? String(name).slice(0, Math.floor(width / 8) - 1) + "…" : name}
+          <text x={x + width / 2} y={y + height / 2 - 6} textAnchor="middle" dominantBaseline="central" fill="white" fontSize={Math.min(13, width / 8)} fontWeight={600}>
+            {String(name).length > 18 ? String(name).slice(0, 16) + "…" : name}
           </text>
-          <text x={x + width / 2} y={y + height / 2 + 12} textAnchor="middle" dominantBaseline="central" fill="white" fontSize={fontSize - 1} fontWeight={500} style={{ textShadow: "0 1px 3px rgba(0,0,0,0.4)" }}>
-            {count}
+          <text x={x + width / 2} y={y + height / 2 + 12} textAnchor="middle" dominantBaseline="central" fill="hsl(0 0% 100% / 0.8)" fontSize={11}>
+            {categoryData?.find((c: any) => c.name === name)?.count ?? ""}
           </text>
         </>
       )}
