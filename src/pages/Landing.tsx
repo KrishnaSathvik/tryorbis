@@ -53,7 +53,7 @@ export default function Landing() {
 
   const hasData = (stats?.totalRuns ?? 0) > 0 || (stats?.totalValidations ?? 0) > 0;
 
-  const handleCta = () => navigate(user ? "/dashboard" : "/auth?mode=guest");
+  const handleCta = () => navigate(user ? "/dashboard" : "/try");
 
   const totalIdeas = stats?.totalIdeas ?? 0;
 
