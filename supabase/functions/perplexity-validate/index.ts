@@ -293,17 +293,23 @@ Verdict: "Build" if demand≥65 AND pain≥55 AND competition<75 AND feasibility
     const verdict = parsed.verdict;
     
     let correctedVerdict = verdict;
-    if (verdict === 'Build' && (scores.demand < 65 || scores.pain < 55 || scores.competition >= 75 || scores.mvpFeasibility < 55)) {
-      correctedVerdict = 'Pivot';
-      parsed.verdictReasoning = `[Auto-corrected from Build to Pivot] Scores don't meet Build threshold. ${parsed.verdictReasoning || ''}`;
-    }
+    // Build requires: demand≥65, pain≥55, competition<75, feasibility≥55
     if (verdict === 'Build' && (scores.demand < 40 || scores.pain < 35)) {
       correctedVerdict = 'Skip';
       parsed.verdictReasoning = `[Auto-corrected from Build to Skip] Insufficient demand/pain evidence. ${parsed.verdictReasoning || ''}`;
+    } else if (verdict === 'Build' && (scores.demand < 65 || scores.pain < 55 || scores.competition >= 75 || scores.mvpFeasibility < 55)) {
+      correctedVerdict = 'Pivot';
+      parsed.verdictReasoning = `[Auto-corrected from Build to Pivot] Scores don't meet Build threshold. ${parsed.verdictReasoning || ''}`;
     }
+    // Skip→Build if all thresholds met
     if (verdict === 'Skip' && scores.demand >= 65 && scores.pain >= 55 && scores.competition < 75 && scores.mvpFeasibility >= 55) {
       correctedVerdict = 'Build';
       parsed.verdictReasoning = `[Auto-corrected from Skip to Build] Scores actually meet Build threshold. ${parsed.verdictReasoning || ''}`;
+    }
+    // Skip→Pivot if strong demand/pain but high competition (opportunity exists, needs differentiation)
+    if (verdict === 'Skip' && correctedVerdict === 'Skip' && scores.demand >= 55 && scores.pain >= 45 && scores.competition >= 75) {
+      correctedVerdict = 'Pivot';
+      parsed.verdictReasoning = `[Auto-corrected from Skip to Pivot] Strong demand & pain signals exist despite high competition — opportunity may work with differentiation. ${parsed.verdictReasoning || ''}`;
     }
     parsed.verdict = correctedVerdict;
     parsed.evidenceLinks = citations;
