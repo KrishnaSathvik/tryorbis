@@ -1,6 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DollarSign, Shield, Clock, Users, TrendingUp, TrendingDown, Minus, Quote, Wrench, Layers, AlertOctagon, Megaphone, Tag, Castle } from "lucide-react";
+import { DataSourceBadge } from "@/components/DataSourceBadge";
 import type { WtpSignals, CompetitionDensity, MarketTiming, ICP, WorkaroundDetection, FeatureGapMap, PlatformRisk, GtmStrategy, PricingBenchmarks, DefensibilityAnalysis } from "@/lib/types";
 
 const wtpColors: Record<string, string> = {
@@ -45,6 +46,7 @@ export function WtpSection({ data }: { data: WtpSignals }) {
           <div className="flex items-center gap-2">
             <DollarSign className="h-4 w-4 text-primary shrink-0" />
             <h3 className="font-semibold text-sm">Willingness to Pay</h3>
+            <DataSourceBadge type="sourced" />
           </div>
           <Badge variant="outline" className={`text-xs capitalize ${wtpColors[data.strength] || wtpColors.none}`}>
             {data.strength}
@@ -84,6 +86,7 @@ export function CompetitionDensitySection({ data }: { data: CompetitionDensity }
           <div className="flex items-center gap-2">
             <Shield className="h-4 w-4 text-primary shrink-0" />
             <h3 className="font-semibold text-sm">Competition Density</h3>
+            <DataSourceBadge type="sourced" />
           </div>
           <Badge variant="outline" className={`text-xs ${competitionColors[data.level] || ''}`}>
             {competitionLabels[data.level] || data.level}
@@ -113,6 +116,7 @@ export function MarketTimingSection({ data }: { data: MarketTiming }) {
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4 text-primary shrink-0" />
             <h3 className="font-semibold text-sm">Market Timing</h3>
+            <DataSourceBadge type="sourced" />
           </div>
           <Badge variant="outline" className={`text-xs capitalize flex items-center gap-1 ${timingColors[data.phase] || ''}`}>
             <TimingIcon phase={data.phase} />
@@ -139,6 +143,7 @@ export function IcpSection({ data }: { data: ICP }) {
         <div className="flex items-center gap-2">
           <Users className="h-4 w-4 text-primary shrink-0" />
           <h3 className="font-semibold text-sm">Ideal Customer Profile</h3>
+          <DataSourceBadge type="estimated" />
         </div>
         <p className="text-sm text-muted-foreground">{data.summary}</p>
         <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
@@ -219,6 +224,7 @@ export function WorkaroundSection({ data }: { data: WorkaroundDetection }) {
           <div className="flex items-center gap-2">
             <Wrench className="h-4 w-4 text-primary shrink-0" />
             <h3 className="font-semibold text-sm">Workaround Detection</h3>
+            <DataSourceBadge type="sourced" />
           </div>
           <Badge variant="outline" className={`text-xs capitalize ${severityColors[data.severity] || severityColors.none}`}>
             {data.severity} signal
@@ -252,6 +258,7 @@ export function FeatureGapSection({ data }: { data: FeatureGapMap }) {
         <div className="flex items-center gap-2">
           <Layers className="h-4 w-4 text-primary shrink-0" />
           <h3 className="font-semibold text-sm">Feature Gap Map</h3>
+          <DataSourceBadge type="sourced" />
         </div>
         <p className="text-sm text-muted-foreground">{data.summary}</p>
         {data.gaps?.length > 0 && (
@@ -288,6 +295,7 @@ export function PlatformRiskSection({ data }: { data: PlatformRisk }) {
           <div className="flex items-center gap-2">
             <AlertOctagon className="h-4 w-4 text-primary shrink-0" />
             <h3 className="font-semibold text-sm">Platform Risk</h3>
+            <DataSourceBadge type="estimated" />
           </div>
           <Badge variant="outline" className={`text-xs capitalize ${platformRiskColors[data.level] || ''}`}>
             {data.level}
@@ -341,6 +349,7 @@ export function GtmStrategySection({ data }: { data: GtmStrategy }) {
         <div className="flex items-center gap-2">
           <Megaphone className="h-4 w-4 text-primary shrink-0" />
           <h3 className="font-semibold text-sm">Go-To-Market Strategy</h3>
+          <DataSourceBadge type="estimated" />
         </div>
         <p className="text-sm text-muted-foreground">{data.summary}</p>
         <div className="flex flex-wrap gap-2 text-xs">
@@ -372,6 +381,7 @@ export function PricingBenchmarkSection({ data }: { data: PricingBenchmarks }) {
         <div className="flex items-center gap-2">
           <Tag className="h-4 w-4 text-primary shrink-0" />
           <h3 className="font-semibold text-sm">Pricing Benchmarks</h3>
+          <DataSourceBadge type="sourced" />
         </div>
         <p className="text-sm text-muted-foreground">{data.summary}</p>
         {data.suggestedRange && (
@@ -410,6 +420,7 @@ export function DefensibilitySection({ data }: { data: DefensibilityAnalysis }) 
           <div className="flex items-center gap-2">
             <Castle className="h-4 w-4 text-primary shrink-0" />
             <h3 className="font-semibold text-sm">Defensibility & Moat</h3>
+            <DataSourceBadge type="estimated" />
           </div>
           <Badge variant="outline" className={`text-xs capitalize ${moatStrengthColors[data.overallStrength] || moatStrengthColors.none}`}>
             {data.overallStrength}

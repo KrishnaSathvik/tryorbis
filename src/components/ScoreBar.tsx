@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { DataSourceBadge } from "@/components/DataSourceBadge";
 
 interface ScoreBarProps {
   label: string;
@@ -12,7 +13,10 @@ export function ScoreBar({ label, value, className }: ScoreBarProps) {
   return (
     <div className={cn("space-y-1.5", className)}>
       <div className="flex justify-between items-center">
-        <span className="text-sm font-medium">{label}</span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-sm font-medium">{label}</span>
+          <DataSourceBadge type="estimated" />
+        </div>
         <span className="text-sm text-muted-foreground font-semibold">{value}/100</span>
       </div>
       <div className="h-2 w-full bg-accent rounded-full overflow-hidden">
