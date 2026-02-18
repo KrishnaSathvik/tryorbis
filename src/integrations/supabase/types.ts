@@ -179,28 +179,34 @@ export type Database = {
         Row: {
           created_at: string
           credits: number
+          credits_reset_at: string | null
           device_fingerprint: string | null
           display_name: string
           email: string | null
           id: string
+          max_credits: number
           user_id: string
         }
         Insert: {
           created_at?: string
           credits?: number
+          credits_reset_at?: string | null
           device_fingerprint?: string | null
           display_name?: string
           email?: string | null
           id?: string
+          max_credits?: number
           user_id: string
         }
         Update: {
           created_at?: string
           credits?: number
+          credits_reset_at?: string | null
           device_fingerprint?: string | null
           display_name?: string
           email?: string | null
           id?: string
+          max_credits?: number
           user_id?: string
         }
         Relationships: []

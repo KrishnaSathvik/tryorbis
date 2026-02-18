@@ -172,7 +172,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     if (error) throw error;
     if (user) {
-      await supabase.from("profiles").update({ email }).eq("user_id", user.id);
+      // Add 20 credits to existing balance, set max_credits to 20, clear reset timer
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("credits")
+        .eq("user_id", user.id)
+        .single();
+      const currentCredits = profile?.credits ?? 0;
+      await supabase
+        .from("profiles")
+        .update({ 
+          email, 
+          credits: currentCredits + 20, 
+          max_credits: 20, 
+          credits_reset_at: null 
+        })
+        .eq("user_id", user.id);
     }
   };
 

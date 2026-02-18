@@ -30,7 +30,7 @@ const navItems = [
 
 export function AppSidebar() {
   const { profile, signOut, isGuest } = useAuth();
-  const { credits } = useCredits();
+  const { credits, timeLeft } = useCredits();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { setOpenMobile } = useSidebar();
@@ -96,10 +96,17 @@ export function AppSidebar() {
               <p className="text-sm font-medium truncate">{profile?.display_name || "User"}</p>
               {isGuest && <span className="text-[9px] bg-warning/10 text-warning px-1.5 py-0.5 rounded-full font-semibold leading-none">Guest</span>}
             </div>
-            <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-              <Zap className="h-3 w-3 text-primary" />
-              <span>{credits} credits</span>
-              {profile?.email && <span className="truncate ml-1">· {profile.email}</span>}
+            <div className="flex flex-col">
+              <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                <Zap className="h-3 w-3 text-primary" />
+                <span>{credits} credits</span>
+                {profile?.email && <span className="truncate ml-1">· {profile.email}</span>}
+              </div>
+              {timeLeft && credits === 0 && (
+                <span className="text-[10px] text-warning font-medium mt-0.5">
+                  Resets in {timeLeft}
+                </span>
+              )}
             </div>
           </div>
         </div>
