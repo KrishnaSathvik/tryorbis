@@ -260,8 +260,6 @@ export default function Landing() {
         </section>
       )}
 
-      {/* Product Hunt Embed */}
-      <LandingProductHunt />
 
       {/* Final CTA */}
       <section className="relative py-24 text-center px-6 overflow-hidden">
