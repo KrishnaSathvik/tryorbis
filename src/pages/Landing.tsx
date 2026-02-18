@@ -260,7 +260,7 @@ export default function Landing() {
           <h3 className="text-3xl sm:text-4xl font-bold font-nunito">
             Ready to Find Your Next<br /><span className="text-gradient-primary">Winning Idea?</span>
           </h3>
-          <p className="text-muted-foreground">No credit card required. Sign up in seconds and start discovering.</p>
+          <p className="text-muted-foreground">Sign up in seconds and start discovering.</p>
           <Button size="lg" onClick={handleCta} className="rounded-full bg-foreground text-background hover:bg-foreground/90 gap-2 text-base px-8 shadow-lg hover:-translate-y-0.5 transition-all">
             Get Started Free <ArrowRight className="h-4 w-4" />
           </Button>
