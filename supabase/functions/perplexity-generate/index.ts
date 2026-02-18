@@ -66,7 +66,6 @@ serve(async (req) => {
     const body = await req.json();
     const { persona, category, region, platform, context } = body;
 
-    // Input validation
     if (!persona || typeof persona !== 'string' || persona.length > 200) {
       return new Response(JSON.stringify({ error: "Invalid or missing 'persona' (max 200 chars)" }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -78,156 +77,23 @@ serve(async (req) => {
       });
     }
 
-    // ─── SINGLE PASS: Research + Structured Analysis with sonar-pro ───
-    const prompt = `You are a senior product strategist and market research analyst. Research real complaints and frustrations from "${persona}" in the "${category}" space${region ? ` in ${region}` : ''}${platform ? ` on ${platform}` : ''}.
-${context ? `\nAdditional context: "${context}"` : ''}
+    // ─── Optimized prompt — no JSON template, structured output handles schema ───
+    const prompt = `Research real complaints from "${persona}" in "${category}"${region ? ` in ${region}` : ''}${platform ? ` on ${platform}` : ''}.${context ? ` Context: "${context}"` : ''}
 
-RESEARCH these sources systematically:
-1. **Reddit**: r/startups, r/SaaS, r/smallbusiness, niche subreddits — find high-upvote frustration posts
-2. **Review sites**: G2, Capterra, Trustpilot — 1-3 star reviews of existing tools
-3. **Twitter/X**: Complaints like "I hate [tool]", "why is [category] so hard"
-4. **Forums**: Hacker News, Indie Hackers, specialized communities
-5. **App stores**: Negative Play Store / App Store reviews if mobile-relevant
+Search Reddit, G2, Capterra, Trustpilot, Twitter/X, HN, Indie Hackers, app stores for:
+- Frustration posts, 1-3 star reviews, "I hate X" / "why is X so hard" complaints
+- Willingness-to-pay signals, pricing complaints, budget discussions
+- Workarounds: spreadsheets, scripts, Zapier, "built our own"
+- Feature gaps: "I wish [tool] had..."
+- Competitor names, pricing, weaknesses, funding
+- Google Trends, VC activity, regulations for market timing
+- GTM channels competitors use, SEO viability
+- Platform risks: bundling, API deprecations
+- Defensibility: network effects, switching costs, data moats
 
-For each complaint: quote actual words, note the source, estimate how many share this frustration.
+Group complaints into 4-6 thematic clusters ranked by severity × frequency. Generate 4-6 product ideas with unique brandable names (like "Loom", "Notion"). Score demand strictly: 85-95 massive, 70-84 strong, 55-69 moderate, 40-54 weak, <40 minimal.`;
 
-ALSO RESEARCH:
-- **Willingness-to-pay**: "what tools do you pay for", "I'd pay $X for...", pricing complaints, budget discussions
-- **Market timing**: Google Trends, recent VC funding, new regulations, recent Product Hunt/YC launches
-- **Workarounds**: Spreadsheets, scripts, Zapier workflows, "we built our own" mentions
-- **Feature gaps**: "I wish [tool] had...", features that would make users switch
-- **Platform risks**: Major platforms building similar, API deprecations, regulation changes
-- **GTM channels**: How competitors acquire customers, organic discussion channels
-- **Pricing benchmarks**: Exact pricing of ALL competitors found
-- **Defensibility**: Network effects, integration ecosystems, switching costs, data moats
-- **Existing solutions**: Tools that exist, their complaints, pricing, gaps, competitor funding
-
-Then analyze and produce structured output.
-
-CLUSTERING RULES:
-- Group complaints into 4-6 distinct thematic clusters
-- Each cluster needs at least 3 real complaints as evidence
-- Rank by severity × frequency (most painful + common first)
-- "complaintCount" = estimated people affected (based on engagement — be realistic)
-- Use ACTUAL quotes from research — never fabricate
-
-IDEA GENERATION:
-- Generate 4-6 product ideas solving discovered problems
-- Each idea links to a specific problem cluster
-- Names: unique, memorable, brandable (2-3 words max, like "Loom", "Notion") — NEVER generic
-- Each name should sound like a real Product Hunt product
-
-DEMAND SCORING (be strict):
-- 85-95: Massive demand, thousands of complaints, no good solution
-- 70-84: Strong signals, hundreds of complaints, clear gaps in existing solutions
-- 55-69: Moderate signals, dozens of complaints, some imperfect solutions
-- 40-54: Weak signals, few complaints, decent solutions available
-- Below 40: Minimal evidence
-
-WTP: Rate strength as "strong"/"moderate"/"weak"/"none"
-COMPETITION: Classify as "blue_ocean"/"fragmented"/"crowded"/"winner_take_most"
-MARKET TIMING: Classify as "emerging"/"growing"/"saturated"/"declining"
-WORKAROUNDS: Rate severity as "strong"/"moderate"/"weak"/"none"
-PLATFORM RISK: Level as "low"/"medium"/"high"/"critical"
-GTM: Rate channel viability as "high"/"medium"/"low"
-DEFENSIBILITY: Overall strength as "strong"/"moderate"/"weak"/"none"
-
-Return ONLY valid JSON with this structure:
-{
-  "problemClusters": [
-    {
-      "id": "cluster_1",
-      "theme": "Clear theme name",
-      "painSummary": "1-2 sentence summary",
-      "complaintCount": 150,
-      "evidenceLinks": ["url1"],
-      "complaints": ["Quote 1", "Quote 2", "Quote 3"]
-    }
-  ],
-  "ideaSuggestions": [
-    {
-      "id": "idea_1",
-      "clusterId": "cluster_1",
-      "name": "BrandName",
-      "description": "What it does",
-      "mvpScope": "Smallest version",
-      "monetization": "Pricing model",
-      "demandScore": 72
-    }
-  ],
-  "wtpSignals": {
-    "strength": "strong",
-    "signals": [{"quote": "Quote", "source": "Source", "context": "Context"}],
-    "priceRange": {"low": 19, "mid": 49, "high": 99, "currency": "USD/mo"},
-    "summary": "Summary"
-  },
-  "competitionDensity": {
-    "level": "fragmented",
-    "competitorCount": 8,
-    "totalFundingEstimate": "$45M",
-    "keyIncumbents": ["Competitor A"],
-    "switchingCosts": "low",
-    "summary": "Summary"
-  },
-  "marketTiming": {
-    "phase": "growing",
-    "signals": ["Signal"],
-    "summary": "Summary"
-  },
-  "icp": {
-    "businessType": "B2B SaaS",
-    "companySize": "10-50",
-    "revenueRange": "$500K-$5M",
-    "industry": "SaaS",
-    "techStack": ["Stripe"],
-    "buyingTriggers": ["Trigger"],
-    "budgetRange": "$30-100/mo",
-    "summary": "Summary"
-  },
-  "workaroundDetection": {
-    "severity": "strong",
-    "workarounds": [{"description": "Desc", "source": "Source", "investmentLevel": "high"}],
-    "summary": "Summary"
-  },
-  "featureGapMap": {
-    "gaps": [{"feature": "Feature", "competitorCoverage": "weak", "opportunity": "high"}],
-    "topWedge": "Best entry feature",
-    "summary": "Summary"
-  },
-  "platformRisk": {
-    "level": "medium",
-    "signals": [{"signal": "Signal", "riskType": "bundling"}],
-    "summary": "Summary"
-  },
-  "gtmStrategy": {
-    "primaryChannel": "Content marketing + SEO",
-    "channels": [
-      {"channel": "Content / SEO", "viability": "high", "reasoning": "Reason"},
-      {"channel": "Communities", "viability": "medium", "reasoning": "Reason"}
-    ],
-    "founderLedSales": true,
-    "seoViability": "strong",
-    "summary": "Summary"
-  },
-  "pricingBenchmarks": {
-    "benchmarks": [
-      {"tool": "Competitor A", "price": "$49/mo", "model": "per-seat", "notes": "Note"}
-    ],
-    "suggestedRange": {"low": "$19/mo", "mid": "$39/mo", "high": "$79/mo"},
-    "pricingModel": "Flat-rate",
-    "summary": "Summary"
-  },
-  "defensibility": {
-    "overallStrength": "moderate",
-    "signals": [
-      {"type": "data_network", "description": "Description", "strength": "moderate"}
-    ],
-    "timeToMoat": "12-18 months",
-    "summary": "Summary"
-  }
-}`;
-
-    console.log('Starting single-pass research + analysis with sonar-pro...');
+    console.log('Starting optimized research with sonar-pro...');
     const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {
@@ -237,10 +103,146 @@ Return ONLY valid JSON with this structure:
       body: JSON.stringify({
         model: 'sonar-pro',
         messages: [
-          { role: 'system', content: 'You are a meticulous market research analyst and product strategist. Research real, specific, verifiable data from the web. Then analyze and return structured JSON. Be thorough and honest — never inflate scores or fabricate evidence. Always cite sources.' },
+          { role: 'system', content: 'You are a market research analyst. Research real web data, cite sources, never fabricate. Be thorough but concise.' },
           { role: 'user', content: prompt },
         ],
-        temperature: 0.1,
+        temperature: 0,
+        response_format: {
+          type: 'json_schema',
+          json_schema: {
+            name: 'market_research',
+            schema: {
+              type: 'object',
+              properties: {
+                problemClusters: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      id: { type: 'string' },
+                      theme: { type: 'string' },
+                      painSummary: { type: 'string' },
+                      complaintCount: { type: 'number' },
+                      evidenceLinks: { type: 'array', items: { type: 'string' } },
+                      complaints: { type: 'array', items: { type: 'string' } },
+                    },
+                    required: ['id', 'theme', 'painSummary', 'complaintCount', 'complaints'],
+                  },
+                },
+                ideaSuggestions: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      id: { type: 'string' },
+                      clusterId: { type: 'string' },
+                      name: { type: 'string' },
+                      description: { type: 'string' },
+                      mvpScope: { type: 'string' },
+                      monetization: { type: 'string' },
+                      demandScore: { type: 'number' },
+                    },
+                    required: ['id', 'name', 'description', 'mvpScope', 'demandScore'],
+                  },
+                },
+                wtpSignals: {
+                  type: 'object',
+                  properties: {
+                    strength: { type: 'string' },
+                    signals: { type: 'array', items: { type: 'object', properties: { quote: { type: 'string' }, source: { type: 'string' }, context: { type: 'string' } } } },
+                    priceRange: { type: 'object', properties: { low: { type: 'number' }, mid: { type: 'number' }, high: { type: 'number' }, currency: { type: 'string' } } },
+                    summary: { type: 'string' },
+                  },
+                },
+                competitionDensity: {
+                  type: 'object',
+                  properties: {
+                    level: { type: 'string' },
+                    competitorCount: { type: 'number' },
+                    totalFundingEstimate: { type: 'string' },
+                    keyIncumbents: { type: 'array', items: { type: 'string' } },
+                    switchingCosts: { type: 'string' },
+                    summary: { type: 'string' },
+                  },
+                },
+                marketTiming: {
+                  type: 'object',
+                  properties: {
+                    phase: { type: 'string' },
+                    signals: { type: 'array', items: { type: 'string' } },
+                    summary: { type: 'string' },
+                  },
+                },
+                icp: {
+                  type: 'object',
+                  properties: {
+                    businessType: { type: 'string' },
+                    companySize: { type: 'string' },
+                    revenueRange: { type: 'string' },
+                    industry: { type: 'string' },
+                    techStack: { type: 'array', items: { type: 'string' } },
+                    buyingTriggers: { type: 'array', items: { type: 'string' } },
+                    budgetRange: { type: 'string' },
+                    summary: { type: 'string' },
+                  },
+                },
+                workaroundDetection: {
+                  type: 'object',
+                  properties: {
+                    severity: { type: 'string' },
+                    workarounds: { type: 'array', items: { type: 'object', properties: { description: { type: 'string' }, source: { type: 'string' }, investmentLevel: { type: 'string' } } } },
+                    summary: { type: 'string' },
+                  },
+                },
+                featureGapMap: {
+                  type: 'object',
+                  properties: {
+                    gaps: { type: 'array', items: { type: 'object', properties: { feature: { type: 'string' }, competitorCoverage: { type: 'string' }, opportunity: { type: 'string' } } } },
+                    topWedge: { type: 'string' },
+                    summary: { type: 'string' },
+                  },
+                },
+                platformRisk: {
+                  type: 'object',
+                  properties: {
+                    level: { type: 'string' },
+                    signals: { type: 'array', items: { type: 'object', properties: { signal: { type: 'string' }, riskType: { type: 'string' } } } },
+                    summary: { type: 'string' },
+                  },
+                },
+                gtmStrategy: {
+                  type: 'object',
+                  properties: {
+                    primaryChannel: { type: 'string' },
+                    channels: { type: 'array', items: { type: 'object', properties: { channel: { type: 'string' }, viability: { type: 'string' }, reasoning: { type: 'string' } } } },
+                    founderLedSales: { type: 'boolean' },
+                    seoViability: { type: 'string' },
+                    summary: { type: 'string' },
+                  },
+                },
+                pricingBenchmarks: {
+                  type: 'object',
+                  properties: {
+                    benchmarks: { type: 'array', items: { type: 'object', properties: { tool: { type: 'string' }, price: { type: 'string' }, model: { type: 'string' }, notes: { type: 'string' } } } },
+                    suggestedRange: { type: 'object', properties: { low: { type: 'string' }, mid: { type: 'string' }, high: { type: 'string' } } },
+                    pricingModel: { type: 'string' },
+                    summary: { type: 'string' },
+                  },
+                },
+                defensibility: {
+                  type: 'object',
+                  properties: {
+                    overallStrength: { type: 'string' },
+                    signals: { type: 'array', items: { type: 'object', properties: { type: { type: 'string' }, description: { type: 'string' }, strength: { type: 'string' } } } },
+                    timeToMoat: { type: 'string' },
+                    summary: { type: 'string' },
+                  },
+                },
+              },
+              required: ['problemClusters', 'ideaSuggestions'],
+            },
+          },
+        },
       }),
     });
 
@@ -258,32 +260,35 @@ Return ONLY valid JSON with this structure:
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || '';
     const citations = data.citations || [];
-    console.log(`Response: ${content.length} chars, ${citations.length} citations`);
+    console.log(`Response: ${content.length} chars, ${citations.length} citations, ${Date.now() - startTime}ms`);
 
     let parsed;
     try {
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : { problemClusters: [], ideaSuggestions: [] };
+      parsed = typeof content === 'string' ? JSON.parse(content) : content;
     } catch {
-      console.error('Failed to parse output, raw:', content.slice(0, 500));
-      parsed = { problemClusters: [], ideaSuggestions: [] };
+      // Fallback: try extracting JSON from content
+      try {
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : { problemClusters: [], ideaSuggestions: [] };
+      } catch {
+        console.error('Failed to parse output, raw:', content.slice(0, 500));
+        parsed = { problemClusters: [], ideaSuggestions: [] };
+      }
     }
 
-    // Ensure citations are distributed to clusters
+    // Distribute citations to clusters
     if (citations.length > 0 && parsed.problemClusters?.length > 0) {
-      const citationsPerCluster = Math.max(1, Math.floor(citations.length / parsed.problemClusters.length));
+      const perCluster = Math.max(1, Math.floor(citations.length / parsed.problemClusters.length));
       parsed.problemClusters.forEach((cluster: any, i: number) => {
         if (!cluster.evidenceLinks || cluster.evidenceLinks.length === 0) {
-          cluster.evidenceLinks = citations.slice(i * citationsPerCluster, (i + 1) * citationsPerCluster);
+          cluster.evidenceLinks = citations.slice(i * perCluster, (i + 1) * perCluster);
         }
       });
     }
-
     parsed.evidenceLinks = citations;
 
-    console.log(`Complete: ${parsed.problemClusters?.length || 0} clusters, ${parsed.ideaSuggestions?.length || 0} ideas, WTP: ${parsed.wtpSignals?.strength || 'none'}, Competition: ${parsed.competitionDensity?.level || 'unknown'}, Timing: ${parsed.marketTiming?.phase || 'unknown'}`);
+    console.log(`Complete in ${Date.now() - startTime}ms: ${parsed.problemClusters?.length || 0} clusters, ${parsed.ideaSuggestions?.length || 0} ideas`);
 
-    // ─── Log success ───
     await serviceClient.from('request_logs').insert({
       user_id: userId, function_name: 'perplexity-generate', status: 'success',
       latency_ms: Date.now() - startTime, provider: 'perplexity-sonar-pro',
