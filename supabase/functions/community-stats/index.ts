@@ -57,18 +57,12 @@ Deno.serve(async (req) => {
       const suggestions = Array.isArray(run.idea_suggestions) ? run.idea_suggestions : [];
       for (const idea of suggestions) {
         if (idea?.name) {
-          let desc = idea.description ? String(idea.description) : undefined;
-          if (desc) {
-            // Cut at last sentence boundary within 80 chars, or last word boundary
-            if (desc.length > 80) {
-              const sentenceEnd = desc.slice(0, 80).lastIndexOf('.');
-              if (sentenceEnd > 20) {
-                desc = desc.slice(0, sentenceEnd + 1);
-              } else {
-                const wordEnd = desc.slice(0, 77).lastIndexOf(' ');
-                desc = desc.slice(0, wordEnd > 20 ? wordEnd : 77);
-              }
-            }
+          let desc: string | undefined = undefined;
+          if (idea.description) {
+            // Extract just the first complete sentence
+            const text = String(idea.description);
+            const firstSentence = text.match(/^[^.!?]+[.!?]/);
+            desc = firstSentence ? firstSentence[0].trim() : text.split(',')[0].trim() + '.';
           }
           allIdeas.push({ name: idea.name, score: idea.demandScore || 0, source: "Generated", description: desc });
         }
