@@ -248,16 +248,14 @@ export function WorkaroundSection({ data }: { data: WorkaroundDetection }) {
         </div>
         <p className={SUMMARY_CLASS}>{data.summary}</p>
         {data.workarounds?.length > 0 && (
-          <div className="space-y-3 pt-1">
+          <div className="space-y-4 pt-1">
             {data.workarounds.slice(0, 3).map((w, i) => (
-              <div key={i} className="flex items-start gap-2.5 text-sm">
-                <Badge variant="outline" className={`text-[10px] capitalize shrink-0 mt-0.5 ${investmentColors[w.investmentLevel] || ''}`}>
+              <div key={i} className="space-y-1.5">
+                <Badge variant="outline" className={`text-xs capitalize ${investmentColors[w.investmentLevel] || ''}`}>
                   {w.investmentLevel}
                 </Badge>
-                <div>
-                  <p className={DETAIL_VALUE_CLASS}>{w.description}</p>
-                  <p className="text-muted-foreground/60 text-xs mt-1">— {w.source}</p>
-                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed">{w.description}</p>
+                <p className="text-xs text-muted-foreground/60">— {w.source}</p>
               </div>
             ))}
           </div>
@@ -317,13 +315,13 @@ export function PlatformRiskSection({ data }: { data: PlatformRisk }) {
         </div>
         <p className={SUMMARY_CLASS}>{data.summary}</p>
         {data.signals?.length > 0 && (
-          <div className="space-y-2.5 pt-1">
+          <div className="space-y-4 pt-1">
             {data.signals.map((s, i) => (
-              <div key={i} className="flex items-start gap-2.5 text-sm">
-                <Badge variant="outline" className="text-[10px] shrink-0 mt-0.5">
+              <div key={i} className="space-y-1.5">
+                <Badge variant="outline" className="text-xs">
                   {riskTypeLabels[s.riskType] || formatLabel(s.riskType)}
                 </Badge>
-                <p className={DETAIL_VALUE_CLASS}>{s.signal}</p>
+                <p className="text-sm text-muted-foreground leading-relaxed">{s.signal}</p>
               </div>
             ))}
           </div>
@@ -454,13 +452,13 @@ export function DefensibilitySection({ data }: { data: DefensibilityAnalysis }) 
           </div>
         )}
         {data.signals?.length > 0 && (
-          <div className="space-y-2.5 pt-1">
+          <div className="space-y-4 pt-1">
             {data.signals.map((s, i) => (
-              <div key={i} className="flex items-start gap-2.5 text-sm">
-                <Badge variant="outline" className={`text-[10px] shrink-0 mt-0.5 capitalize ${moatStrengthColors[s.strength] || ''}`}>
+              <div key={i} className="space-y-1.5">
+                <Badge variant="outline" className={`text-xs capitalize ${moatStrengthColors[s.strength] || ''}`}>
                   {moatTypeLabels[s.type] || formatLabel(s.type)}
                 </Badge>
-                <p className={DETAIL_VALUE_CLASS}>{s.description}</p>
+                <p className="text-sm text-muted-foreground leading-relaxed">{s.description}</p>
               </div>
             ))}
           </div>
