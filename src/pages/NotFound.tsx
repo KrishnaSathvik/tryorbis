@@ -14,7 +14,7 @@ const NotFound = () => {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-6">
       <div className="text-center space-y-6 max-w-md animate-fade-in">
-        <img src={orbisLogo} alt="Orbis" className="h-12 w-12 mx-auto dark-invert opacity-40" />
+        <a href="/"><img src={orbisLogo} alt="Orbis" className="h-12 w-12 mx-auto dark-invert opacity-40" /></a>
         <div className="space-y-2">
           <h1 className="text-6xl font-bold font-nunito text-gradient-primary">404</h1>
           <p className="text-lg text-muted-foreground">This page doesn't exist or has been moved.</p>

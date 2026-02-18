@@ -270,11 +270,11 @@ export default function Landing() {
       {/* Footer */}
       <footer className="border-t border-border/50 py-10">
         <div className="max-w-5xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
+          <a href="/" className="flex items-center gap-2">
             <img src={orbisLogo} alt="Orbis" className="h-6 w-6 dark-invert" />
             <span className="font-bold font-nunito text-gradient-primary">Orbis</span>
             <span className="text-xs text-muted-foreground ml-1">From problem discovery to product validation.</span>
-          </div>
+          </a>
           <div className="flex items-center gap-4">
             <button onClick={() => navigate("/examples")} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
               Examples & Changelog
