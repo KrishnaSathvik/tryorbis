@@ -31,16 +31,39 @@ const tooltipStyle = {
 function TreemapCell(props: any) {
   const { x, y, width, height, name, fill, categoryData } = props;
   if (!width || !height || width < 2 || height < 2) return null;
-  const showLabel = width > 50 && height > 36;
+  const showLabel = width > 30 && height > 24;
+  const fontSize = Math.max(10, Math.min(14, width / 7));
+  const words = String(name).split(/\s+/);
+  const lines: string[] = [];
+  if (width < 80) {
+    words.forEach(w => lines.push(w));
+  } else {
+    let cur = words[0];
+    for (let i = 1; i < words.length; i++) {
+      if ((cur + " " + words[i]).length * fontSize * 0.55 < width - 12) {
+        cur += " " + words[i];
+      } else {
+        lines.push(cur);
+        cur = words[i];
+      }
+    }
+    lines.push(cur);
+  }
+  const lineHeight = fontSize + 4;
+  const totalTextHeight = lines.length * lineHeight + 16;
+  const startY = y + height / 2 - totalTextHeight / 2 + lineHeight / 2;
+
   return (
     <g>
       <rect x={x} y={y} width={width} height={height} rx={6} fill={fill} fillOpacity={0.85} stroke="hsl(0 0% 100%)" strokeWidth={2} />
       {showLabel && (
         <>
-          <text x={x + width / 2} y={y + height / 2 - 6} textAnchor="middle" dominantBaseline="central" fill="white" fontSize={Math.min(13, width / 8)} fontWeight={600}>
-            {String(name).length > 18 ? String(name).slice(0, 16) + "…" : name}
-          </text>
-          <text x={x + width / 2} y={y + height / 2 + 12} textAnchor="middle" dominantBaseline="central" fill="hsl(0 0% 100% / 0.8)" fontSize={11}>
+          {lines.map((line, i) => (
+            <text key={i} x={x + width / 2} y={startY + i * lineHeight} textAnchor="middle" dominantBaseline="central" fill="white" fontSize={fontSize} fontWeight={600}>
+              {line}
+            </text>
+          ))}
+          <text x={x + width / 2} y={startY + lines.length * lineHeight} textAnchor="middle" dominantBaseline="central" fill="hsl(0 0% 100% / 0.8)" fontSize={11}>
             {categoryData?.find((c: any) => c.name === name)?.count ?? ""}
           </text>
         </>
