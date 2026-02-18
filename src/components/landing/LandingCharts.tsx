@@ -29,7 +29,7 @@ const tooltipStyle = {
 };
 
 function TreemapCell(props: any) {
-  const { x, y, width, height, name, fill, categoryData } = props;
+  const { x, y, width, height, name, fill, value } = props;
   if (!width || !height || width < 2 || height < 2) return null;
   const showLabel = width > 30 && height > 24;
   const fontSize = Math.max(10, Math.min(14, width / 7));
@@ -64,7 +64,7 @@ function TreemapCell(props: any) {
             </text>
           ))}
           <text x={x + width / 2} y={startY + lines.length * lineHeight} textAnchor="middle" dominantBaseline="central" fill="hsl(0 0% 100% / 0.8)" fontSize={11}>
-            {categoryData?.find((c: any) => c.name === name)?.count ?? ""}
+            {value ?? ""}
           </text>
         </>
       )}
@@ -161,7 +161,7 @@ export function LandingCharts({ stats }: Props) {
                 dataKey="count"
                 nameKey="name"
                 stroke="hsl(0 0% 100%)"
-                content={<TreemapCell categoryData={categoryData} />}
+                content={<TreemapCell />}
               >
                 <Tooltip {...tooltipStyle} />
               </Treemap>
