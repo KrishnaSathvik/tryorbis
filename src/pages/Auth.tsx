@@ -102,6 +102,7 @@ export default function Auth() {
               <Button type="submit" className="w-full rounded-full bg-foreground text-background hover:bg-foreground/90" disabled={loading}>
                 {loading ? "Starting..." : "Start instantly with 5 credits →"}
               </Button>
+              <p className="text-center text-[11px] text-muted-foreground">Upgrade later to save your research.</p>
             </form>
 
             <p className="text-center text-xs text-muted-foreground">
