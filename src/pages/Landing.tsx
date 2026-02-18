@@ -59,6 +59,7 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-background">
+    <main>
       {/* Nav */}
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border/50">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
@@ -110,17 +111,17 @@ export default function Landing() {
         <div className="grid md:grid-cols-3 gap-8">
           <div className="space-y-3">
             <p className="text-xs font-bold tracking-widest uppercase text-destructive">The Problem</p>
-            <h4 className="text-xl font-bold font-nunito">Most startups fail because they build something nobody wants.</h4>
+            <h3 className="text-xl font-bold font-nunito">Most startups fail because they build something nobody wants.</h3>
             <p className="text-sm text-muted-foreground leading-relaxed">Founders waste months building products based on assumptions, gut feelings, or biased surveys — only to discover there's no real demand.</p>
           </div>
           <div className="space-y-3">
             <p className="text-xs font-bold tracking-widest uppercase text-primary">The Solution</p>
-            <h4 className="text-xl font-bold font-nunito">Orbis finds real pain points and validates ideas with AI research.</h4>
+            <h3 className="text-xl font-bold font-nunito">Orbis finds real pain points and validates ideas with AI research.</h3>
             <p className="text-sm text-muted-foreground leading-relaxed">It mines actual complaints from forums and reviews, clusters them into patterns, generates product ideas with demand scores, and delivers a clear Build / Pivot / Skip verdict.</p>
           </div>
           <div className="space-y-3">
             <p className="text-xs font-bold tracking-widest uppercase text-muted-foreground">Who It's For</p>
-            <h4 className="text-xl font-bold font-nunito">Solo founders, indie hackers, and early-stage teams.</h4>
+            <h3 className="text-xl font-bold font-nunito">Solo founders, indie hackers, and early-stage teams.</h3>
             <p className="text-sm text-muted-foreground leading-relaxed">Anyone who wants to validate a product idea before writing a single line of code — without spending weeks on manual market research.</p>
           </div>
         </div>
@@ -150,7 +151,7 @@ export default function Landing() {
                   <f.icon className="h-6 w-6 text-primary" />
                 </div>
                 <div className="flex items-center gap-2">
-                  <h4 className="font-semibold text-base font-nunito">{f.title}</h4>
+                  <h3 className="font-semibold text-base font-nunito">{f.title}</h3>
                   {f.highlight && <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-full">New</span>}
                 </div>
                 <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
@@ -176,11 +177,11 @@ export default function Landing() {
               { step: "04", icon: Sparkles, title: "Chat with Orbis AI", desc: "Discuss findings, explore pivots, refine strategy — your AI advisor is always ready to help you think deeper." },
             ].map((s) => (
               <div key={s.step} className="relative space-y-4">
-                <span className="text-5xl font-bold text-primary/10 font-nunito">{s.step}</span>
+                <span className="text-5xl font-bold text-primary/25 font-nunito">{s.step}</span>
                 <div className="h-11 w-11 rounded-2xl gradient-primary flex items-center justify-center shadow-md">
                   <s.icon className="h-5 w-5 text-primary-foreground" />
                 </div>
-                <h4 className="font-semibold text-lg font-nunito">{s.title}</h4>
+                <h3 className="font-semibold text-lg font-nunito">{s.title}</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">{s.desc}</p>
               </div>
             ))}
@@ -239,7 +240,7 @@ export default function Landing() {
                     </div>
                     <div>
                       <p className="text-3xl sm:text-4xl font-bold tracking-tight font-nunito">{s.value}</p>
-                      <p className="text-xs text-muted-foreground mt-1 font-semibold uppercase tracking-wider">{s.label}</p>
+                      <p className="text-xs text-muted-foreground/80 mt-1 font-semibold uppercase tracking-wider">{s.label}</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -289,6 +290,7 @@ export default function Landing() {
           </div>
         </div>
       </footer>
+    </main>
     </div>
   );
 }
