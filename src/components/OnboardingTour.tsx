@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Lightbulb, ClipboardCheck, Bookmark, X, ArrowRight, Sparkles } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const TOUR_KEY = "orbis_onboarding_complete";
 
@@ -42,15 +43,20 @@ const steps = [
 export function OnboardingTour() {
   const [currentStep, setCurrentStep] = useState(0);
   const [visible, setVisible] = useState(false);
+  const shownRef = useRef(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, loading } = useAuth();
 
   useEffect(() => {
+    // Don't show while auth is loading, or if already shown this session, or if no user
+    if (loading || shownRef.current || !user) return;
     const done = localStorage.getItem(TOUR_KEY);
     if (!done && location.pathname === "/dashboard") {
+      shownRef.current = true;
       setVisible(true);
     }
-  }, [location.pathname]);
+  }, [location.pathname, loading, user]);
 
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
