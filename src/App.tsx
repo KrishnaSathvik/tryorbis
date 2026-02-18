@@ -15,7 +15,7 @@ import Backlog from "./pages/Backlog";
 import Reports from "./pages/Reports";
 import Analytics from "./pages/Analytics";
 import OrbisChat from "./pages/OrbisChat";
-
+import Examples from "./pages/Examples";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +32,7 @@ const AppRoutes = () => (
     <OnboardingTour />
     <Routes>
       <Route path="/" element={<Landing />} />
+      <Route path="/examples" element={<Examples />} />
       <Route path="/auth" element={<Auth />} />
       <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
         <Route path="/dashboard" element={<Dashboard />} />

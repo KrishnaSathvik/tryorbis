@@ -15,6 +15,7 @@ import { LandingTrends } from "@/components/landing/LandingTrends";
 import { LandingSuccessTracking } from "@/components/landing/LandingSuccessTracking";
 import { LandingTicker } from "@/components/landing/LandingTicker";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { FeedbackDrawer } from "@/components/FeedbackDrawer";
 import orbisLogo from "@/assets/orbis-logo.png";
 
 export default function Landing() {
@@ -261,7 +262,13 @@ export default function Landing() {
             <span className="font-bold font-nunito text-gradient-primary">Orbis</span>
             <span className="text-xs text-muted-foreground ml-1">From problem discovery to product validation.</span>
           </div>
-          <span className="text-xs text-muted-foreground">© {new Date().getFullYear()} Orbis. All rights reserved.</span>
+          <div className="flex items-center gap-4">
+            <button onClick={() => navigate("/examples")} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+              Examples & Changelog
+            </button>
+            <FeedbackDrawer />
+            <span className="text-xs text-muted-foreground">© {new Date().getFullYear()} Orbis</span>
+          </div>
         </div>
       </footer>
     </div>
