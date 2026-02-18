@@ -15,6 +15,7 @@ import { LandingTrends } from "@/components/landing/LandingTrends";
 
 import { LandingComparison } from "@/components/landing/LandingComparison";
 import { LandingTicker } from "@/components/landing/LandingTicker";
+import { LandingProductHunt } from "@/components/landing/LandingProductHunt";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { FeedbackDrawer } from "@/components/FeedbackDrawer";
 import orbisLogo from "@/assets/orbis-logo.png";
@@ -258,6 +259,9 @@ export default function Landing() {
           </div>
         </section>
       )}
+
+      {/* Product Hunt Embed */}
+      <LandingProductHunt />
 
       {/* Final CTA */}
       <section className="relative py-24 text-center px-6 overflow-hidden">
