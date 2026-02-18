@@ -94,7 +94,7 @@ export function LandingComparison() {
       </Card>
 
       <p className="text-[11px] text-muted-foreground text-center">
-        Based on publicly available feature lists as of 2025. <Minus className="inline h-3 w-3 mb-0.5" /> = limited or partial support.
+        Based on publicly available feature lists as of 2026. <Minus className="inline h-3 w-3 mb-0.5" /> = limited or partial support.
       </p>
     </section>
   );
