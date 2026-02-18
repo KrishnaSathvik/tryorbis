@@ -2,20 +2,43 @@
 
 > Stop guessing. Start validating. Orbis mines real complaints, clusters pain points, and validates product ideas with AI-powered research — so you build what people actually need.
 
-🔗 **Live:** [tryorbis.lovable.app](https://tryorbis.lovable.app)
+🔗 **Live:** [www.tryorbis.com](https://www.tryorbis.com)
 
 ---
 
 ## Features
 
+### Core
 - **Problem Discovery** — Automatically mine real complaints from forums, reviews, and social media.
 - **Pain Point Clustering** — AI groups raw complaints into thematic clusters to spot high-frequency patterns.
 - **Idea Generation** — Get actionable product ideas ranked by demand score, backed by evidence.
 - **Full Validation Reports** — Competitor analysis, pros & cons, evidence links, and a Build / Pivot / Skip verdict.
 - **Orbis AI Advisor** — Brainstorm ideas, discuss strategy, refine your pitch — all in a dedicated AI chat.
+
+### Market Intelligence
+- **Willingness-to-Pay (WTP)** — Direct pricing signals and budget intent from real conversations.
+- **Competition Density** — Blue Ocean to Winner-Take-Most classification with funding estimates.
+- **Market Timing** — Emerging / Growing / Saturated / Declining phase detection.
+- **ICP Precision** — Business type, industry, buying triggers, and tech stack targeting.
+- **Workaround Detection** — How people currently solve the problem (and how much they invest).
+- **Feature Gap Map** — Competitor coverage gaps ranked by opportunity.
+- **Platform Risk** — Bundling, API limitation, and roadmap overlap signals.
+- **GTM Strategy** — Channel viability, SEO potential, and founder-led sales assessment.
+- **Pricing Benchmarks** — Competitor pricing data with suggested range.
+- **Defensibility & Moat** — Data network, lock-in, community, and technical moat analysis.
+
+### Data Quality
+- **Sourced vs Estimated Labels** — Every metric shows whether it's backed by research data or AI-estimated.
+- **Market Sizing (TAM/SAM/SOM)** — Estimated market size with methodology transparency.
+- **Evidence Attribution** — Research sources with clickable URLs and site favicons.
+
+### Platform
 - **Backlog Management** — Save and track your best ideas with status tracking.
 - **Analytics Dashboard** — Personal stats on ideas generated, validated, and saved.
 - **Community Trends** — Live aggregate stats showing what the community is researching.
+- **Examples & Changelog** — Sample reports and product update timeline.
+- **Feedback Widget** — In-app feedback submission (Bug / Feature Request / General).
+- **Observability Logging** — Latency, error rates, and provider tracking across all AI functions.
 - **Guest Mode** — Try the app instantly without signing up (with limited credits).
 - **Dark / Light Theme** — Full theme support with system preference detection.
 
@@ -31,6 +54,7 @@
 | Route | Page | Description |
 |-------|------|-------------|
 | `/` | Landing | Public marketing page with live community stats |
+| `/examples` | Examples & Changelog | Sample reports and recent product updates |
 | `/auth` | Auth | Sign up / sign in |
 | `/dashboard` | Dashboard | Welcome screen with quick stats and CTA cards |
 | `/chat` | Orbis AI | Conversational AI advisor for strategy and brainstorming |
