@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
@@ -46,28 +46,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<{ display_name: string; email?: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  const initializedRef = useRef(false);
 
   const isGuest = !!user?.is_anonymous;
 
   const fetchProfile = async (userId: string) => {
-    for (let i = 0; i < 3; i++) {
-      const { data } = await supabase
-        .from("profiles")
-        .select("display_name, email")
-        .eq("user_id", userId)
-        .single();
-      if (data) { setProfile(data); return; }
-      if (i < 2) await new Promise(r => setTimeout(r, 500));
+    for (let i = 0; i < 5; i++) {
+      try {
+        const { data } = await supabase
+          .from("profiles")
+          .select("display_name, email")
+          .eq("user_id", userId)
+          .single();
+        if (data) { setProfile(data); return; }
+      } catch {
+        // ignore fetch errors during retries
+      }
+      if (i < 4) await new Promise(r => setTimeout(r, 600));
     }
+    // Even if profile fetch fails, don't block the user — set a fallback
+    setProfile({ display_name: "User" });
   };
 
   const saveFingerprint = async (userId: string) => {
-    const fp = getDeviceFingerprint();
-    await supabase.from("profiles").update({ device_fingerprint: fp }).eq("user_id", userId);
+    try {
+      const fp = getDeviceFingerprint();
+      await supabase.from("profiles").update({ device_fingerprint: fp }).eq("user_id", userId);
+    } catch {
+      // Non-critical — don't block auth flow
+    }
   };
 
   useEffect(() => {
     let mounted = true;
+
+    // 1. Set up listener FIRST (before getSession) to avoid missing events
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (!mounted) return;
+        const u = session?.user ?? null;
+        setUser(u);
+        if (u) {
+          // Use setTimeout to avoid Supabase auth deadlock
+          setTimeout(() => {
+            if (mounted) fetchProfile(u.id);
+          }, 0);
+        } else {
+          setProfile(null);
+        }
+        // Only set loading=false from onAuthStateChange AFTER initial load is done
+        if (initializedRef.current) {
+          // Don't set loading false here — initial load handles it
+        }
+      }
+    );
+
+    // 2. Then do the initial session check
     const init = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -78,24 +112,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch (e) {
         console.error("Auth init error:", e);
       } finally {
-        if (mounted) setLoading(false);
+        if (mounted) {
+          initializedRef.current = true;
+          setLoading(false);
+        }
       }
     };
     init();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        if (!mounted) return;
-        const u = session?.user ?? null;
-        setUser(u);
-        if (u) {
-          fetchProfile(u.id);
-        } else {
-          setProfile(null);
-        }
-        setLoading(false);
-      }
-    );
 
     return () => { mounted = false; subscription.unsubscribe(); };
   }, []);
@@ -113,6 +136,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
     if (data.user) {
       incrementSignupCount();
+      // Wait briefly for the trigger to create the profile
+      await new Promise(r => setTimeout(r, 300));
       await saveFingerprint(data.user.id);
     }
   };
@@ -133,7 +158,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
     if (data.user) {
       incrementSignupCount();
+      // Wait for the handle_new_user trigger to create the profile
+      await new Promise(r => setTimeout(r, 500));
       await saveFingerprint(data.user.id);
+      await fetchProfile(data.user.id);
     }
   };
 
@@ -143,7 +171,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password,
     });
     if (error) throw error;
-    // Update profile email
     if (user) {
       await supabase.from("profiles").update({ email }).eq("user_id", user.id);
     }
