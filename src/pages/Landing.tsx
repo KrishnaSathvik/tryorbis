@@ -285,11 +285,19 @@ export default function Landing() {
             <span className="font-bold font-nunito text-gradient-primary">Orbis</span>
             <span className="text-xs text-muted-foreground ml-1">From problem discovery to product validation.</span>
           </a>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-wrap">
             <button onClick={() => navigate("/examples")} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
               Examples & Changelog
             </button>
             <FeedbackDrawer />
+            <a
+              href="https://www.producthunt.com/products/orbis-ai-product-research-validation?embed=true&utm_source=embed&utm_medium=post_embed"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#ff6154] hover:bg-[#e5564a] text-white text-xs font-semibold transition-colors"
+            >
+              🚀 Support us on Product Hunt
+            </a>
             <span className="text-xs text-muted-foreground">© {new Date().getFullYear()} Orbis</span>
           </div>
         </div>
