@@ -329,6 +329,10 @@ export type Database = {
       }
       cleanup_old_request_logs: { Args: never; Returns: undefined }
       try_deduct_credit: { Args: { p_user_id: string }; Returns: boolean }
+      try_deduct_credits: {
+        Args: { p_amount?: number; p_user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

@@ -12,6 +12,7 @@ import { WtpSection, CompetitionDensitySection, MarketTimingSection, IcpSection,
 import { useCredits } from "@/hooks/useCredits";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, Bookmark, ClipboardCheck, Copy, Send, User, FolderOpen, Monitor, Globe, Rocket, Search } from "lucide-react";
+import { ResearchModeToggle } from "@/components/ResearchModeToggle";
 import { supabase } from "@/integrations/supabase/client";
 import { saveGeneratorRunDb, addToBacklogDb } from "@/lib/db";
 import { toast } from "sonner";
@@ -54,6 +55,7 @@ export default function GenerateIdeas() {
   const [result, setResult] = useState<GeneratorResult | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [generatingParams, setGeneratingParams] = useState<any>(null);
+  const [researchMode, setResearchMode] = useState<'regular' | 'deep'>('regular');
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, isTyping]);
 
@@ -95,12 +97,12 @@ export default function GenerateIdeas() {
     try {
       const stepInterval = setInterval(() => { setResearchStep(prev => { if (prev >= researchSteps.length - 1) { clearInterval(stepInterval); return prev; } return prev + 1; }); }, 3500);
       const { data, error } = await supabase.functions.invoke('perplexity-generate', {
-        body: { persona: params.persona, category: params.category, region: params.region || undefined, platform: params.platform || undefined, context: params.context || undefined },
+        body: { persona: params.persona, category: params.category, region: params.region || undefined, platform: params.platform || undefined, context: params.context || undefined, mode: researchMode },
       });
       clearInterval(stepInterval); setResearchStep(researchSteps.length);
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      await deductCredit();
+      await deductCredit(); // refresh client-side credit count
       const run: GeneratorResult = {
         persona: params.persona, category: params.category,
         region: params.region || undefined, platform: params.platform || undefined,
@@ -162,8 +164,9 @@ export default function GenerateIdeas() {
                 {generatingParams.platform && <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-medium"><Monitor className="h-3 w-3" /> {generatingParams.platform}</span>}
                 {generatingParams.region && <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-medium"><Globe className="h-3 w-3" /> {generatingParams.region}</span>}
               </div>
+              <ResearchModeToggle mode={researchMode} onChange={setResearchMode} />
               <Button className="w-full rounded-full" size="sm" onClick={() => triggerGenerate(generatingParams)}>
-                <Rocket className="h-3.5 w-3.5 mr-1" /> Start Research
+                <Rocket className="h-3.5 w-3.5 mr-1" /> Start Research {researchMode === 'deep' ? '(3 credits)' : '(1 credit)'}
               </Button>
             </div>
           )}
