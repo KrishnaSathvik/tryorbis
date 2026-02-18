@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -35,6 +35,7 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/orbis-chat`;
 export default function OrbisChat() {
   usePageTitle("Orbis AI Chat");
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeConvoId, setActiveConvoId] = useState<string | null>(searchParams.get("c"));
   const [messages, setMessages] = useState<ChatMsg[]>([]);
@@ -251,30 +252,62 @@ export default function OrbisChat() {
             <div className="space-y-5">
               {messages.map((msg, i) => {
                 const isUser = msg.role === "user";
+                const isLastAssistant = !isUser && (i === messages.length - 1 || messages.slice(i + 1).every(m => m.role === "user"));
+                const lowerContent = msg.content.toLowerCase();
+                const showGenerate = !isUser && isLastAssistant && !isStreaming && (lowerContent.includes("generate") || lowerContent.includes("idea") || lowerContent.includes("pain point") || lowerContent.includes("unmet need"));
+                const showValidate = !isUser && isLastAssistant && !isStreaming && (lowerContent.includes("validate") || lowerContent.includes("verdict") || lowerContent.includes("build") || lowerContent.includes("pivot"));
                 return (
-                  <div key={i} className={`flex gap-3 ${isUser ? "flex-row-reverse" : ""} animate-fade-in`}>
-                    <div className={`h-7 w-7 rounded-lg flex items-center justify-center shrink-0 mt-1 ${
-                      isUser ? "bg-primary/10" : "bg-gradient-to-br from-primary/15 to-primary/5"
-                    }`}>
-                      {isUser ? (
-                        <User className="h-3.5 w-3.5 text-primary" />
-                      ) : (
-                        <Sparkles className="h-3.5 w-3.5 text-primary" />
-                      )}
+                  <div key={i} className="animate-fade-in">
+                    <div className={`flex gap-3 ${isUser ? "flex-row-reverse" : ""}`}>
+                      <div className={`h-7 w-7 rounded-lg flex items-center justify-center shrink-0 mt-1 ${
+                        isUser ? "bg-primary/10" : "bg-gradient-to-br from-primary/15 to-primary/5"
+                      }`}>
+                        {isUser ? (
+                          <User className="h-3.5 w-3.5 text-primary" />
+                        ) : (
+                          <Sparkles className="h-3.5 w-3.5 text-primary" />
+                        )}
+                      </div>
+                      <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-[13.5px] leading-relaxed ${
+                        isUser
+                          ? "bg-primary text-primary-foreground rounded-tr-md shadow-md shadow-primary/10"
+                          : "bg-secondary/60 text-foreground rounded-tl-md"
+                      }`}>
+                        {isUser ? (
+                          <p className="whitespace-pre-wrap">{msg.content}</p>
+                        ) : (
+                          <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:mb-2 [&>p:last-child]:mb-0 [&>ul]:mb-2 [&>ol]:mb-2 [&>strong]:text-foreground">
+                            <ReactMarkdown>{msg.content}</ReactMarkdown>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-[13.5px] leading-relaxed ${
-                      isUser
-                        ? "bg-primary text-primary-foreground rounded-tr-md shadow-md shadow-primary/10"
-                        : "bg-secondary/60 text-foreground rounded-tl-md"
-                    }`}>
-                      {isUser ? (
-                        <p className="whitespace-pre-wrap">{msg.content}</p>
-                      ) : (
-                        <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:mb-2 [&>p:last-child]:mb-0 [&>ul]:mb-2 [&>ol]:mb-2 [&>strong]:text-foreground">
-                          <ReactMarkdown>{msg.content}</ReactMarkdown>
-                        </div>
-                      )}
-                    </div>
+                    {(showGenerate || showValidate) && (
+                      <div className="flex gap-2 mt-2 ml-10">
+                        {showGenerate && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="rounded-xl gap-1.5 text-xs h-8 border-primary/20 hover:bg-primary/5 hover:border-primary/40"
+                            onClick={() => navigate("/generate")}
+                          >
+                            <Lightbulb className="h-3.5 w-3.5 text-primary" />
+                            Generate Ideas
+                          </Button>
+                        )}
+                        {showValidate && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="rounded-xl gap-1.5 text-xs h-8 border-primary/20 hover:bg-primary/5 hover:border-primary/40"
+                            onClick={() => navigate("/validate")}
+                          >
+                            <Target className="h-3.5 w-3.5 text-primary" />
+                            Validate Idea
+                          </Button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}
