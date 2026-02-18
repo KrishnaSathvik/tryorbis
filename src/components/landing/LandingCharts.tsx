@@ -30,7 +30,7 @@ const tooltipStyle = {
 
 function TreemapCell(props: any) {
   const { x, y, width, height, name, fill, count } = props;
-  if (!width || !height || width < 2 || height < 2) return null;
+  if (!width || !height || width < 2 || height < 2 || !name) return null;
   const showLabel = width > 30 && height > 24;
   const fontSize = Math.max(10, Math.min(14, width / 7));
   const words = String(name).split(/\s+/);
