@@ -35,6 +35,19 @@ export default function Landing() {
 
   useEffect(() => {
     refreshStats();
+
+    // Subscribe to realtime changes on tables that feed community stats
+    const channel = supabase
+      .channel("community-stats-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "generator_runs" }, () => refreshStats())
+      .on("postgres_changes", { event: "*", schema: "public", table: "validation_reports" }, () => refreshStats())
+      .on("postgres_changes", { event: "*", schema: "public", table: "backlog_items" }, () => refreshStats())
+      .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => refreshStats())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [refreshStats]);
 
   const hasData = (stats?.totalRuns ?? 0) > 0 || (stats?.totalValidations ?? 0) > 0;
