@@ -256,7 +256,7 @@ Verdict: "Build" if demand≥65 AND pain≥55 AND competition<75 AND feasibility
                   },
                 },
               },
-              required: ['scores', 'verdict', 'verdictReasoning', 'pros', 'cons'],
+              required: ['scores', 'verdict', 'verdictReasoning', 'pros', 'cons', 'gapOpportunities', 'mvpWedge', 'killTest', 'competitors'],
             },
           },
         },
