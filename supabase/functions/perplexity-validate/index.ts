@@ -52,18 +52,21 @@ serve(async (req) => {
 
     const startTime = Date.now();
 
-    const { data: deducted } = await supabaseClient.rpc('try_deduct_credit', { p_user_id: userId });
+    const body = await req.json();
+    const { ideaText, mode } = body;
+    const isDeep = mode === 'deep';
+    const creditCost = isDeep ? 3 : 1;
+
+    // ─── Credit deduction (1 for regular, 3 for deep) ───
+    const { data: deducted } = await serviceClient.rpc('try_deduct_credits', { p_user_id: userId, p_amount: creditCost });
     if (!deducted) {
-      return new Response(JSON.stringify({ error: 'Insufficient credits' }), {
+      return new Response(JSON.stringify({ error: isDeep ? 'Insufficient credits (Deep Research requires 3 credits)' : 'Insufficient credits' }), {
         status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     const PERPLEXITY_API_KEY = Deno.env.get('PERPLEXITY_API_KEY');
     if (!PERPLEXITY_API_KEY) throw new Error('API key not configured');
-
-    const body = await req.json();
-    const { ideaText } = body;
 
     if (!ideaText || typeof ideaText !== 'string' || ideaText.length > 1000) {
       return new Response(JSON.stringify({ error: `Invalid or missing 'ideaText' (max 1000 chars)` }), {
@@ -91,7 +94,8 @@ Score strictly with evidence:
 
 Verdict: "Build" if demand≥65 AND pain≥55 AND competition<75 AND feasibility≥55. "Pivot" if pain≥45 but approach needs rethinking. "Skip" if demand<40 OR pain<35 OR competition≥80 with no differentiator.`;
 
-    console.log('Starting optimized validation with sonar-pro...');
+    const modelName = isDeep ? 'sonar-deep-research' : 'sonar-pro';
+    console.log(`Starting validation with ${modelName} (mode=${mode || 'regular'}, cost=${creditCost})...`);
     const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {
@@ -99,7 +103,7 @@ Verdict: "Build" if demand≥65 AND pain≥55 AND competition<75 AND feasibility
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'sonar-pro',
+        model: modelName,
         messages: [
           { role: 'system', content: 'You are a brutally honest startup advisor. Research real web data, score with evidence, never inflate. Be concise.' },
           { role: 'user', content: prompt },

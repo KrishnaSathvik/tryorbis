@@ -52,19 +52,21 @@ serve(async (req) => {
 
     const startTime = Date.now();
 
+    const body = await req.json();
+    const { persona, category, region, platform, context, mode } = body;
+    const isDeep = mode === 'deep';
+    const creditCost = isDeep ? 3 : 1;
+
     // ─── Server-side credit check & deduction ───
-    const { data: deducted } = await supabaseClient.rpc('try_deduct_credit', { p_user_id: userId });
+    const { data: deducted } = await serviceClient.rpc('try_deduct_credits', { p_user_id: userId, p_amount: creditCost });
     if (!deducted) {
-      return new Response(JSON.stringify({ error: 'Insufficient credits' }), {
+      return new Response(JSON.stringify({ error: isDeep ? 'Insufficient credits (Deep Research requires 3 credits)' : 'Insufficient credits' }), {
         status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     const PERPLEXITY_API_KEY = Deno.env.get('PERPLEXITY_API_KEY');
     if (!PERPLEXITY_API_KEY) throw new Error('API key not configured');
-
-    const body = await req.json();
-    const { persona, category, region, platform, context } = body;
 
     if (!persona || typeof persona !== 'string' || persona.length > 200) {
       return new Response(JSON.stringify({ error: "Invalid or missing 'persona' (max 200 chars)" }), {
@@ -93,7 +95,8 @@ Search Reddit, G2, Capterra, Trustpilot, Twitter/X, HN, Indie Hackers, app store
 
 Group complaints into 4-6 thematic clusters ranked by severity × frequency. Generate 4-6 product ideas with unique brandable names (like "Loom", "Notion"). Score demand strictly: 85-95 massive, 70-84 strong, 55-69 moderate, 40-54 weak, <40 minimal.`;
 
-    console.log('Starting optimized research with sonar-pro...');
+    const modelName = isDeep ? 'sonar-deep-research' : 'sonar-pro';
+    console.log(`Starting research with ${modelName} (mode=${mode || 'regular'}, cost=${creditCost})...`);
     const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {
@@ -101,7 +104,7 @@ Group complaints into 4-6 thematic clusters ranked by severity × frequency. Gen
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'sonar-pro',
+        model: modelName,
         messages: [
           { role: 'system', content: 'You are a market research analyst. Research real web data, cite sources, never fabricate. Be thorough but concise.' },
           { role: 'user', content: prompt },

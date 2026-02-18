@@ -16,6 +16,7 @@ import { saveValidationReportDb, addToBacklogDb } from "@/lib/db";
 import { toast } from "sonner";
 import { Bookmark, Lightbulb, ThumbsUp, ThumbsDown, Target, AlertTriangle, Send, Search, Globe, Rocket, RefreshCw, XOctagon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ResearchModeToggle } from "@/components/ResearchModeToggle";
 
 import type { WtpSignals, CompetitionDensity, MarketTiming, ICP, WorkaroundDetection, FeatureGapMap, PlatformRisk, GtmStrategy, PricingBenchmarks, DefensibilityAnalysis } from "@/lib/types";
 
@@ -61,6 +62,7 @@ export default function ValidateIdea() {
   const [currentStep, setCurrentStep] = useState(0);
   const [report, setReport] = useState<Report | null>(null);
   const [validatingParams, setValidatingParams] = useState<{ ideaText: string } | null>(null);
+  const [researchMode, setResearchMode] = useState<'regular' | 'deep'>('regular');
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, isTyping]);
   useEffect(() => { if (prefilled && messages.length === 1) setTimeout(() => handleUserInput(prefilled), 300); }, []);
@@ -99,11 +101,11 @@ export default function ValidateIdea() {
     setPhase('researching'); setCurrentStep(0);
     try {
       const stepInterval = setInterval(() => { setCurrentStep(prev => { if (prev >= researchSteps.length - 1) { clearInterval(stepInterval); return prev; } return prev + 1; }); }, 3500);
-      const { data, error } = await supabase.functions.invoke('perplexity-validate', { body: { ideaText } });
+      const { data, error } = await supabase.functions.invoke('perplexity-validate', { body: { ideaText, mode: researchMode } });
       clearInterval(stepInterval); setCurrentStep(researchSteps.length);
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      await deductCredit();
+      await deductCredit(); // refresh client-side credit count
       const r: Report = {
         ideaText, scores: data.scores || { demand: 0, pain: 0, competition: 0, mvpFeasibility: 0 },
         verdict: data.verdict || 'Skip', pros: data.pros || [], cons: data.cons || [],
@@ -172,8 +174,9 @@ export default function ValidateIdea() {
               <div className="flex flex-wrap gap-2">
                 <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-medium"><Lightbulb className="h-3 w-3 shrink-0" /> {validatingParams.ideaText.length > 80 ? validatingParams.ideaText.slice(0, 80) + '...' : validatingParams.ideaText}</span>
               </div>
+              <ResearchModeToggle mode={researchMode} onChange={setResearchMode} />
               <Button className="w-full rounded-full" size="sm" onClick={() => triggerValidation(validatingParams.ideaText)}>
-                <Search className="h-3.5 w-3.5 mr-1" /> Start Validation
+                <Search className="h-3.5 w-3.5 mr-1" /> Start Validation {researchMode === 'deep' ? '(3 credits)' : '(1 credit)'}
               </Button>
             </div>
           )}
