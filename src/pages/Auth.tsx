@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { usePageTitle } from "@/hooks/usePageTitle";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,12 +8,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import orbisLogo from "@/assets/orbis-logo.png";
-import { Eye, EyeOff, Zap } from "lucide-react";
+import { Eye, EyeOff, Zap, Sparkles } from "lucide-react";
 
 export default function Auth() {
   usePageTitle("Sign In");
   const { signUp, signIn, signInAsGuest, user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isGuestMode = searchParams.get("mode") === "guest";
   const [loading, setLoading] = useState(false);
 
   // Sign Up state
@@ -71,6 +73,46 @@ export default function Auth() {
       toast.error(err.message || "Something went wrong");
     } finally { setLoading(false); }
   };
+
+  if (isGuestMode) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md rounded-[32px] border border-border/50 shadow-xl animate-slide-up">
+          <CardContent className="p-8 space-y-6">
+            <div className="text-center space-y-2">
+              <a href="/" className="cursor-pointer"><img src={orbisLogo} alt="Orbis" className="h-14 w-14 mx-auto dark-invert" /></a>
+              <h1 className="text-2xl font-bold tracking-tight font-nunito">
+                Welcome to <a href="/" className="text-gradient-primary hover:opacity-80 transition-opacity">Orbis</a>
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                AI-powered product research & validation
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 text-xs text-muted-foreground bg-primary/5 rounded-xl p-3">
+              <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
+              <span>Continue as guest with free credits. <strong className="text-foreground">No account needed.</strong></span>
+            </div>
+
+            <form onSubmit={handleGuest} className="space-y-3">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">Nickname <span className="text-muted-foreground font-normal">(optional)</span></label>
+                <Input value={guestName} onChange={e => setGuestName(e.target.value)} placeholder="e.g. Explorer" className="rounded-xl" autoFocus />
+              </div>
+              <Button type="submit" className="w-full rounded-full bg-foreground text-background hover:bg-foreground/90" disabled={loading}>
+                {loading ? "Starting..." : "Start instantly with 5 credits →"}
+              </Button>
+            </form>
+
+            <p className="text-center text-xs text-muted-foreground">
+              Already have an account?{" "}
+              <button onClick={() => navigate("/auth")} className="text-primary hover:underline font-medium">Log in</button>
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
