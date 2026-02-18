@@ -36,6 +36,20 @@ serve(async (req) => {
     }
     const userId = claimsData.claims.sub;
 
+    // ─── Rate limiting (10 req/min) ───
+    const serviceClient = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+    const { data: allowed } = await serviceClient.rpc('check_rate_limit', {
+      p_user_id: userId, p_function_name: 'perplexity-validate',
+    });
+    if (!allowed) {
+      return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please wait a minute.' }), {
+        status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // ─── Server-side credit check & deduction ───
     const { data: deducted } = await supabaseClient.rpc('try_deduct_credit', { p_user_id: userId });
     if (!deducted) {
