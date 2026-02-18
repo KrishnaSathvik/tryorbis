@@ -199,6 +199,45 @@ export type Database = {
         }
         Relationships: []
       }
+      request_logs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          error_type: string | null
+          function_name: string
+          id: string
+          latency_ms: number
+          provider: string | null
+          status: string
+          tokens_used: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          error_type?: string | null
+          function_name: string
+          id?: string
+          latency_ms?: number
+          provider?: string | null
+          status?: string
+          tokens_used?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          error_type?: string | null
+          function_name?: string
+          id?: string
+          latency_ms?: number
+          provider?: string | null
+          status?: string
+          tokens_used?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       validation_reports: {
         Row: {
           competitors: Json
@@ -261,6 +300,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      cleanup_old_request_logs: { Args: never; Returns: undefined }
       try_deduct_credit: { Args: { p_user_id: string }; Returns: boolean }
     }
     Enums: {

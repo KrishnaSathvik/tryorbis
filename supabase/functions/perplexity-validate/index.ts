@@ -50,6 +50,8 @@ serve(async (req) => {
       });
     }
 
+    const startTime = Date.now();
+
     // ─── Server-side credit check & deduction ───
     const { data: deducted } = await supabaseClient.rpc('try_deduct_credit', { p_user_id: userId });
     if (!deducted) {
@@ -434,11 +436,24 @@ Return ONLY valid JSON:
 
     console.log(`Complete: Verdict=${parsed.verdict}, Demand=${scores.demand}, Pain=${scores.pain}, WTP=${parsed.wtpSignals?.strength || 'none'}, GTM=${parsed.gtmStrategy?.primaryChannel || 'none'}, Moat=${parsed.defensibility?.overallStrength || 'unknown'}`);
 
+    // ─── Log success ───
+    await serviceClient.from('request_logs').insert({
+      user_id: userId, function_name: 'perplexity-validate', status: 'success',
+      latency_ms: Date.now() - startTime, provider: 'perplexity+gemini',
+    });
+
     return new Response(JSON.stringify(parsed), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error: any) {
     console.error('perplexity-validate error:', error);
+    try {
+      const svc = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+      await svc.from('request_logs').insert({
+        user_id: 'unknown', function_name: 'perplexity-validate', status: 'error',
+        latency_ms: 0, error_type: 'api_error', error_message: (error.message || '').slice(0, 500),
+      });
+    } catch {}
     return new Response(JSON.stringify({ error: 'An error occurred processing your request' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

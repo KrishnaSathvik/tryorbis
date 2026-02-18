@@ -81,6 +81,8 @@ serve(async (req) => {
     }
     // Orbis Chat is free — no credit deduction
 
+    const startTime = Date.now();
+
     const { messages } = await req.json();
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     if (!GEMINI_API_KEY) throw new Error("API key not configured");
@@ -118,6 +120,12 @@ serve(async (req) => {
       }
       throw new Error(`API error [${response.status}]`);
     }
+
+    // Log success (stream start counts as success)
+    serviceClient.from('request_logs').insert({
+      user_id: userId, function_name: 'orbis-chat', status: 'success',
+      latency_ms: Date.now() - startTime, provider: 'gemini',
+    }).then(() => {});
 
     // Transform Gemini SSE stream to OpenAI-compatible SSE stream
     const { readable, writable } = new TransformStream();
@@ -167,8 +175,15 @@ serve(async (req) => {
     return new Response(readable, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
-  } catch (e) {
+  } catch (e: any) {
     console.error("orbis-chat error:", e);
+    try {
+      const svc = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+      await svc.from('request_logs').insert({
+        user_id: 'unknown', function_name: 'orbis-chat', status: 'error',
+        latency_ms: 0, error_type: 'api_error', error_message: (e.message || '').slice(0, 500),
+      });
+    } catch {}
     return new Response(
       JSON.stringify({ error: "An error occurred processing your request" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
