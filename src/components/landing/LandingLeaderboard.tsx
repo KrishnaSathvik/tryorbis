@@ -29,7 +29,6 @@ export function LandingLeaderboard({ stats }: Props) {
                 {item.description && (
                   <p className="text-xs text-muted-foreground line-clamp-1">{item.description}</p>
                 )}
-                <p className="text-xs text-muted-foreground/60">{item.source}</p>
               </div>
               <span className="text-sm font-semibold tabular-nums">{item.score}</span>
             </div>
