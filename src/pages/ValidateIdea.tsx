@@ -15,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { saveValidationReportDb, addToBacklogDb } from "@/lib/db";
 import { toast } from "sonner";
 import { Bookmark, Lightbulb, ThumbsUp, ThumbsDown, Target, AlertTriangle, Send, Search, Globe } from "lucide-react";
-import { DataSourceBadge } from "@/components/DataSourceBadge";
+
 import type { WtpSignals, CompetitionDensity, MarketTiming, ICP, WorkaroundDetection, FeatureGapMap, PlatformRisk, GtmStrategy, PricingBenchmarks, DefensibilityAnalysis } from "@/lib/types";
 
 const researchSteps = ["Deep-diving demand signals & market data...", "Scanning competitors, pricing & reviews...", "Analyzing pain severity & workarounds...", "AI strategist scoring & verdict...", "Cross-checking verdict consistency...", "Finalizing validation report..."];
@@ -289,7 +289,7 @@ export default function ValidateIdea() {
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">{m.label}</span>
                     <span className="text-[10px] text-muted-foreground">{m.sublabel}</span>
-                    <DataSourceBadge type="estimated" className="ml-auto" />
+                    
                   </div>
                   <p className="text-sm text-foreground leading-relaxed">{m.value}</p>
                 </CardContent>
