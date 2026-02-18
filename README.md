@@ -36,6 +36,9 @@
 - **Backlog Management** — Save and track your best ideas with status tracking.
 - **Analytics Dashboard** — Personal stats on ideas generated, validated, and saved.
 - **Community Trends** — Live aggregate stats showing what the community is researching.
+- **Competitive Comparison** — Side-by-side feature comparison against IdeaBuddy, Validator AI, DimeADozen, Informly, and IdeaProof.
+- **Founder Success Tracking** — Pipeline funnel, progression rate, and build rate metrics.
+- **Top Ideas Leaderboard** — Community-ranked ideas by validation score.
 - **Examples & Changelog** — Sample reports and product update timeline.
 - **Feedback Widget** — In-app feedback submission (Bug / Feature Request / General).
 - **Observability Logging** — Latency, error rates, and provider tracking across all AI functions.
