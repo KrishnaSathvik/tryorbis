@@ -36,7 +36,7 @@ serve(async (req) => {
     }
     const userId = claimsData.claims.sub;
 
-    // ─── Rate limiting (10 req/min) ───
+    // ─── Rate limiting ───
     const serviceClient = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -52,7 +52,6 @@ serve(async (req) => {
 
     const startTime = Date.now();
 
-    // ─── Server-side credit check & deduction ───
     const { data: deducted } = await supabaseClient.rpc('try_deduct_credit', { p_user_id: userId });
     if (!deducted) {
       return new Response(JSON.stringify({ error: 'Insufficient credits' }), {
@@ -66,119 +65,33 @@ serve(async (req) => {
     const body = await req.json();
     const { ideaText } = body;
 
-    // Input validation
     if (!ideaText || typeof ideaText !== 'string' || ideaText.length > 1000) {
       return new Response(JSON.stringify({ error: `Invalid or missing 'ideaText' (max 1000 chars)` }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // ─── SINGLE PASS: Research + Validation with sonar-pro ───
-    const prompt = `You are a brutally honest startup advisor and market research analyst. Validate this idea: "${ideaText}"
+    // ─── Optimized prompt — lean, structured output handles schema ───
+    const prompt = `Validate this startup idea: "${ideaText}"
 
-RESEARCH these areas systematically using real web data:
+Research real web data from Reddit, G2, Capterra, Trustpilot, Twitter/X, HN, app stores:
+- Demand signals: "I wish...", "why doesn't X exist", Google Trends, Product Hunt launches
+- Direct & indirect competitors: names, pricing, weakest reviews, market position
+- Pain severity: how painful, how often, what workarounds exist
+- Feasibility: tech needed, APIs, realistic MVP scope
+- Market size: TAM/SAM/SOM with methodology
+- Willingness-to-pay: pricing complaints, budget discussions
+- Workarounds, feature gaps, platform risks, GTM channels, defensibility
 
-1. **DEMAND SIGNALS**: Reddit, Twitter, forums for "I wish...", "why doesn't X exist" posts. Google Trends. Product Hunt launches.
-2. **COMPETITOR ANALYSIS**: Direct & indirect competitors. For EACH: name, what they do, pricing, weakest reviews, market position. Check G2, Capterra, Trustpilot.
-3. **PAIN SEVERITY**: How painful? How often? What workarounds exist? Time/money cost?
-4. **FEASIBILITY**: Technology needed, existing APIs/frameworks, realistic MVP scope.
-5. **MARKET SIZE**: Target audience size, adjacent markets, growth trends.
-6. **WILLINGNESS-TO-PAY**: "I'd pay $X", pricing complaints, budget discussions, tool switching reasons.
-7. **MARKET TIMING**: Google Trends trajectory, VC funding, regulations, recent launches.
-8. **WORKAROUNDS**: Spreadsheets, scripts, Zapier, "we built our own" mentions + investment level.
-9. **FEATURE GAPS**: "I wish [tool] had...", features that would make users switch.
-10. **PLATFORM RISKS**: Platforms building similar, API deprecations, regulation changes.
-11. **GTM CHANNELS**: How competitors acquire customers, organic discussion channels.
-12. **PRICING BENCHMARKS**: Exact pricing of ALL competitors found.
-13. **DEFENSIBILITY**: Network effects, integration ecosystems, switching costs, data moats.
+Score strictly with evidence:
+- Demand (0-100): 85+ thousands searching, 70-84 hundreds, 50-69 dozens, <50 few/none
+- Pain (0-100): 85+ nightmare/dealbreaker, 70-84 significant, 50-69 tolerable, <50 minor
+- Competition (0-100, HIGHER=harder): 85+ funded incumbents, 70-84 established, 50-69 mediocre, <50 few
+- MVP Feasibility (0-100): 85+ 1-2 weeks, 70-84 2-4 weeks, 50-69 1-2 months, <50 longer
 
-Then analyze and score honestly.
+Verdict: "Build" if demand≥65 AND pain≥55 AND competition<75 AND feasibility≥55. "Pivot" if pain≥45 but approach needs rethinking. "Skip" if demand<40 OR pain<35 OR competition≥80 with no differentiator.`;
 
-SCORING RUBRIC (be strict, evidence-based):
-**Demand (0-100):** 85-100: thousands searching, 70-84: hundreds expressing need, 50-69: dozens mentioning, 30-49: few mentions, 0-29: no evidence
-**Pain (0-100):** 85-100: "nightmare"/"dealbreaker", 70-84: significant frustration, 50-69: annoying but tolerable, 30-49: minor, 0-29: not painful
-**Competition (0-100, HIGHER = harder):** 85-100: well-funded incumbents with moats, 70-84: established players with room, 50-69: mediocre competitors, 30-49: few small tools, 0-29: almost none
-**MVP Feasibility (0-100):** 85-100: 1-2 weeks MVP, 70-84: 2-4 weeks, 50-69: 1-2 months, 30-49: 3-6 months, 0-29: major challenges
-
-VERDICT RULES (apply AFTER scoring):
-- **Build**: demand ≥ 65 AND pain ≥ 55 AND competition < 75 AND feasibility ≥ 55
-- **Pivot**: pain ≥ 45 but approach needs rethinking
-- **Skip**: demand < 40 OR pain < 35 OR (competition ≥ 80 AND no differentiator)
-
-Your verdict MUST be consistent with scores. If demand is 35, you cannot say "Build".
-
-Return ONLY valid JSON:
-{
-  "scores": {"demand": 72, "pain": 65, "competition": 55, "mvpFeasibility": 80},
-  "scoreJustifications": {"demand": "Why", "pain": "Why", "competition": "Why", "mvpFeasibility": "Why"},
-  "marketSizing": {"tam": "TAM", "sam": "SAM", "som": "SOM", "methodology": "Method"},
-  "verdict": "Build",
-  "verdictReasoning": "Reasoning",
-  "pros": ["Pro 1"],
-  "cons": ["Con 1"],
-  "gapOpportunities": ["Gap 1"],
-  "mvpWedge": "MVP description",
-  "killTest": "How to quickly validate/invalidate",
-  "competitors": [{"name": "Name", "weakness": "Weakness", "pricing": "$X/mo"}],
-  "wtpSignals": {
-    "strength": "strong",
-    "signals": [{"quote": "Quote", "source": "Source", "context": "Context"}],
-    "priceRange": {"low": 19, "mid": 49, "high": 99, "currency": "USD/mo"},
-    "summary": "Summary"
-  },
-  "competitionDensity": {
-    "level": "fragmented", "competitorCount": 8, "totalFundingEstimate": "$45M",
-    "keyIncumbents": ["A"], "switchingCosts": "low", "summary": "Summary"
-  },
-  "marketTiming": {"phase": "growing", "signals": ["Signal"], "summary": "Summary"},
-  "icp": {
-    "businessType": "B2B SaaS", "companySize": "10-50", "revenueRange": "$500K-$5M",
-    "industry": "SaaS", "techStack": ["Stripe"], "buyingTriggers": ["Trigger"],
-    "budgetRange": "$30-100/mo", "summary": "Summary"
-  },
-  "workaroundDetection": {
-    "severity": "strong",
-    "workarounds": [{"description": "Desc", "source": "Source", "investmentLevel": "high"}],
-    "summary": "Summary"
-  },
-  "featureGapMap": {
-    "gaps": [{"feature": "Feature", "competitorCoverage": "weak", "opportunity": "high"}],
-    "topWedge": "Wedge", "summary": "Summary"
-  },
-  "platformRisk": {
-    "level": "medium",
-    "signals": [{"signal": "Signal", "riskType": "bundling"}],
-    "summary": "Summary"
-  },
-  "gtmStrategy": {
-    "primaryChannel": "Content marketing",
-    "channels": [
-      {"channel": "Content / SEO", "viability": "high", "reasoning": "Reason"},
-      {"channel": "Communities", "viability": "medium", "reasoning": "Reason"}
-    ],
-    "founderLedSales": true,
-    "seoViability": "strong",
-    "summary": "Summary"
-  },
-  "pricingBenchmarks": {
-    "benchmarks": [
-      {"tool": "Competitor A", "price": "$49/mo", "model": "per-seat", "notes": "Note"}
-    ],
-    "suggestedRange": {"low": "$19/mo", "mid": "$39/mo", "high": "$79/mo"},
-    "pricingModel": "Flat-rate",
-    "summary": "Summary"
-  },
-  "defensibility": {
-    "overallStrength": "moderate",
-    "signals": [
-      {"type": "data_network", "description": "Description", "strength": "moderate"}
-    ],
-    "timeToMoat": "12-18 months",
-    "summary": "Summary"
-  }
-}`;
-
-    console.log('Starting single-pass validation with sonar-pro...');
+    console.log('Starting optimized validation with sonar-pro...');
     const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {
@@ -188,10 +101,161 @@ Return ONLY valid JSON:
       body: JSON.stringify({
         model: 'sonar-pro',
         messages: [
-          { role: 'system', content: 'You are a brutally honest startup advisor and market research analyst. Research real data from the web, then analyze and score ideas. Never be diplomatic at the expense of truth. Base every score on evidence. Return structured JSON.' },
+          { role: 'system', content: 'You are a brutally honest startup advisor. Research real web data, score with evidence, never inflate. Be concise.' },
           { role: 'user', content: prompt },
         ],
-        temperature: 0.1,
+        temperature: 0,
+        response_format: {
+          type: 'json_schema',
+          json_schema: {
+            name: 'idea_validation',
+            schema: {
+              type: 'object',
+              properties: {
+                scores: {
+                  type: 'object',
+                  properties: {
+                    demand: { type: 'number' },
+                    pain: { type: 'number' },
+                    competition: { type: 'number' },
+                    mvpFeasibility: { type: 'number' },
+                  },
+                  required: ['demand', 'pain', 'competition', 'mvpFeasibility'],
+                },
+                scoreJustifications: {
+                  type: 'object',
+                  properties: {
+                    demand: { type: 'string' },
+                    pain: { type: 'string' },
+                    competition: { type: 'string' },
+                    mvpFeasibility: { type: 'string' },
+                  },
+                },
+                marketSizing: {
+                  type: 'object',
+                  properties: {
+                    tam: { type: 'string' },
+                    sam: { type: 'string' },
+                    som: { type: 'string' },
+                    methodology: { type: 'string' },
+                  },
+                },
+                verdict: { type: 'string' },
+                verdictReasoning: { type: 'string' },
+                pros: { type: 'array', items: { type: 'string' } },
+                cons: { type: 'array', items: { type: 'string' } },
+                gapOpportunities: { type: 'array', items: { type: 'string' } },
+                mvpWedge: { type: 'string' },
+                killTest: { type: 'string' },
+                competitors: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      name: { type: 'string' },
+                      weakness: { type: 'string' },
+                      pricing: { type: 'string' },
+                    },
+                  },
+                },
+                wtpSignals: {
+                  type: 'object',
+                  properties: {
+                    strength: { type: 'string' },
+                    signals: { type: 'array', items: { type: 'object', properties: { quote: { type: 'string' }, source: { type: 'string' }, context: { type: 'string' } } } },
+                    priceRange: { type: 'object', properties: { low: { type: 'number' }, mid: { type: 'number' }, high: { type: 'number' }, currency: { type: 'string' } } },
+                    summary: { type: 'string' },
+                  },
+                },
+                competitionDensity: {
+                  type: 'object',
+                  properties: {
+                    level: { type: 'string' },
+                    competitorCount: { type: 'number' },
+                    totalFundingEstimate: { type: 'string' },
+                    keyIncumbents: { type: 'array', items: { type: 'string' } },
+                    switchingCosts: { type: 'string' },
+                    summary: { type: 'string' },
+                  },
+                },
+                marketTiming: {
+                  type: 'object',
+                  properties: {
+                    phase: { type: 'string' },
+                    signals: { type: 'array', items: { type: 'string' } },
+                    summary: { type: 'string' },
+                  },
+                },
+                icp: {
+                  type: 'object',
+                  properties: {
+                    businessType: { type: 'string' },
+                    companySize: { type: 'string' },
+                    revenueRange: { type: 'string' },
+                    industry: { type: 'string' },
+                    techStack: { type: 'array', items: { type: 'string' } },
+                    buyingTriggers: { type: 'array', items: { type: 'string' } },
+                    budgetRange: { type: 'string' },
+                    summary: { type: 'string' },
+                  },
+                },
+                workaroundDetection: {
+                  type: 'object',
+                  properties: {
+                    severity: { type: 'string' },
+                    workarounds: { type: 'array', items: { type: 'object', properties: { description: { type: 'string' }, source: { type: 'string' }, investmentLevel: { type: 'string' } } } },
+                    summary: { type: 'string' },
+                  },
+                },
+                featureGapMap: {
+                  type: 'object',
+                  properties: {
+                    gaps: { type: 'array', items: { type: 'object', properties: { feature: { type: 'string' }, competitorCoverage: { type: 'string' }, opportunity: { type: 'string' } } } },
+                    topWedge: { type: 'string' },
+                    summary: { type: 'string' },
+                  },
+                },
+                platformRisk: {
+                  type: 'object',
+                  properties: {
+                    level: { type: 'string' },
+                    signals: { type: 'array', items: { type: 'object', properties: { signal: { type: 'string' }, riskType: { type: 'string' } } } },
+                    summary: { type: 'string' },
+                  },
+                },
+                gtmStrategy: {
+                  type: 'object',
+                  properties: {
+                    primaryChannel: { type: 'string' },
+                    channels: { type: 'array', items: { type: 'object', properties: { channel: { type: 'string' }, viability: { type: 'string' }, reasoning: { type: 'string' } } } },
+                    founderLedSales: { type: 'boolean' },
+                    seoViability: { type: 'string' },
+                    summary: { type: 'string' },
+                  },
+                },
+                pricingBenchmarks: {
+                  type: 'object',
+                  properties: {
+                    benchmarks: { type: 'array', items: { type: 'object', properties: { tool: { type: 'string' }, price: { type: 'string' }, model: { type: 'string' }, notes: { type: 'string' } } } },
+                    suggestedRange: { type: 'object', properties: { low: { type: 'string' }, mid: { type: 'string' }, high: { type: 'string' } } },
+                    pricingModel: { type: 'string' },
+                    summary: { type: 'string' },
+                  },
+                },
+                defensibility: {
+                  type: 'object',
+                  properties: {
+                    overallStrength: { type: 'string' },
+                    signals: { type: 'array', items: { type: 'object', properties: { type: { type: 'string' }, description: { type: 'string' }, strength: { type: 'string' } } } },
+                    timeToMoat: { type: 'string' },
+                    summary: { type: 'string' },
+                  },
+                },
+              },
+              required: ['scores', 'verdict', 'verdictReasoning', 'pros', 'cons'],
+            },
+          },
+        },
       }),
     });
 
@@ -209,15 +273,19 @@ Return ONLY valid JSON:
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || '';
     const citations = data.citations || [];
-    console.log(`Response: ${content.length} chars, ${citations.length} citations`);
+    console.log(`Response: ${content.length} chars, ${citations.length} citations, ${Date.now() - startTime}ms`);
 
     let parsed;
     try {
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
+      parsed = typeof content === 'string' ? JSON.parse(content) : content;
     } catch {
-      console.error('Failed to parse output:', content.slice(0, 500));
-      parsed = {};
+      try {
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
+      } catch {
+        console.error('Failed to parse output:', content.slice(0, 500));
+        parsed = {};
+      }
     }
 
     // ─── Verdict consistency check ───
@@ -238,13 +306,10 @@ Return ONLY valid JSON:
       parsed.verdictReasoning = `[Auto-corrected from Skip to Build] Scores actually meet Build threshold. ${parsed.verdictReasoning || ''}`;
     }
     parsed.verdict = correctedVerdict;
-
-    // Inject citations
     parsed.evidenceLinks = citations;
 
-    console.log(`Complete: Verdict=${parsed.verdict}, Demand=${scores.demand}, Pain=${scores.pain}, WTP=${parsed.wtpSignals?.strength || 'none'}, GTM=${parsed.gtmStrategy?.primaryChannel || 'none'}`);
+    console.log(`Complete in ${Date.now() - startTime}ms: Verdict=${parsed.verdict}, Demand=${scores.demand}, Pain=${scores.pain}`);
 
-    // ─── Log success ───
     await serviceClient.from('request_logs').insert({
       user_id: userId, function_name: 'perplexity-validate', status: 'success',
       latency_ms: Date.now() - startTime, provider: 'perplexity-sonar-pro',
