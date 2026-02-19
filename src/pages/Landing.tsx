@@ -23,8 +23,15 @@ import orbisLogo from "@/assets/orbis-logo.png";
 export default function Landing() {
   usePageTitle();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const [stats, setStats] = useState<any>(null);
+
+  // Redirect authenticated users to dashboard
+  useEffect(() => {
+    if (!loading && user) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [user, loading, navigate]);
 
   const refreshStats = useCallback(async () => {
     try {
