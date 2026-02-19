@@ -140,38 +140,68 @@ export type Database = {
         Row: {
           budget_scope: string | null
           category: string
+          competition_density: Json | null
           created_at: string
+          defensibility: Json | null
+          feature_gap_map: Json | null
+          gtm_strategy: Json | null
+          icp: Json | null
           id: string
           idea_suggestions: Json
+          market_timing: Json | null
           persona: string
           platform: string | null
+          platform_risk: Json | null
+          pricing_benchmarks: Json | null
           problem_clusters: Json
           region: string | null
           user_id: string
+          workaround_detection: Json | null
+          wtp_signals: Json | null
         }
         Insert: {
           budget_scope?: string | null
           category: string
+          competition_density?: Json | null
           created_at?: string
+          defensibility?: Json | null
+          feature_gap_map?: Json | null
+          gtm_strategy?: Json | null
+          icp?: Json | null
           id?: string
           idea_suggestions?: Json
+          market_timing?: Json | null
           persona: string
           platform?: string | null
+          platform_risk?: Json | null
+          pricing_benchmarks?: Json | null
           problem_clusters?: Json
           region?: string | null
           user_id: string
+          workaround_detection?: Json | null
+          wtp_signals?: Json | null
         }
         Update: {
           budget_scope?: string | null
           category?: string
+          competition_density?: Json | null
           created_at?: string
+          defensibility?: Json | null
+          feature_gap_map?: Json | null
+          gtm_strategy?: Json | null
+          icp?: Json | null
           id?: string
           idea_suggestions?: Json
+          market_timing?: Json | null
           persona?: string
           platform?: string | null
+          platform_risk?: Json | null
+          pricing_benchmarks?: Json | null
           problem_clusters?: Json
           region?: string | null
           user_id?: string
+          workaround_detection?: Json | null
+          wtp_signals?: Json | null
         }
         Relationships: []
       }
@@ -273,49 +303,82 @@ export type Database = {
       }
       validation_reports: {
         Row: {
+          competition_density: Json | null
           competitors: Json
           cons: Json
           created_at: string
+          defensibility: Json | null
           evidence_links: Json
+          feature_gap_map: Json | null
           gap_opportunities: Json
+          gtm_strategy: Json | null
+          icp: Json | null
           id: string
           idea_text: string
           kill_test: string | null
+          market_sizing: Json | null
+          market_timing: Json | null
           mvp_wedge: string | null
+          platform_risk: Json | null
+          pricing_benchmarks: Json | null
           pros: Json
           scores: Json
           user_id: string
           verdict: string
+          workaround_detection: Json | null
+          wtp_signals: Json | null
         }
         Insert: {
+          competition_density?: Json | null
           competitors?: Json
           cons?: Json
           created_at?: string
+          defensibility?: Json | null
           evidence_links?: Json
+          feature_gap_map?: Json | null
           gap_opportunities?: Json
+          gtm_strategy?: Json | null
+          icp?: Json | null
           id?: string
           idea_text: string
           kill_test?: string | null
+          market_sizing?: Json | null
+          market_timing?: Json | null
           mvp_wedge?: string | null
+          platform_risk?: Json | null
+          pricing_benchmarks?: Json | null
           pros?: Json
           scores?: Json
           user_id: string
           verdict: string
+          workaround_detection?: Json | null
+          wtp_signals?: Json | null
         }
         Update: {
+          competition_density?: Json | null
           competitors?: Json
           cons?: Json
           created_at?: string
+          defensibility?: Json | null
           evidence_links?: Json
+          feature_gap_map?: Json | null
           gap_opportunities?: Json
+          gtm_strategy?: Json | null
+          icp?: Json | null
           id?: string
           idea_text?: string
           kill_test?: string | null
+          market_sizing?: Json | null
+          market_timing?: Json | null
           mvp_wedge?: string | null
+          platform_risk?: Json | null
+          pricing_benchmarks?: Json | null
           pros?: Json
           scores?: Json
           user_id?: string
           verdict?: string
+          workaround_detection?: Json | null
+          wtp_signals?: Json | null
         }
         Relationships: []
       }

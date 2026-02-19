@@ -9,6 +9,16 @@ export async function saveGeneratorRunDb(run: {
   platform?: string;
   problemClusters: any[];
   ideaSuggestions: any[];
+  wtpSignals?: any;
+  competitionDensity?: any;
+  marketTiming?: any;
+  icp?: any;
+  workaroundDetection?: any;
+  featureGapMap?: any;
+  platformRisk?: any;
+  gtmStrategy?: any;
+  pricingBenchmarks?: any;
+  defensibility?: any;
 }) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
@@ -22,6 +32,16 @@ export async function saveGeneratorRunDb(run: {
     platform: run.platform || null,
     problem_clusters: run.problemClusters,
     idea_suggestions: run.ideaSuggestions,
+    wtp_signals: run.wtpSignals || null,
+    competition_density: run.competitionDensity || null,
+    market_timing: run.marketTiming || null,
+    icp: run.icp || null,
+    workaround_detection: run.workaroundDetection || null,
+    feature_gap_map: run.featureGapMap || null,
+    platform_risk: run.platformRisk || null,
+    gtm_strategy: run.gtmStrategy || null,
+    pricing_benchmarks: run.pricingBenchmarks || null,
+    defensibility: run.defensibility || null,
   });
   if (error) throw error;
 }
@@ -50,6 +70,17 @@ export async function saveValidationReportDb(report: {
   killTest: string;
   competitors: any[];
   evidenceLinks: string[];
+  marketSizing?: any;
+  wtpSignals?: any;
+  competitionDensity?: any;
+  marketTiming?: any;
+  icp?: any;
+  workaroundDetection?: any;
+  featureGapMap?: any;
+  platformRisk?: any;
+  gtmStrategy?: any;
+  pricingBenchmarks?: any;
+  defensibility?: any;
 }) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
@@ -66,6 +97,17 @@ export async function saveValidationReportDb(report: {
     kill_test: report.killTest,
     competitors: report.competitors,
     evidence_links: report.evidenceLinks,
+    market_sizing: report.marketSizing || null,
+    wtp_signals: report.wtpSignals || null,
+    competition_density: report.competitionDensity || null,
+    market_timing: report.marketTiming || null,
+    icp: report.icp || null,
+    workaround_detection: report.workaroundDetection || null,
+    feature_gap_map: report.featureGapMap || null,
+    platform_risk: report.platformRisk || null,
+    gtm_strategy: report.gtmStrategy || null,
+    pricing_benchmarks: report.pricingBenchmarks || null,
+    defensibility: report.defensibility || null,
   });
   if (error) throw error;
 }
