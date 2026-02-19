@@ -129,10 +129,10 @@ export default function Auth() {
           </div>
 
           <Tabs defaultValue="signup" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 rounded-xl">
+            <TabsList className={`grid w-full ${user?.is_anonymous ? 'grid-cols-2' : 'grid-cols-3'} rounded-xl`}>
               <TabsTrigger value="signup" className="rounded-lg text-xs">Sign Up</TabsTrigger>
               <TabsTrigger value="signin" className="rounded-lg text-xs">Log In</TabsTrigger>
-              <TabsTrigger value="guest" className="rounded-lg text-xs">Guest</TabsTrigger>
+              {!user?.is_anonymous && <TabsTrigger value="guest" className="rounded-lg text-xs">Guest</TabsTrigger>}
             </TabsList>
 
             <TabsContent value="signup" className="mt-4">
