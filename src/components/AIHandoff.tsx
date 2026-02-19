@@ -1,9 +1,17 @@
-import { ExternalLink, Smartphone } from "lucide-react";
+import { ExternalLink, Smartphone, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { ChatGPTIcon, ClaudeIcon, GeminiIcon, CursorIcon, CodexIcon } from "@/components/icons/AIBrandIcons";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
-import { type SVGProps } from "react";
+import { useState, type SVGProps } from "react";
 
 interface AIHandoffProps {
   context: string;
@@ -25,36 +33,37 @@ const tools: {
 export function AIHandoff({ context }: AIHandoffProps) {
   const encoded = encodeURIComponent(context);
   const isMobile = useIsMobile();
+  const [pendingTool, setPendingTool] = useState<typeof tools[number] | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const isPWA = window.matchMedia('(display-mode: standalone)').matches
+    || (window.navigator as any).standalone === true;
+
+  const copyAndOpen = async (tool: typeof tools[number]) => {
+    try {
+      await navigator.clipboard.writeText(context);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Failed to copy context");
+    }
+
+    const targetUrl = `${tool.url}${encoded}`;
+    window.open(targetUrl, '_blank');
+    setPendingTool(null);
+  };
 
   const handleToolClick = (tool: typeof tools[number]) => {
-    const targetUrl = `${tool.url}${encoded}`;
-
-    if (isMobile && tool.deepLink) {
-      navigator.clipboard.writeText(context).then(() => {
-        toast.success(`Context copied! Opening ${tool.name} app...`, {
-          description: "Paste the context in the chat to continue.",
-          duration: 4000,
-        });
-      }).catch(() => {
-        toast.info(`Opening ${tool.name}...`);
-      });
-
-      const timeout = setTimeout(() => {
-        window.open(targetUrl, '_blank');
-      }, 1500);
-
-      window.location.href = tool.deepLink;
-
-      const handleVisibilityChange = () => {
-        if (document.hidden) {
-          clearTimeout(timeout);
-        }
-        document.removeEventListener('visibilitychange', handleVisibilityChange);
-      };
-      document.addEventListener('visibilitychange', handleVisibilityChange);
-    } else {
-      window.open(targetUrl, '_blank');
+    // In PWA or mobile: show confirmation dialog first
+    if (isPWA || (isMobile && tool.deepLink)) {
+      setPendingTool(tool);
+      setCopied(false);
+      return;
     }
+
+    // Desktop browser: open directly
+    const targetUrl = `${tool.url}${encoded}`;
+    window.open(targetUrl, '_blank');
   };
 
   return (
@@ -71,7 +80,7 @@ export function AIHandoff({ context }: AIHandoffProps) {
           >
             <tool.icon className="h-3.5 w-3.5" />
             {tool.name}
-            {isMobile && tool.deepLink ? (
+            {isPWA || (isMobile && tool.deepLink) ? (
               <Smartphone className="h-3 w-3 text-muted-foreground" />
             ) : (
               <ExternalLink className="h-3 w-3 text-muted-foreground" />
@@ -86,6 +95,32 @@ export function AIHandoff({ context }: AIHandoffProps) {
           Copy Context
         </Button>
       </div>
+
+      <Dialog open={!!pendingTool} onOpenChange={(open) => !open && setPendingTool(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {pendingTool && <pendingTool.icon className="h-5 w-5" />}
+              Open {pendingTool?.name}?
+            </DialogTitle>
+            <DialogDescription>
+              Your research context will be copied to your clipboard. After {pendingTool?.name} opens, paste it into a new chat to continue.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="rounded-md bg-muted p-3 max-h-32 overflow-y-auto">
+            <p className="text-xs text-muted-foreground line-clamp-4">{context.slice(0, 300)}{context.length > 300 ? '...' : ''}</p>
+          </div>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => setPendingTool(null)}>
+              Cancel
+            </Button>
+            <Button onClick={() => pendingTool && copyAndOpen(pendingTool)} className="gap-2">
+              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+              {copied ? "Copied! Opening..." : `Copy & Open ${pendingTool?.name}`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
