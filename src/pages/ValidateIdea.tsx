@@ -94,7 +94,16 @@ export default function ValidateIdea() {
   const [researchMode, setResearchMode] = useState<'regular' | 'deep'>('regular');
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, isTyping]);
-  useEffect(() => { if (prefilled && messages.length === 1) setTimeout(() => handleUserInput(prefilled), 300); }, []);
+  useEffect(() => {
+    if (prefilled && messages.length === 1) {
+      // Skip chat step — go directly to confirmation
+      const userMsg: ChatMessage = { id: crypto.randomUUID(), role: 'user', text: prefilled };
+      const aiMsg: ChatMessage = { id: crypto.randomUUID(), role: 'assistant', text: "I'll validate this idea for you. Hit Start Validation when ready!" };
+      setMessages(prev => [...prev, userMsg, aiMsg]);
+      setValidatingParams({ ideaText: prefilled });
+      setInputValue("");
+    }
+  }, []);
 
   const sendToAI = useCallback(async (allMessages: ChatMessage[]) => {
     setIsTyping(true);
