@@ -274,12 +274,12 @@ export default function ValidateIdea() {
                 report!.verdict === 'Pivot' && "text-amber-700 dark:text-amber-400",
                 report!.verdict === 'Skip' && "text-rose-700 dark:text-rose-400",
               )}>{report!.verdict}</p>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground mt-1 inline-flex items-center gap-1">
                 {report!.verdict === 'Build' && "Strong signals — worth pursuing"}
                 {report!.verdict === 'Pivot' && "Potential exists — rethink approach"}
                 {report!.verdict === 'Skip' && "Weak signals — move on"}
+                <SectionTooltip id="verdict" />
               </p>
-              <SectionTooltip id="verdict" />
             </div>
           </CardContent>
         </Card>
