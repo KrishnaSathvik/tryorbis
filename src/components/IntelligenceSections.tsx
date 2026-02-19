@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { DollarSign, Shield, Clock, Users, TrendingUp, TrendingDown, Minus, Quote, Wrench, Layers, AlertOctagon, Megaphone, Tag, Castle } from "lucide-react";
 
 import type { WtpSignals, CompetitionDensity, MarketTiming, ICP, WorkaroundDetection, FeatureGapMap, PlatformRisk, GtmStrategy, PricingBenchmarks, DefensibilityAnalysis } from "@/lib/types";
@@ -109,18 +109,16 @@ export function CompetitionDensitySection({ data }: { data: CompetitionDensity }
             <Shield className="h-4 w-4 text-primary shrink-0" />
             <h3 className={TITLE_CLASS}>Competition Density</h3>
           </div>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Badge variant="outline" className={`text-xs cursor-help ${competitionColors[data.level] || ''}`}>
-                  {competitionLabels[data.level] || formatLabel(data.level)}
-                </Badge>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="max-w-[220px] text-xs">
-                {competitionTooltips[data.level] || formatLabel(data.level)}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Badge variant="outline" className={`text-xs cursor-help ${competitionColors[data.level] || ''}`}>
+                {competitionLabels[data.level] || formatLabel(data.level)}
+              </Badge>
+            </PopoverTrigger>
+            <PopoverContent side="bottom" className="max-w-[220px] text-xs p-2">
+              {competitionTooltips[data.level] || formatLabel(data.level)}
+            </PopoverContent>
+          </Popover>
         </div>
         <p className={SUMMARY_CLASS}>{data.summary}</p>
         <div className="flex flex-wrap gap-2">

@@ -16,7 +16,7 @@ import { ResearchModeToggle } from "@/components/ResearchModeToggle";
 import { supabase } from "@/integrations/supabase/client";
 import { saveGeneratorRunDb, addToBacklogDb } from "@/lib/db";
 import { toast } from "sonner";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Info } from "lucide-react";
 import type { WtpSignals, CompetitionDensity, MarketTiming, ICP, WorkaroundDetection, FeatureGapMap, PlatformRisk, GtmStrategy, PricingBenchmarks, DefensibilityAnalysis } from "@/lib/types";
 
@@ -214,17 +214,17 @@ export default function GenerateIdeas() {
                       <p className="text-xs text-muted-foreground mt-0.5">{cluster.painSummary}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
+                      <Popover>
+                        <PopoverTrigger asChild>
                           <span className="text-xs text-muted-foreground flex items-center gap-1 cursor-help">
                             {cluster.complaintCount} signals
                             <Info className="h-3 w-3" />
                           </span>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="max-w-[220px]">
+                        </PopoverTrigger>
+                        <PopoverContent side="top" className="max-w-[220px] p-2">
                           <p className="text-xs">Number of real complaints, posts, and reviews found online that relate to this problem theme.</p>
-                        </TooltipContent>
-                      </Tooltip>
+                        </PopoverContent>
+                      </Popover>
                       <ChevronDown className="h-4 w-4 text-muted-foreground" />
                     </div>
                   </CardContent>
