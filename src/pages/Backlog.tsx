@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ScoreBar } from "@/components/ScoreBar";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
@@ -155,13 +156,27 @@ export default function Backlog() {
                         </div>
                       ) : (
                         <div className="group/name flex items-center gap-1.5">
-                          <p className="text-sm font-semibold leading-snug">{item.idea_name}</p>
+                         <p className="text-sm font-semibold leading-snug">{item.idea_name}</p>
                           <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover/name:opacity-100 transition-opacity shrink-0" onClick={() => startRename(item.id, item.idea_name)}>
                             <Pencil className="h-3 w-3 text-muted-foreground" />
                           </Button>
                         </div>
                       )}
-                      <div className="flex items-center gap-3 mt-0.5">
+                      {item.description && (
+                        <p className="text-sm text-muted-foreground leading-relaxed mt-1">{item.description}</p>
+                      )}
+                      {item.demand_score != null && (
+                        <div className="mt-2">
+                          <ScoreBar label="Opportunity Score" value={item.demand_score} />
+                        </div>
+                      )}
+                      {(item.mvp_scope || item.monetization) && (
+                        <div className="text-xs space-y-1 mt-2 text-muted-foreground">
+                          {item.mvp_scope && <p><span className="font-medium text-foreground">MVP:</span> {item.mvp_scope}</p>}
+                          {item.monetization && <p><span className="font-medium text-foreground">Monetization:</span> {item.monetization}</p>}
+                        </div>
+                      )}
+                      <div className="flex items-center gap-3 mt-1">
                         <p className="text-xs text-muted-foreground">{new Date(item.created_at).toLocaleDateString()}</p>
                         {notes.length > 0 && (
                           <span className="text-xs text-muted-foreground flex items-center gap-1"><StickyNote className="h-3 w-3" />{notes.length} note{notes.length !== 1 ? 's' : ''}</span>

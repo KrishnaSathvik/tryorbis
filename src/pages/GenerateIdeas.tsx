@@ -118,7 +118,7 @@ export default function GenerateIdeas() {
   }, [hasCredits, deductCredit]);
 
   const handleAddToBacklog = async (idea: any) => {
-    try { await addToBacklogDb({ ideaName: idea.name, source: 'Generated', demandScore: idea.demandScore, status: 'New' }); toast.success(`"${idea.name}" saved to My Ideas`); } catch { toast.error("Failed to save"); }
+    try { await addToBacklogDb({ ideaName: idea.name, source: 'Generated', demandScore: idea.demandScore, status: 'New', description: idea.description, mvpScope: idea.mvpScope, monetization: idea.monetization }); toast.success(`"${idea.name}" saved to My Ideas`); } catch { toast.error("Failed to save"); }
   };
 
   const handleValidate = (idea: any) => { navigate(`/validate?idea=${encodeURIComponent(idea.name + ': ' + idea.description)}`); };
