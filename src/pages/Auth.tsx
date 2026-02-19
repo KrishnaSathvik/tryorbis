@@ -32,8 +32,8 @@ export default function Auth() {
   // Guest state
   const [guestName, setGuestName] = useState("");
 
-  // Redirect if already logged in
-  if (user) { navigate("/dashboard", { replace: true }); return null; }
+  // Redirect if already logged in (but not if anonymous/guest wanting to upgrade)
+  if (user && !user.is_anonymous) { navigate("/dashboard", { replace: true }); return null; }
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
