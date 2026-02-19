@@ -19,15 +19,22 @@ export function useCredits() {
       .eq("user_id", user.id)
       .single();
     if (data) {
-      // Check if reset time has passed client-side for immediate UI update
+      // Check if reset time has passed — update DB immediately so it's not just client-side
       if (data.credits_reset_at && new Date(data.credits_reset_at) <= new Date()) {
-        setCredits(data.max_credits ?? 20);
+        const newCredits = data.max_credits ?? 20;
+        setCredits(newCredits);
         setResetAt(null);
+        setMaxCredits(data.max_credits ?? 20);
+        // Persist the reset to the database
+        await supabase
+          .from("profiles")
+          .update({ credits: newCredits, credits_reset_at: null })
+          .eq("user_id", user.id);
       } else {
         setCredits(data.credits ?? 0);
         setResetAt(data.credits_reset_at ?? null);
+        setMaxCredits(data.max_credits ?? 20);
       }
-      setMaxCredits(data.max_credits ?? 20);
     }
     setLoading(false);
   }, [user]);
