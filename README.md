@@ -14,6 +14,7 @@
 - **Idea Generation** — Get actionable product ideas ranked by opportunity score, backed by real evidence.
 - **Deep Research Mode** — Toggle between regular (1 credit) and deep research (3 credits) for more thorough analysis using advanced AI models.
 - **Full Validation Reports** — Competitor analysis, pros & cons, evidence links, and a Build / Pivot / Skip verdict.
+- **Full Idea Persistence** — Save ideas to backlog with complete details: description, MVP scope, and monetization strategy.
 
 ### Orbis AI Advisor
 - **Personalized Strategic Chat** — An always-on AI advisor that knows your credits, saved ideas, and research history to give tailored guidance.
@@ -50,7 +51,7 @@ Every research run includes up to 10 intelligence layers:
 - **Additive Upgrade** — Guest-to-registered upgrade adds 20 credits to existing balance.
 
 ### Platform
-- **My Ideas (Backlog)** — Save, rename, and track ideas with status workflow (New → Exploring → Testing → Validated → Archived), inline notes with formatting, and keyboard shortcuts.
+- **My Ideas (Backlog)** — Save, rename, and track ideas with status workflow (New → Exploring → Testing → Validated → Archived), inline notes with formatting, and keyboard shortcuts. Full idea metadata (description, MVP, monetization) is preserved.
 - **History** — Dual archive for research runs and Orbis AI conversations, with deletion and chronological sorting.
 - **Analytics Dashboard** — Personal stats: verdict distribution, average scores, category trends, build rate.
 - **Community Trends** — Live aggregate stats showing what the community is researching.
@@ -59,16 +60,23 @@ Every research run includes up to 10 intelligence layers:
 - **Top Ideas Leaderboard** — Community-ranked ideas by validation score.
 - **Examples & Changelog** — Sample reports and product update timeline.
 - **Feedback Widget** — In-app feedback submission (Bug / Feature Request / General).
+- **Profile Sheet** — Sidebar drawer for credits, account info, guest upgrade, and account deletion.
+- **Account Deletion** — Full data sweep (backlog, research, conversations, chat messages, profile) with typed "DELETE" confirmation.
 - **Observability Logging** — Latency, error rates, and provider tracking across all AI functions.
 - **Dark / Light Theme** — Full theme support with system preference detection.
 - **Anti-Abuse** — Device fingerprinting and signup limits (3 per device).
+
+### Security
+- **Row-Level Security (RLS)** — All tables are protected with permissive RLS policies scoped to authenticated users via `auth.uid()`.
+- **Rate Limiting** — Database-level rate limiting with automatic cleanup.
+- **Service Role Isolation** — Admin-only tables (rate_limits, request_logs) deny all client access.
 
 ## Tech Stack
 
 - **Frontend:** React 18 · TypeScript · Vite · Tailwind CSS · shadcn/ui · Recharts · Framer Motion
 - **Backend:** Lovable Cloud (database, auth, edge functions, secrets)
 - **AI Research:** Perplexity Sonar Pro (regular) · Sonar Deep Research (deep mode)
-- **AI Advisor:** Google Gemini 2.5 Flash with personalized user context injection
+- **AI Advisor:** Google Gemini 3 Flash Preview (chat) · Gemini 2.5 Pro (deep analysis)
 - **Routing:** React Router v6
 
 ## Pages
@@ -97,6 +105,7 @@ Every research run includes up to 10 intelligence layers:
 | `chat-followup` | General follow-up conversations |
 | `orbis-chat` | Personalized Orbis AI advisor (with user context) |
 | `community-stats` | Aggregated community statistics (public) |
+| `delete-account` | Full account deletion with service role data sweep |
 
 ## Getting Started
 
