@@ -27,6 +27,41 @@ const wtpColors: Record<string, string> = {
   none: "bg-muted text-muted-foreground border-border",
 };
 
+const wtpTooltips: Record<string, string> = {
+  strong: "Users are actively paying for similar solutions — high willingness to pay",
+  moderate: "Some payment signals exist but price sensitivity is notable",
+  weak: "Little evidence of users paying for this type of solution",
+  none: "No willingness-to-pay signals detected",
+};
+
+const timingTooltips: Record<string, string> = {
+  emerging: "Market is just forming — early mover advantage possible but demand is unproven",
+  growing: "Demand is accelerating — good time to enter with a differentiated product",
+  saturated: "Market is mature with established players — harder to break in",
+  declining: "Demand is shrinking — risky to enter unless you have a contrarian thesis",
+};
+
+const workaroundTooltips: Record<string, string> = {
+  strong: "People are building elaborate DIY fixes — strong signal for a dedicated product",
+  moderate: "Some workarounds exist but they're manageable for most users",
+  weak: "Few workarounds found — the pain may not be severe enough",
+  none: "No workaround signals detected",
+};
+
+const platformRiskTooltips: Record<string, string> = {
+  low: "Minimal dependency on any single platform — safe to build",
+  medium: "Some platform dependency exists — monitor for changes",
+  high: "Significant risk from platform changes or competition",
+  critical: "Heavily dependent on a platform that could shut you down",
+};
+
+const moatTooltips: Record<string, string> = {
+  strong: "Multiple defensibility layers — hard for competitors to replicate",
+  moderate: "Some defensibility but competitors could catch up with effort",
+  weak: "Easy to copy — limited barriers to entry",
+  none: "No meaningful moat detected",
+};
+
 const competitionColors: Record<string, string> = {
   blue_ocean: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20",
   fragmented: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20",
@@ -70,9 +105,16 @@ export function WtpSection({ data }: { data: WtpSignals }) {
             <DollarSign className="h-4 w-4 text-primary shrink-0" />
             <h3 className={TITLE_CLASS}>Willingness to Pay</h3>
           </div>
-          <Badge variant="outline" className={`text-xs capitalize ${wtpColors[data.strength] || wtpColors.none}`}>
-            {data.strength}
-          </Badge>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Badge variant="outline" className={`text-xs capitalize cursor-help ${wtpColors[data.strength] || wtpColors.none}`}>
+                {data.strength}
+              </Badge>
+            </PopoverTrigger>
+            <PopoverContent side="bottom" className="max-w-[220px] text-xs p-2">
+              {wtpTooltips[data.strength] || `WTP strength: ${data.strength}`}
+            </PopoverContent>
+          </Popover>
         </div>
         <p className={SUMMARY_CLASS}>{data.summary}</p>
         {data.priceRange && (
@@ -146,10 +188,17 @@ export function MarketTimingSection({ data }: { data: MarketTiming }) {
             <Clock className="h-4 w-4 text-primary shrink-0" />
             <h3 className={TITLE_CLASS}>Market Timing</h3>
           </div>
-          <Badge variant="outline" className={`text-xs capitalize flex items-center gap-1 ${timingColors[data.phase] || ''}`}>
-            <TimingIcon phase={data.phase} />
-            {data.phase}
-          </Badge>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Badge variant="outline" className={`text-xs capitalize flex items-center gap-1 cursor-help ${timingColors[data.phase] || ''}`}>
+                <TimingIcon phase={data.phase} />
+                {data.phase}
+              </Badge>
+            </PopoverTrigger>
+            <PopoverContent side="bottom" className="max-w-[220px] text-xs p-2">
+              {timingTooltips[data.phase] || `Market phase: ${data.phase}`}
+            </PopoverContent>
+          </Popover>
         </div>
         <p className={SUMMARY_CLASS}>{data.summary}</p>
         {data.signals?.length > 0 && (
@@ -257,9 +306,16 @@ export function WorkaroundSection({ data }: { data: WorkaroundDetection }) {
             <Wrench className="h-4 w-4 text-primary shrink-0" />
             <h3 className={TITLE_CLASS}>Workaround Detection</h3>
           </div>
-          <Badge variant="outline" className={`text-xs capitalize ${severityColors[data.severity] || severityColors.none}`}>
-            {data.severity} signal
-          </Badge>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Badge variant="outline" className={`text-xs capitalize cursor-help ${severityColors[data.severity] || severityColors.none}`}>
+                {data.severity} signal
+              </Badge>
+            </PopoverTrigger>
+            <PopoverContent side="bottom" className="max-w-[220px] text-xs p-2">
+              {workaroundTooltips[data.severity] || `Workaround severity: ${data.severity}`}
+            </PopoverContent>
+          </Popover>
         </div>
         <p className={SUMMARY_CLASS}>{data.summary}</p>
         {data.workarounds?.length > 0 && (
@@ -324,9 +380,16 @@ export function PlatformRiskSection({ data }: { data: PlatformRisk }) {
             <AlertOctagon className="h-4 w-4 text-primary shrink-0" />
             <h3 className={TITLE_CLASS}>Platform Risk</h3>
           </div>
-          <Badge variant="outline" className={`text-xs capitalize ${platformRiskColors[data.level] || ''}`}>
-            {data.level}
-          </Badge>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Badge variant="outline" className={`text-xs capitalize cursor-help ${platformRiskColors[data.level] || ''}`}>
+                {data.level}
+              </Badge>
+            </PopoverTrigger>
+            <PopoverContent side="bottom" className="max-w-[220px] text-xs p-2">
+              {platformRiskTooltips[data.level] || `Platform risk: ${data.level}`}
+            </PopoverContent>
+          </Popover>
         </div>
         <p className={SUMMARY_CLASS}>{data.summary}</p>
         {data.signals?.length > 0 && (
@@ -455,9 +518,16 @@ export function DefensibilitySection({ data }: { data: DefensibilityAnalysis }) 
             <Castle className="h-4 w-4 text-primary shrink-0" />
             <h3 className={TITLE_CLASS}>Defensibility & Moat</h3>
           </div>
-          <Badge variant="outline" className={`text-xs capitalize ${moatStrengthColors[data.overallStrength] || moatStrengthColors.none}`}>
-            {data.overallStrength}
-          </Badge>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Badge variant="outline" className={`text-xs capitalize cursor-help ${moatStrengthColors[data.overallStrength] || moatStrengthColors.none}`}>
+                {data.overallStrength}
+              </Badge>
+            </PopoverTrigger>
+            <PopoverContent side="bottom" className="max-w-[220px] text-xs p-2">
+              {moatTooltips[data.overallStrength] || `Defensibility: ${data.overallStrength}`}
+            </PopoverContent>
+          </Popover>
         </div>
         <p className={SUMMARY_CLASS}>{data.summary}</p>
         {data.timeToMoat && (
