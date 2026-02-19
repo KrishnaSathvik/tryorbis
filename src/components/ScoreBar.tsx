@@ -1,6 +1,5 @@
 import { cn } from "@/lib/utils";
-
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Info } from "lucide-react";
 
 const scoreDescriptions: Record<string, string> = {
@@ -8,7 +7,7 @@ const scoreDescriptions: Record<string, string> = {
   "Pain": "How severe the problem is for users — higher means people are actively struggling.",
   "Competition": "How crowded the market is. Higher score = more competitors.",
   "MVP Feasibility": "How easy it is to build a minimum viable product for this idea.",
-  "Opportunity Score": "Overall opportunity rating combining demand signals and market gaps.",
+  "Opportunity Score": "Overall opportunity rating combining demand, pain severity, market gaps, and competition weakness. Higher = stronger opportunity.",
 };
 
 interface ScoreBarProps {
@@ -27,16 +26,15 @@ export function ScoreBar({ label, value, className }: ScoreBarProps) {
         <div className="flex items-center gap-1.5">
           <span className="text-sm font-medium">{label}</span>
           {description && (
-            <Tooltip>
-              <TooltipTrigger asChild>
+            <Popover>
+              <PopoverTrigger asChild>
                 <Info className="h-3 w-3 text-muted-foreground cursor-help" />
-              </TooltipTrigger>
-              <TooltipContent side="top" className="max-w-[220px]">
+              </PopoverTrigger>
+              <PopoverContent side="top" className="max-w-[240px] p-2">
                 <p className="text-xs">{description}</p>
-              </TooltipContent>
-            </Tooltip>
+              </PopoverContent>
+            </Popover>
           )}
-          
         </div>
         <span className="text-sm text-muted-foreground font-semibold">{value}/100</span>
       </div>
