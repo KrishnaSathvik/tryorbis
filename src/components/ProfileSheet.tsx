@@ -41,6 +41,8 @@ export function ProfileSheet({ children }: ProfileSheetProps) {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const displayName = profile?.display_name || "User";
   const initials = displayName
@@ -53,24 +55,37 @@ export function ProfileSheet({ children }: ProfileSheetProps) {
   const creditPercent = maxCredits > 0 ? (credits / maxCredits) * 100 : 0;
 
   const handleDeleteAccount = async () => {
-    if (!user) return;
+    if (!user || deleteConfirmText !== "DELETE") return;
     setDeleting(true);
     try {
-      // Delete user data (cascades via RLS)
-      await Promise.all([
-        supabase.from("backlog_items").delete().eq("user_id", user.id),
-        supabase.from("generator_runs").delete().eq("user_id", user.id),
-        supabase.from("validation_reports").delete().eq("user_id", user.id),
-        supabase.from("conversations").delete().eq("user_id", user.id),
-      ]);
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error("Not authenticated");
+
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-account`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const result = await resp.json();
+      if (!resp.ok) throw new Error(result.error || "Failed to delete account");
+
       await signOut();
-      toast.success("Account data deleted. You've been signed out.");
+      toast.success("Your account has been permanently deleted.");
+      setDeleteDialogOpen(false);
       setOpen(false);
       navigate("/");
     } catch (err: any) {
-      toast.error("Failed to delete account data");
+      toast.error(err.message || "Failed to delete account");
     } finally {
       setDeleting(false);
+      setDeleteConfirmText("");
     }
   };
 
@@ -180,29 +195,52 @@ export function ProfileSheet({ children }: ProfileSheetProps) {
               <span>Sign Out</span>
             </button>
 
-            <AlertDialog>
+            <AlertDialog open={deleteDialogOpen} onOpenChange={(v) => { setDeleteDialogOpen(v); if (!v) setDeleteConfirmText(""); }}>
               <AlertDialogTrigger asChild>
                 <button className="flex items-center gap-3 px-3 py-2.5 text-sm text-destructive/70 rounded-xl transition-all hover:text-destructive hover:bg-destructive/5 w-full">
                   <Trash2 className="h-4 w-4" />
-                  <span>Delete Account Data</span>
+                  <span>Delete Account</span>
                 </button>
               </AlertDialogTrigger>
               <AlertDialogContent className="rounded-2xl">
                 <AlertDialogHeader>
-                  <AlertDialogTitle className="font-nunito">Delete Account Data?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will permanently delete all your saved ideas, research history, and conversations. This action cannot be undone.
+                  <AlertDialogTitle className="font-nunito text-destructive">Delete Account Permanently?</AlertDialogTitle>
+                  <AlertDialogDescription className="space-y-3">
+                    <span className="block">
+                      This will <strong className="text-foreground">permanently delete</strong> your entire account including:
+                    </span>
+                    <ul className="list-disc list-inside space-y-1 text-sm">
+                      <li>All saved ideas and backlog items</li>
+                      <li>All research reports (Generate & Validate)</li>
+                      <li>All chat conversations</li>
+                      <li>Your profile and credits</li>
+                    </ul>
+                    <span className="block font-semibold text-destructive">
+                      ⚠ This action cannot be undone.
+                    </span>
+                    <span className="block text-sm">
+                      Type <strong className="text-foreground font-mono bg-muted px-1.5 py-0.5 rounded">DELETE</strong> to confirm:
+                    </span>
+                    <input
+                      type="text"
+                      value={deleteConfirmText}
+                      onChange={(e) => setDeleteConfirmText(e.target.value)}
+                      placeholder="Type DELETE"
+                      className="w-full px-3 py-2 text-sm border border-border rounded-xl bg-background focus:outline-none focus:ring-2 focus:ring-destructive/30 font-mono"
+                      autoComplete="off"
+                    />
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
-                  <AlertDialogAction
+                  <Button
                     onClick={handleDeleteAccount}
-                    disabled={deleting}
-                    className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    disabled={deleting || deleteConfirmText !== "DELETE"}
+                    variant="destructive"
+                    className="rounded-xl"
                   >
-                    {deleting ? "Deleting..." : "Delete Everything"}
-                  </AlertDialogAction>
+                    {deleting ? "Deleting..." : "Delete My Account Forever"}
+                  </Button>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
