@@ -33,7 +33,8 @@ export function AppSidebar() {
 
   const handleNavClick = () => {
     if (isMobile) {
-      setOpenMobile(false);
+      // Small delay so navigation starts before sidebar animation
+      setTimeout(() => setOpenMobile(false), 100);
     }
   };
 
