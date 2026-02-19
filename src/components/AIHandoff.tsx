@@ -54,16 +54,8 @@ export function AIHandoff({ context }: AIHandoffProps) {
   };
 
   const handleToolClick = (tool: typeof tools[number]) => {
-    // In PWA or mobile: show confirmation dialog first
-    if (isPWA || (isMobile && tool.deepLink)) {
-      setPendingTool(tool);
-      setCopied(false);
-      return;
-    }
-
-    // Desktop browser: open directly
-    const targetUrl = `${tool.url}${encoded}`;
-    window.open(targetUrl, '_blank');
+    setPendingTool(tool);
+    setCopied(false);
   };
 
   return (
