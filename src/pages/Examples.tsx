@@ -48,6 +48,13 @@ const exampleReports = [
 ];
 
 const changelog = [
+  { date: "Feb 2026", title: "Profile Sheet", desc: "New profile drawer accessible from sidebar — view credits, account info, feedback, sign out, and delete account all in one place." },
+  { date: "Feb 2026", title: "Delete Account", desc: "Full account deletion flow with typed confirmation. Permanently removes all data including ideas, reports, conversations, and profile." },
+  { date: "Feb 2026", title: "Orbis AI Intelligence Upgrade", desc: "Smart routing between flash and pro models, Perplexity-powered research grounding, and context-aware responses with credit and history awareness." },
+  { date: "Feb 2026", title: "Guest Upgrade Flow", desc: "Guest users can now upgrade to a full account from the profile sheet without errors or white screens." },
+  { date: "Feb 2026", title: "Onboarding Tour Fix", desc: "Tour steps no longer trigger page loading — smooth overlay transitions between steps." },
+  { date: "Feb 2026", title: "Mobile Sidebar Fix", desc: "Sidebar navigation on mobile now opens pages instantly without delay." },
+  { date: "Feb 2026", title: "Dark Mode Logo Fix", desc: "Logo visibility improved in dark mode with adjusted brightness filters." },
   { date: "Feb 2026", title: "Sourced vs Estimated labels", desc: "Every metric now shows whether it's backed by research or AI-estimated." },
   { date: "Feb 2026", title: "Observability logging", desc: "All AI functions now track latency, error rates, and provider performance." },
   { date: "Feb 2026", title: "Phase 3 Intelligence Layers", desc: "Added GTM Strategy, Pricing Benchmarks, and Defensibility & Moat analysis." },
