@@ -128,7 +128,7 @@ export default function Auth() {
             </p>
           </div>
 
-          <Tabs defaultValue="signup" className="w-full">
+          <Tabs defaultValue="signin" className="w-full">
             <TabsList className={`grid w-full ${user?.is_anonymous ? 'grid-cols-2' : 'grid-cols-3'} rounded-xl`}>
               <TabsTrigger value="signup" className="rounded-lg text-xs">Sign Up</TabsTrigger>
               <TabsTrigger value="signin" className="rounded-lg text-xs">Log In</TabsTrigger>
