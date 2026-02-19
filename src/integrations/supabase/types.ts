@@ -18,8 +18,11 @@ export type Database = {
         Row: {
           created_at: string
           demand_score: number | null
+          description: string | null
           id: string
           idea_name: string
+          monetization: string | null
+          mvp_scope: string | null
           notes: Json
           overall_score: number | null
           source: string
@@ -30,8 +33,11 @@ export type Database = {
         Insert: {
           created_at?: string
           demand_score?: number | null
+          description?: string | null
           id?: string
           idea_name: string
+          monetization?: string | null
+          mvp_scope?: string | null
           notes?: Json
           overall_score?: number | null
           source: string
@@ -42,8 +48,11 @@ export type Database = {
         Update: {
           created_at?: string
           demand_score?: number | null
+          description?: string | null
           id?: string
           idea_name?: string
+          monetization?: string | null
+          mvp_scope?: string | null
           notes?: Json
           overall_score?: number | null
           source?: string

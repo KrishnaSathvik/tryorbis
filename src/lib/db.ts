@@ -133,6 +133,9 @@ export async function addToBacklogDb(item: {
   overallScore?: number;
   status?: string;
   notes?: string[];
+  description?: string;
+  mvpScope?: string;
+  monetization?: string;
 }) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
@@ -146,6 +149,9 @@ export async function addToBacklogDb(item: {
     overall_score: item.overallScore || null,
     status: item.status || "New",
     notes: item.notes || [],
+    description: item.description || null,
+    mvp_scope: item.mvpScope || null,
+    monetization: item.monetization || null,
   });
   if (error) throw error;
 }
