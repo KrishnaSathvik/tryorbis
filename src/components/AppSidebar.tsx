@@ -1,7 +1,6 @@
-import { LayoutDashboard, Lightbulb, ClipboardCheck, Archive, FileText, LogOut, BarChart3, Sparkles } from "lucide-react";
+import { LayoutDashboard, Lightbulb, ClipboardCheck, Archive, FileText, BarChart3, Sparkles } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
 import { ProfileSheet } from "@/components/ProfileSheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import orbisLogo from "@/assets/orbis-logo.png";
@@ -28,15 +27,9 @@ const navItems = [
 ];
 
 export function AppSidebar() {
-  const { profile, signOut } = useAuth();
-  const navigate = useNavigate();
+  const { profile } = useAuth();
   const isMobile = useIsMobile();
   const { setOpenMobile } = useSidebar();
-
-  const handleSignOut = async () => {
-    await signOut();
-    navigate("/");
-  };
 
   const handleNavClick = () => {
     if (isMobile) {
@@ -94,13 +87,6 @@ export function AppSidebar() {
             </div>
           </button>
         </ProfileSheet>
-        <button
-          onClick={handleSignOut}
-          className="flex items-center gap-3 px-3 py-2 text-sm text-muted-foreground rounded-xl transition-all hover:text-foreground hover:bg-accent w-full"
-        >
-          <LogOut className="h-4 w-4" />
-          <span>Sign Out</span>
-        </button>
       </div>
     </Sidebar>
   );
