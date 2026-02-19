@@ -89,25 +89,29 @@ serve(async (req) => {
 
     const startTime = Date.now();
 
-    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
-    if (!GEMINI_API_KEY) throw new Error('API key not configured');
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY is not configured');
 
     const { messages } = await req.json();
 
-    const geminiMessages = [
-      { role: 'user', parts: [{ text: SYSTEM_PROMPT + '\n\n' + messages[0].content }] },
-      ...messages.slice(1).map((m: any) => ({
-        role: m.role === 'user' ? 'user' : 'model',
-        parts: [{ text: m.content }],
+    const apiMessages = [
+      { role: 'system', content: SYSTEM_PROMPT },
+      ...messages.map((m: any) => ({
+        role: m.role === 'user' ? 'user' : 'assistant',
+        content: m.content,
       })),
     ];
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${GEMINI_API_KEY}`, {
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({
-        contents: geminiMessages,
-        generationConfig: { temperature: 0.6 },
+        model: 'google/gemini-3-flash-preview',
+        messages: apiMessages,
+        temperature: 0.6,
       }),
     });
 
@@ -119,11 +123,16 @@ serve(async (req) => {
           status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ error: "AI usage limit reached. Please add credits to continue." }), {
+          status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
       throw new Error(`API error [${response.status}]`);
     }
 
     const apiData = await response.json();
-    const content = apiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const content = apiData.choices?.[0]?.message?.content || '';
 
     const readyMatch = content.match(/\|\|\|READY\|\|\|\s*(\{[\s\S]*?\})\s*\|\|\|END\|\|\|/);
     let ready = false;
@@ -144,7 +153,7 @@ serve(async (req) => {
     // ─── Log success ───
     await serviceClient.from('request_logs').insert({
       user_id: userId, function_name: 'chat-generate', status: 'success',
-      latency_ms: Date.now() - startTime, provider: 'gemini',
+      latency_ms: Date.now() - startTime, provider: 'gemini-3-flash-preview',
     });
 
     return new Response(JSON.stringify({ reply: displayText, ready, params }), {
