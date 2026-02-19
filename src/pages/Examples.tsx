@@ -2,11 +2,10 @@ import { usePageTitle } from "@/hooks/usePageTitle";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { ScoreBar } from "@/components/ScoreBar";
 import { VerdictBadge } from "@/components/VerdictBadge";
 
-import { ArrowLeft, Sparkles, Zap, Clock, CheckCircle2 } from "lucide-react";
+import { ArrowRight, Sparkles, Zap, CheckCircle2, Clock } from "lucide-react";
 import orbisLogo from "@/assets/orbis-logo.png";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { FeedbackDrawer } from "@/components/FeedbackDrawer";
@@ -81,12 +80,7 @@ export default function Examples() {
             <img src={orbisLogo} alt="Orbis" className="h-6 w-6 sm:h-7 sm:w-7 dark-invert" />
             <h1 className="text-lg sm:text-xl font-bold tracking-tight font-nunito text-gradient-primary">Orbis</h1>
           </div>
-          <div className="flex items-center gap-3">
-            <ThemeToggle />
-            <Button variant="outline" size="sm" className="rounded-full gap-1.5" onClick={() => navigate("/")}>
-              <ArrowLeft className="h-3.5 w-3.5" /> Back
-            </Button>
-          </div>
+          <ThemeToggle />
         </div>
       </header>
 
@@ -201,7 +195,7 @@ export default function Examples() {
 
           <div className="text-center pt-4">
             <Button size="lg" className="rounded-full bg-foreground text-background hover:bg-foreground/90 gap-2" onClick={() => navigate("/auth")}>
-              Try It Yourself — Free <ArrowLeft className="h-4 w-4 rotate-180" />
+              Try It Yourself — Free <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
         </section>
