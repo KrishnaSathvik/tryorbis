@@ -201,7 +201,7 @@ export default function OrbisChat() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-2rem)] max-w-3xl mx-auto animate-fade-in">
+    <div className="flex flex-col h-[calc(100vh-7rem)] sm:h-[calc(100vh-8rem)] max-w-3xl mx-auto animate-fade-in overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between py-4 px-1">
         <div className="flex items-center gap-2.5">
@@ -225,7 +225,7 @@ export default function OrbisChat() {
       </div>
 
       {/* Messages */}
-      <ScrollArea className="flex-1 -mx-1">
+      <ScrollArea className="flex-1 -mx-1 min-h-0">
         <div className="px-1 py-4">
           {messages.length === 0 && !isStreaming ? (
             <div className="flex flex-col items-center justify-center min-h-[55vh] space-y-8 animate-fade-in">
@@ -331,7 +331,7 @@ export default function OrbisChat() {
       </ScrollArea>
 
       {/* Input area */}
-      <div className="py-4 px-1">
+      <div className="py-3 sm:py-4 px-1 shrink-0">
         <div className="flex items-end gap-2.5 p-1.5 rounded-2xl border border-border/50 bg-background shadow-sm focus-within:border-primary/30 focus-within:shadow-md focus-within:shadow-primary/5 transition-all">
           <textarea
             ref={inputRef}
