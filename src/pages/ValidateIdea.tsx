@@ -14,8 +14,37 @@ import { useCredits } from "@/hooks/useCredits";
 import { supabase } from "@/integrations/supabase/client";
 import { saveValidationReportDb, addToBacklogDb } from "@/lib/db";
 import { toast } from "sonner";
-import { Bookmark, Lightbulb, ThumbsUp, ThumbsDown, Target, AlertTriangle, Send, Search, Globe, Rocket, RefreshCw, XOctagon } from "lucide-react";
+import { Bookmark, Lightbulb, ThumbsUp, ThumbsDown, Target, AlertTriangle, Send, Search, Globe, Rocket, RefreshCw, XOctagon, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+
+const sectionTooltips: Record<string, string> = {
+  verdict: "Overall recommendation based on market research, demand signals, and competitive analysis.",
+  pros: "Key advantages and positive signals found during research.",
+  cons: "Risks, challenges, and negative signals to watch out for.",
+  gapOpportunities: "Underserved needs or missing features that competitors haven't addressed yet.",
+  killTest: "The single biggest risk that could make this idea fail — test this assumption first.",
+  mvpWedge: "The smallest, most focused version you could launch to gain early traction.",
+  competitors: "Existing players in this space, their weaknesses, and pricing.",
+  sources: "References and data sources used to support the analysis.",
+  marketIntelligence: "Deep-dive research layers covering pricing, timing, ICP, risk, and more.",
+  marketSizing: "Estimated market size broken into TAM, SAM, and SOM.",
+};
+
+function SectionTooltip({ id }: { id: string }) {
+  const tip = sectionTooltips[id];
+  if (!tip) return null;
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help shrink-0" />
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-[240px]">
+        <p className="text-xs">{tip}</p>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
 import { ResearchModeToggle } from "@/components/ResearchModeToggle";
 
 import type { WtpSignals, CompetitionDensity, MarketTiming, ICP, WorkaroundDetection, FeatureGapMap, PlatformRisk, GtmStrategy, PricingBenchmarks, DefensibilityAnalysis } from "@/lib/types";
@@ -241,6 +270,7 @@ export default function ValidateIdea() {
                 {report!.verdict === 'Pivot' && "Potential exists — rethink approach"}
                 {report!.verdict === 'Skip' && "Weak signals — move on"}
               </p>
+              <SectionTooltip id="verdict" />
             </div>
           </CardContent>
         </Card>
@@ -258,11 +288,11 @@ export default function ValidateIdea() {
         <h2 className="text-lg font-semibold font-nunito mb-4">Strategy</h2>
         <div className="grid md:grid-cols-2 gap-4">
           <Card className="rounded-2xl border-border/50"><CardContent className="p-5 space-y-3">
-            <div className="flex items-center gap-2"><ThumbsUp className="h-4 w-4 text-green-600 shrink-0" /><h3 className="font-semibold text-sm">Pros</h3></div>
+            <div className="flex items-center gap-2"><ThumbsUp className="h-4 w-4 text-green-600 shrink-0" /><h3 className="font-semibold text-sm">Pros</h3><SectionTooltip id="pros" /></div>
             <ul className="space-y-1.5">{report!.pros.map((p, i) => <li key={i} className="text-sm text-muted-foreground">• {p}</li>)}</ul>
           </CardContent></Card>
           <Card className="rounded-2xl border-border/50"><CardContent className="p-5 space-y-3">
-            <div className="flex items-center gap-2"><ThumbsDown className="h-4 w-4 text-red-600 shrink-0" /><h3 className="font-semibold text-sm">Cons</h3></div>
+            <div className="flex items-center gap-2"><ThumbsDown className="h-4 w-4 text-red-600 shrink-0" /><h3 className="font-semibold text-sm">Cons</h3><SectionTooltip id="cons" /></div>
             <ul className="space-y-1.5">{report!.cons.map((c, i) => <li key={i} className="text-sm text-muted-foreground">• {c}</li>)}</ul>
           </CardContent></Card>
         </div>
@@ -270,18 +300,18 @@ export default function ValidateIdea() {
 
       <div className="grid md:grid-cols-2 gap-4">
         <Card className="rounded-2xl border-border/50"><CardContent className="p-5 space-y-3">
-          <div className="flex items-center gap-2"><Target className="h-4 w-4 text-primary shrink-0" /><h3 className="font-semibold text-sm">Gap Opportunities</h3></div>
+          <div className="flex items-center gap-2"><Target className="h-4 w-4 text-primary shrink-0" /><h3 className="font-semibold text-sm">Gap Opportunities</h3><SectionTooltip id="gapOpportunities" /></div>
           <ul className="space-y-1.5">{report!.gapOpportunities.map((g, i) => <li key={i} className="text-sm text-muted-foreground">• {g}</li>)}</ul>
         </CardContent></Card>
         <Card className="rounded-2xl border-border/50"><CardContent className="p-5 space-y-3">
-          <div className="flex items-center gap-2"><AlertTriangle className="h-4 w-4 text-yellow-600 shrink-0" /><h3 className="font-semibold text-sm">Kill Test</h3></div>
+          <div className="flex items-center gap-2"><AlertTriangle className="h-4 w-4 text-yellow-600 shrink-0" /><h3 className="font-semibold text-sm">Kill Test</h3><SectionTooltip id="killTest" /></div>
           <p className="text-sm text-muted-foreground">{report!.killTest}</p>
         </CardContent></Card>
       </div>
 
       {report!.mvpWedge && (
         <Card className="rounded-2xl border-border/50"><CardContent className="p-5 space-y-2">
-          <h3 className="font-semibold text-sm">Suggested MVP Wedge</h3>
+          <div className="flex items-center gap-2"><h3 className="font-semibold text-sm">Suggested MVP Wedge</h3><SectionTooltip id="mvpWedge" /></div>
           <p className="text-sm text-muted-foreground">{report!.mvpWedge}</p>
         </CardContent></Card>
       )}
@@ -289,7 +319,7 @@ export default function ValidateIdea() {
       {/* ─── Intelligence Layers (Phase 1 + 2 + 3) ─── */}
       {(report!.wtpSignals || report!.competitionDensity || report!.marketTiming || report!.icp || report!.workaroundDetection || report!.featureGapMap || report!.platformRisk || report!.gtmStrategy || report!.pricingBenchmarks || report!.defensibility) && (
         <div>
-          <h2 className="text-lg font-semibold font-nunito mb-4">Market Intelligence</h2>
+          <h2 className="text-lg font-semibold font-nunito mb-4 flex items-center gap-2">Market Intelligence <SectionTooltip id="marketIntelligence" /></h2>
           <div className="grid md:grid-cols-2 gap-4">
             {report!.wtpSignals && <WtpSection data={report!.wtpSignals} />}
             {report!.competitionDensity && <CompetitionDensitySection data={report!.competitionDensity} />}
@@ -307,7 +337,7 @@ export default function ValidateIdea() {
 
       {report!.marketSizing && (
         <div>
-          <h2 className="text-lg font-semibold font-nunito mb-4 flex items-center gap-2"><Globe className="h-5 w-5 text-primary" /> Market Sizing</h2>
+          <h2 className="text-lg font-semibold font-nunito mb-4 flex items-center gap-2"><Globe className="h-5 w-5 text-primary" /> Market Sizing <SectionTooltip id="marketSizing" /></h2>
           <div className="grid sm:grid-cols-3 gap-4">
             {[
               { label: 'TAM', sublabel: 'Total Addressable Market', value: report!.marketSizing.tam },
@@ -334,7 +364,7 @@ export default function ValidateIdea() {
 
       {report!.competitors.length > 0 && (
         <div>
-          <h2 className="text-lg font-semibold font-nunito mb-4">Competitors</h2>
+          <h2 className="text-lg font-semibold font-nunito mb-4 flex items-center gap-2">Competitors <SectionTooltip id="competitors" /></h2>
           <div className="grid sm:grid-cols-3 gap-4">
             {report!.competitors.map((c, i) => (
               <Card key={i} className="rounded-2xl bg-secondary border-0"><CardContent className="p-5 space-y-1">
@@ -351,7 +381,7 @@ export default function ValidateIdea() {
 
       {report!.evidenceLinks.length > 0 && (
         <div>
-          <h2 className="text-lg font-semibold font-nunito mb-4">Sources</h2>
+          <h2 className="text-lg font-semibold font-nunito mb-4 flex items-center gap-2">Sources <SectionTooltip id="sources" /></h2>
           <div className="space-y-1.5">
             {report!.evidenceLinks.map((link, i) => {
               let displayUrl = link;
