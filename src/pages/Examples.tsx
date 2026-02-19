@@ -47,6 +47,9 @@ const exampleReports = [
 ];
 
 const changelog = [
+  { date: "Feb 2026", title: "RLS Policy Overhaul", desc: "Fixed all database security policies across every table — conversations, backlog, reports, profiles, and more now use permissive policies for reliable access." },
+  { date: "Feb 2026", title: "Full Idea Details in Backlog", desc: "Saving ideas to My Ideas now preserves description, MVP scope, and monetization — not just the name and score." },
+  { date: "Feb 2026", title: "AI Handoff to External Tools", desc: "Export your full research context to ChatGPT, Claude, Gemini, Cursor, or Codex with one click from any report." },
   { date: "Feb 2026", title: "Profile Sheet", desc: "New profile drawer accessible from sidebar — view credits, account info, feedback, sign out, and delete account all in one place." },
   { date: "Feb 2026", title: "Delete Account", desc: "Full account deletion flow with typed confirmation. Permanently removes all data including ideas, reports, conversations, and profile." },
   { date: "Feb 2026", title: "Orbis AI Intelligence Upgrade", desc: "Smart routing between flash and pro models, Perplexity-powered research grounding, and context-aware responses with credit and history awareness." },
