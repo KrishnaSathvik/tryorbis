@@ -1,9 +1,7 @@
-import { LayoutDashboard, Lightbulb, ClipboardCheck, Archive, FileText, LogOut, BarChart3, Zap, Sparkles } from "lucide-react";
+import { LayoutDashboard, Lightbulb, ClipboardCheck, Archive, FileText, LogOut, BarChart3, Sparkles } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
-import { useCredits } from "@/hooks/useCredits";
 import { useNavigate } from "react-router-dom";
-import { GuestUpgradeBanner } from "@/components/GuestUpgradeBanner";
 import { ProfileSheet } from "@/components/ProfileSheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import orbisLogo from "@/assets/orbis-logo.png";
@@ -30,8 +28,7 @@ const navItems = [
 ];
 
 export function AppSidebar() {
-  const { profile, signOut, isGuest } = useAuth();
-  const { credits, timeLeft } = useCredits();
+  const { profile, signOut } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { setOpenMobile } = useSidebar();
@@ -85,7 +82,6 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <div className="mt-auto border-t border-sidebar-border p-3 space-y-2">
-        <GuestUpgradeBanner />
         <ProfileSheet>
           <button className="flex items-center gap-3 px-3 py-2 w-full rounded-xl hover:bg-accent transition-all cursor-pointer text-left">
             <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -94,14 +90,7 @@ export function AppSidebar() {
               </span>
             </div>
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5">
-                <p className="text-sm font-medium truncate">{profile?.display_name || "User"}</p>
-                {isGuest && <span className="text-[9px] bg-warning/10 text-warning px-1.5 py-0.5 rounded-full font-semibold leading-none">Guest</span>}
-              </div>
-              <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                <Zap className="h-3 w-3 text-primary" />
-                <span>{credits} credits</span>
-              </div>
+              <p className="text-sm font-medium truncate">{profile?.display_name || "User"}</p>
             </div>
           </button>
         </ProfileSheet>
