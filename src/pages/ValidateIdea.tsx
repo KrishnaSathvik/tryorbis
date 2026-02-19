@@ -16,7 +16,7 @@ import { saveValidationReportDb, addToBacklogDb } from "@/lib/db";
 import { toast } from "sonner";
 import { Bookmark, Lightbulb, ThumbsUp, ThumbsDown, Target, AlertTriangle, Send, Search, Globe, Rocket, RefreshCw, XOctagon, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const sectionTooltips: Record<string, string> = {
   verdict: "Overall recommendation based on market research, demand signals, and competitive analysis.",
@@ -35,14 +35,14 @@ function SectionTooltip({ id }: { id: string }) {
   const tip = sectionTooltips[id];
   if (!tip) return null;
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
+    <Popover>
+      <PopoverTrigger asChild>
         <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help shrink-0" />
-      </TooltipTrigger>
-      <TooltipContent side="top" className="max-w-[240px]">
+      </PopoverTrigger>
+      <PopoverContent side="top" className="max-w-[240px] p-2">
         <p className="text-xs">{tip}</p>
-      </TooltipContent>
-    </Tooltip>
+      </PopoverContent>
+    </Popover>
   );
 }
 import { ResearchModeToggle } from "@/components/ResearchModeToggle";
