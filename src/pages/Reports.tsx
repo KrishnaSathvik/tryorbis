@@ -49,9 +49,9 @@ export default function Reports() {
     });
   }, []);
 
-  const handleSaveIdea = async (name: string, source: string, score?: number, overallScore?: number) => {
+  const handleSaveIdea = async (name: string, source: string, score?: number, overallScore?: number, extra?: { description?: string; mvpScope?: string; monetization?: string }) => {
     try {
-      await addToBacklogDb({ ideaName: name, source, demandScore: score, overallScore, status: "New" });
+      await addToBacklogDb({ ideaName: name, source, demandScore: score, overallScore, status: "New", description: extra?.description, mvpScope: extra?.mvpScope, monetization: extra?.monetization });
       toast.success(`"${name}" saved to My Ideas`);
     } catch {
       toast.error("Failed to save");
@@ -257,7 +257,7 @@ export default function Reports() {
 }
 
 // ─── Full Generator Run Details ───
-function GeneratorRunDetails({ data, onSaveIdea, navigate }: { data: any; onSaveIdea: (name: string, source: string, score?: number) => void; navigate: (path: string) => void }) {
+function GeneratorRunDetails({ data, onSaveIdea, navigate }: { data: any; onSaveIdea: (name: string, source: string, score?: number, overallScore?: number, extra?: { description?: string; mvpScope?: string; monetization?: string }) => void; navigate: (path: string) => void }) {
   const problemClusters = Array.isArray(data.problem_clusters) ? data.problem_clusters : [];
   const ideaSuggestions = Array.isArray(data.idea_suggestions) ? data.idea_suggestions : [];
 
@@ -322,7 +322,7 @@ function GeneratorRunDetails({ data, onSaveIdea, navigate }: { data: any; onSave
                 <CardContent className="p-4 space-y-2">
                   <div className="flex items-start justify-between gap-2">
                     <p className="text-sm font-semibold">{idea.name}</p>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={(e) => { e.stopPropagation(); onSaveIdea(idea.name, "Generated", idea.demandScore); }}>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={(e) => { e.stopPropagation(); onSaveIdea(idea.name, "Generated", idea.demandScore, undefined, { description: idea.description, mvpScope: idea.mvpScope, monetization: idea.monetization }); }}>
                       <Bookmark className="h-3.5 w-3.5" />
                     </Button>
                   </div>
@@ -351,7 +351,7 @@ function GeneratorRunDetails({ data, onSaveIdea, navigate }: { data: any; onSave
 }
 
 // ─── Full Validation Report Details ───
-function ValidationReportDetails({ data, onSaveIdea }: { data: any; onSaveIdea: (name: string, source: string, score?: number, overallScore?: number) => void }) {
+function ValidationReportDetails({ data, onSaveIdea }: { data: any; onSaveIdea: (name: string, source: string, score?: number, overallScore?: number, extra?: { description?: string; mvpScope?: string; monetization?: string }) => void }) {
   const scores = data.scores as any || {};
   const pros = Array.isArray(data.pros) ? data.pros : [];
   const cons = Array.isArray(data.cons) ? data.cons : [];
