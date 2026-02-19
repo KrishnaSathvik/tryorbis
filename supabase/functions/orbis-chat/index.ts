@@ -7,79 +7,144 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SYSTEM_PROMPT = `You are Orbis AI, the built-in strategic advisor for the Orbis platform — a Founder Research OS designed for solo founders, indie hackers, and early-stage teams.
+// ─── Smart Model Routing ───
+// Classify query complexity to pick the right model
+function classifyQuery(messages: Array<{ role: string; content: string }>): "simple" | "complex" {
+  const lastUserMsg = [...messages].reverse().find((m) => m.role === "user")?.content?.toLowerCase() || "";
+  
+  const complexSignals = [
+    "strategy", "gtm", "go-to-market", "pricing model", "business model",
+    "competitive analysis", "market analysis", "defensibility", "moat",
+    "positioning", "pivot", "fundrais", "investor", "pitch",
+    "unit economics", "retention", "churn", "ltv", "cac",
+    "compare", "analyze", "evaluate", "deep dive", "breakdown",
+    "pros and cons", "tradeoff", "trade-off",
+  ];
+  
+  const simpleSignals = [
+    "what is orbis", "how do i use", "what can you do", "help me",
+    "hi", "hello", "hey", "thanks", "thank you", "ok", "sure",
+    "how many credits", "what's my", "where do i find",
+  ];
+  
+  if (simpleSignals.some((s) => lastUserMsg.includes(s)) && lastUserMsg.length < 80) return "simple";
+  if (complexSignals.some((s) => lastUserMsg.includes(s))) return "complex";
+  if (lastUserMsg.length > 200) return "complex";
+  return "simple";
+}
 
-## ABOUT ORBIS (answer accurately when users ask)
+// ─── Research Grounding via Perplexity ───
+async function searchWeb(query: string): Promise<string | null> {
+  const PERPLEXITY_API_KEY = Deno.env.get("PERPLEXITY_API_KEY");
+  if (!PERPLEXITY_API_KEY) return null;
 
-Orbis is a product strategy engine that goes beyond simple idea validation. It uses search-grounded AI research (powered by real-time web data) combined with a 10-dimension market intelligence layer to help founders make confident decisions.
+  try {
+    const resp = await fetch("https://api.perplexity.ai/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${PERPLEXITY_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "sonar",
+        messages: [
+          { role: "system", content: "Return concise, factual market research data. Focus on numbers, trends, competitors, and recent developments. Be brief." },
+          { role: "user", content: query },
+        ],
+        search_recency_filter: "month",
+      }),
+    });
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    const content = data.choices?.[0]?.message?.content;
+    const citations = data.citations?.slice(0, 5)?.map((c: string, i: number) => `[${i + 1}] ${c}`).join("\n") || "";
+    return content ? `${content}${citations ? "\n\nSources:\n" + citations : ""}` : null;
+  } catch (e) {
+    console.error("Perplexity search error:", e);
+    return null;
+  }
+}
+
+// Determine if a query needs web research
+function needsWebResearch(messages: Array<{ role: string; content: string }>): string | null {
+  const lastUserMsg = [...messages].reverse().find((m) => m.role === "user")?.content?.toLowerCase() || "";
+  
+  const researchTriggers = [
+    "competitor", "market size", "trend", "funding", "raised",
+    "pricing", "how much does", "market share", "growth rate",
+    "who else", "alternatives to", "similar to", "compare with",
+    "industry", "sector", "tam", "sam", "som",
+    "latest", "recent", "current", "2024", "2025", "2026",
+    "revenue", "valuation", "users", "customers",
+  ];
+  
+  if (researchTriggers.some((t) => lastUserMsg.includes(t))) {
+    return lastUserMsg;
+  }
+  return null;
+}
+
+// ─── Enhanced System Prompt ───
+const SYSTEM_PROMPT = `You are Orbis AI, the built-in strategic advisor for the Orbis platform — a Founder Research OS for solo founders, indie hackers, and early-stage teams.
+
+## ABOUT ORBIS
+Orbis is a product strategy engine that uses search-grounded AI research combined with a 10-dimension market intelligence layer.
 
 ### Core Features:
-1. **Generate Ideas** — Users describe a problem space or audience in natural language. Orbis extracts the persona, industry, and platform, then runs deep web research to find real complaints, unmet needs, and opportunities. It returns:
-   - Problem Themes (clustered pain points with real complaint quotes and evidence links)
-   - Idea Suggestions (scored by opportunity, with MVP scope and monetization angles)
-   - Market Intelligence across 10 dimensions: Willingness-to-Pay signals, Competition Density, Market Timing, Ideal Customer Profile, Workaround Detection, Feature Gap Map, Platform Risk, GTM Strategy, Pricing Benchmarks, and Defensibility Analysis
-   - A "Deep Research" mode (costs 3 credits) for more thorough analysis using advanced models
+1. **Generate Ideas** — Describe a problem space → get Problem Themes, Idea Suggestions, and Market Intelligence across 10 dimensions. Costs 1 credit (3 for Deep Research).
+2. **Validate Idea** — Paste an idea → get scores, verdict (Go/Maybe/No-Go), pros/cons, competitors, MVP wedge, and kill test. Costs 1 credit.
+3. **Orbis AI Chat** (this conversation) — Free strategic advisor with rate limits.
+4. **My Ideas (Backlog)** — Save, organize, track ideas with status workflow.
+5. **History** — Past research reports, searchable.
+6. **Analytics** — Usage stats and activity tracking.
 
-2. **Validate Idea** — Users paste a specific idea and get a full validation report including:
-   - Scores across multiple dimensions (demand, timing, competition, monetization, defensibility)
-   - A verdict (Go / Maybe / No-Go)
-   - Pros, cons, gap opportunities, MVP wedge, and kill test
-   - Competitor analysis with evidence links
+### Access:
+- **Guest**: 5 free credits, no signup
+- **Registered**: More credits, saved research, full history
+- Chat is free (rate-limited)
 
-3. **Orbis AI Chat (this conversation)** — A strategic advisor that helps brainstorm, refine ideas, discuss strategy, positioning, pricing, GTM, and more. Free to use with rate limits.
+## YOUR ROLE
 
-4. **My Ideas (Backlog)** — A personal idea board where users save, organize, and track ideas from Generate or Validate. Supports status tracking (New → Exploring → Testing → Validated → Archived), notes, and renaming.
+### Personality:
+- **Sharp & concise**: 2-4 sentences default. Expand only when asked.
+- **Strategic**: Focus on market fit, positioning, differentiation, execution.
+- **Contrarian**: Push back on weak assumptions. Don't be a yes-man.
+- **Actionable**: Every response = something concrete to do or think about.
+- **Data-informed**: When you have web research context, cite specific data points and sources.
 
-5. **History** — Past research reports from Generate and Validate, searchable and reviewable.
+### Reasoning Framework:
+When analyzing an idea or strategy question, internally consider:
+1. **Demand signal** — Is there evidence people want this?
+2. **Competition** — Who else is doing this? What's the gap?
+3. **Timing** — Why now? What changed?
+4. **Monetization** — How does this make money? Will people pay?
+5. **Defensibility** — What stops someone from copying this?
 
-6. **Analytics** — Usage stats and research activity tracking.
+Don't list all 5 every time — pick the 1-2 most relevant to the user's question.
 
-### How It Works (for users):
-1. Describe a problem or audience → Orbis understands context
-2. AI researches real complaints, trends, and gaps across the web
-3. Get scored ideas with market intelligence
-4. Validate favorites with deep competitive analysis
+### Few-Shot Examples:
 
-### Pricing & Access:
-- **Guest Mode**: Try free with 5 credits, no signup required (just a nickname)
-- **Registered Users**: Sign up to save research, get more credits, and access full history
-- Each Generate Ideas run costs 1 credit (or 3 for Deep Research)
-- Each Validate Idea run costs 1 credit
-- Orbis AI Chat is free (rate-limited)
+**User**: "I want to build a todo app"
+**You**: "The todo space is brutally saturated — Todoist, Things 3, TickTick, and hundreds more. Unless you have a specific wedge (e.g., todo for ADHD brains, todo for construction crews), you'll struggle to differentiate. What specific audience's workflow is broken right now?"
 
-## YOUR ROLE AS ORBIS AI
+**User**: "How do I price my SaaS?"
+**You**: "Start with your ICP's willingness-to-pay, not your costs. Three approaches: (1) anchor to the cost of the problem (if you save 10hrs/mo, charge 20-30% of that value), (2) competitive anchoring (price ±20% of alternatives), (3) talk to 10 target users and ask 'at what price would this be too expensive?' The intersection of those answers is your starting point. Want me to research competitor pricing in your space?"
 
-Your personality:
-- **Sharp & concise**: 2-4 sentences per response unless the user asks for detail
-- **Strategic**: Focus on what matters — market fit, positioning, differentiation, execution
-- **Contrarian when needed**: Push back on weak assumptions, don't be a yes-man
-- **Actionable**: Every response should leave the user with something concrete to do or think about
-- **Self-aware**: You know exactly what Orbis can do and can guide users to the right tool
+### Tool Suggestions:
+When contextually appropriate, guide users to Orbis tools:
+- Problem exploration → "Try **Generate Ideas** to discover real unmet needs in this space."
+- Specific idea ready → "Run this through **Validate Idea** for a full market analysis."
+- Worth tracking → "Save this to **My Ideas** to track your progress."
 
-You can help with:
-- Explaining Orbis features and guiding users through the platform
-- Brainstorming and refining startup ideas
-- Market analysis and competitive positioning
-- Go-to-market strategy and user acquisition
-- Pricing and business model design
-- MVP scoping and feature prioritization
-- Risk assessment and kill tests
-- Pivot strategies
+Keep suggestions natural — only when they genuinely help.
 
-IMPORTANT CAPABILITIES:
-When a user has refined or described an idea well enough, suggest Orbis tools:
-- To explore a problem space: "Would you like me to generate ideas in this space? Head to **Generate Ideas** to discover unmet needs."
-- To validate a specific idea: "Ready to validate this? Go to **Validate Idea** to get a full market analysis."
-- To save an idea: "You can save this to **My Ideas** to track it."
-
-Keep suggestions natural and contextual — only offer when it genuinely makes sense.
-
-NEVER:
-- Give vague motivational advice like "follow your passion"
-- Write walls of text unless asked
-- Be overly diplomatic when an idea has clear problems
+### NEVER:
+- Give vague motivational advice ("follow your passion")
+- Write walls of text unless asked for detail
+- Be overly diplomatic about bad ideas
 - Repeat yourself
-- Make up features Orbis doesn't have`;
+- Make up features Orbis doesn't have
+- Ignore web research context when provided`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -123,9 +188,8 @@ serve(async (req) => {
         status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    // Orbis Chat is free — no credit deduction
 
-    // ─── Fetch user context for personalized guidance ───
+    // ─── Fetch user context ───
     const [profileRes, backlogRes, generatorRes, validationRes] = await Promise.all([
       serviceClient.from("profiles").select("credits, max_credits, credits_reset_at, display_name, email").eq("user_id", userId).single(),
       serviceClient.from("backlog_items").select("id", { count: "exact", head: true }).eq("user_id", userId),
@@ -139,128 +203,90 @@ serve(async (req) => {
     const validationRunsCount = validationRes.count ?? 0;
     const isGuest = !profile?.email;
 
-    let userContext = `\n\n## CURRENT USER CONTEXT (use this to personalize your advice)\n`;
+    let userContext = `\n\n## CURRENT USER CONTEXT\n`;
     userContext += `- Name: ${profile?.display_name || "Unknown"}\n`;
-    userContext += `- Account type: ${isGuest ? "Guest (not signed up yet)" : "Registered user"}\n`;
-    userContext += `- Credits remaining: ${profile?.credits ?? "unknown"} / ${profile?.max_credits ?? "unknown"}\n`;
-    if (profile?.credits_reset_at) {
-      userContext += `- Credits reset scheduled: ${profile.credits_reset_at}\n`;
-    }
-    userContext += `- Saved ideas in backlog: ${savedIdeasCount}\n`;
-    userContext += `- Past Generate Ideas runs: ${generatorRunsCount}\n`;
-    userContext += `- Past Validate Idea runs: ${validationRunsCount}\n`;
-    userContext += `- Total research runs: ${generatorRunsCount + validationRunsCount}\n`;
-    if (isGuest) {
-      userContext += `\nSince this is a guest user, gently encourage signing up to save research and get more credits when contextually appropriate (don't force it).\n`;
-    }
-    if ((profile?.credits ?? 0) <= 1) {
-      userContext += `\nThis user is low on credits. Be mindful of suggesting credit-consuming actions. Mention they can wait for the 24h auto-refill.\n`;
-    }
-    if (savedIdeasCount === 0 && generatorRunsCount > 0) {
-      userContext += `\nThis user has run research but hasn't saved any ideas yet. If relevant, remind them they can save ideas to My Ideas.\n`;
-    }
+    userContext += `- Account: ${isGuest ? "Guest (not signed up)" : "Registered"}\n`;
+    userContext += `- Credits: ${profile?.credits ?? "?"} / ${profile?.max_credits ?? "?"}\n`;
+    userContext += `- Saved ideas: ${savedIdeasCount} | Generate runs: ${generatorRunsCount} | Validate runs: ${validationRunsCount}\n`;
+    if (isGuest) userContext += `\nGuest user — gently suggest signing up when relevant.\n`;
+    if ((profile?.credits ?? 0) <= 1) userContext += `\nLow credits — be mindful of suggesting credit-consuming actions.\n`;
+    if (savedIdeasCount === 0 && generatorRunsCount > 0) userContext += `\nHas run research but hasn't saved ideas — remind about My Ideas when relevant.\n`;
 
     const startTime = Date.now();
-
     const { messages } = await req.json();
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) throw new Error("API key not configured");
 
-    // Convert messages to Gemini format
-    const geminiMessages = [
-      { role: "user", parts: [{ text: SYSTEM_PROMPT + userContext }] },
-      { role: "model", parts: [{ text: "Understood. I'm Orbis, ready to help you build something great. What's on your mind?" }] },
-      ...messages.map((m: any) => ({
-        role: m.role === "user" ? "user" : "model",
-        parts: [{ text: m.content }],
-      })),
-    ];
+    // ─── Smart Model Routing ───
+    const complexity = classifyQuery(messages);
+    const model = complexity === "complex" ? "google/gemini-2.5-pro" : "google/gemini-3-flash-preview";
+    console.log(`Query complexity: ${complexity} → Model: ${model}`);
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse&key=${GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: geminiMessages,
-          generationConfig: { temperature: 0.7 },
-        }),
+    // ─── Research Grounding ───
+    const researchQuery = needsWebResearch(messages);
+    let researchContext = "";
+    if (researchQuery) {
+      console.log("Triggering web research for:", researchQuery);
+      const webData = await searchWeb(researchQuery);
+      if (webData) {
+        researchContext = `\n\n## WEB RESEARCH CONTEXT (from live search — use this data in your response, cite sources)\n${webData}`;
       }
-    );
+    }
+
+    // ─── Call Lovable AI Gateway ───
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT + userContext + researchContext },
+          ...messages.map((m: any) => ({ role: m.role, content: m.content })),
+        ],
+        stream: true,
+        temperature: complexity === "complex" ? 0.5 : 0.7,
+      }),
+    });
 
     if (!response.ok) {
       const errBody = await response.text();
-      console.error("Gemini API error:", response.status, errBody);
+      console.error("Lovable AI Gateway error:", response.status, errBody);
       if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      throw new Error(`API error [${response.status}]`);
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ error: "AI usage limit reached. Please try again later." }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      throw new Error(`AI gateway error [${response.status}]`);
     }
 
-    // Log success (stream start counts as success)
-    serviceClient.from('request_logs').insert({
-      user_id: userId, function_name: 'orbis-chat', status: 'success',
-      latency_ms: Date.now() - startTime, provider: 'gemini',
+    // Log success
+    serviceClient.from("request_logs").insert({
+      user_id: userId, function_name: "orbis-chat", status: "success",
+      latency_ms: Date.now() - startTime, provider: model,
     }).then(() => {});
 
-    // Transform Gemini SSE stream to OpenAI-compatible SSE stream
-    const { readable, writable } = new TransformStream();
-    const writer = writable.getWriter();
-    const encoder = new TextEncoder();
-
-    (async () => {
-      try {
-        const reader = response.body!.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-
-          let newlineIndex: number;
-          while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
-            let line = buffer.slice(0, newlineIndex);
-            buffer = buffer.slice(newlineIndex + 1);
-            if (line.endsWith("\r")) line = line.slice(0, -1);
-            if (!line.startsWith("data: ")) continue;
-            const jsonStr = line.slice(6).trim();
-            if (!jsonStr) continue;
-
-            try {
-              const parsed = JSON.parse(jsonStr);
-              const text = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
-              if (text) {
-                const chunk = {
-                  choices: [{ delta: { content: text } }],
-                };
-                await writer.write(encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`));
-              }
-            } catch {}
-          }
-        }
-        await writer.write(encoder.encode("data: [DONE]\n\n"));
-      } catch (e) {
-        console.error("Stream processing error:", e);
-      } finally {
-        await writer.close();
-      }
-    })();
-
-    return new Response(readable, {
+    // Stream response back (already OpenAI-compatible SSE from gateway)
+    return new Response(response.body, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (e: any) {
     console.error("orbis-chat error:", e);
     try {
       const svc = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-      await svc.from('request_logs').insert({
-        user_id: 'unknown', function_name: 'orbis-chat', status: 'error',
-        latency_ms: 0, error_type: 'api_error', error_message: (e.message || '').slice(0, 500),
+      await svc.from("request_logs").insert({
+        user_id: "unknown", function_name: "orbis-chat", status: "error",
+        latency_ms: 0, error_type: "api_error", error_message: (e.message || "").slice(0, 500),
       });
     } catch {}
     return new Response(
