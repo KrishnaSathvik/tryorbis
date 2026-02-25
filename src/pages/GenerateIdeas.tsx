@@ -193,12 +193,12 @@ export default function GenerateIdeas() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight font-nunito">Results</h1>
-          <p className="text-muted-foreground mt-1">{result?.persona} × {result?.category} — {result?.ideaSuggestions.length} ideas found</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight font-nunito">Results</h1>
+          <p className="text-muted-foreground mt-1 text-sm truncate">{result?.persona} × {result?.category} — {result?.ideaSuggestions.length} ideas found</p>
         </div>
-        <Button variant="outline" className="rounded-full" onClick={resetChat}>New Search</Button>
+        <Button variant="outline" className="rounded-full shrink-0" onClick={resetChat}>New Search</Button>
       </div>
 
       <div>
@@ -283,7 +283,7 @@ export default function GenerateIdeas() {
       {result && (result.wtpSignals || result.competitionDensity || result.marketTiming || result.icp || result.workaroundDetection || result.featureGapMap || result.platformRisk || result.gtmStrategy || result.pricingBenchmarks || result.defensibility) && (
         <div>
           <h2 className="text-lg font-semibold font-nunito mb-4">Market Intelligence</h2>
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {result.wtpSignals && <WtpSection data={result.wtpSignals} />}
             {result.competitionDensity && <CompetitionDensitySection data={result.competitionDensity} />}
             {result.marketTiming && <MarketTimingSection data={result.marketTiming} />}
