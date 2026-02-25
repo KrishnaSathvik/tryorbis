@@ -78,8 +78,20 @@ async function searchWeb(query: string): Promise<string | null> {
 }
 
 // Determine if a query needs web research
-function needsWebResearch(messages: Array<{ role: string; content: string }>): string | null {
-  const lastUserMsg = [...messages].reverse().find((m) => m.role === "user")?.content?.toLowerCase() || "";
+function needsWebResearch(messages: Array<{ role: string; content: any }>): string | null {
+  const lastMsg = [...messages].reverse().find((m) => m.role === "user");
+  let lastUserMsg = "";
+  if (lastMsg) {
+    if (typeof lastMsg.content === "string") {
+      lastUserMsg = lastMsg.content.toLowerCase();
+    } else if (Array.isArray(lastMsg.content)) {
+      lastUserMsg = lastMsg.content
+        .filter((p: any) => p.type === "text")
+        .map((p: any) => p.text || "")
+        .join(" ")
+        .toLowerCase();
+    }
+  }
   
   const researchTriggers = [
     "competitor", "market size", "trend", "funding", "raised",
