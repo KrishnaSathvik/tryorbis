@@ -47,6 +47,12 @@ const exampleReports = [
 ];
 
 const changelog = [
+  { date: "Feb 2026", title: "Deep Research Fix", desc: "Fixed stale closure bug that caused Deep Research mode to silently fall back to regular mode. Now correctly uses sonar-deep-research model (30-90s+ analysis)." },
+  { date: "Feb 2026", title: "Voice Input", desc: "Added browser-native voice-to-text input across all chat interfaces — Orbis Chat, Generate Ideas, and Validate Idea. No API key needed." },
+  { date: "Feb 2026", title: "Multi-File Upload (up to 10)", desc: "Increased attachment limit from 3 to 10 files per message. Supports images, PDFs, and text files." },
+  { date: "Feb 2026", title: "Drag & Drop Uploads", desc: "Drag files directly into any chat input area with a visual drop zone overlay." },
+  { date: "Feb 2026", title: "Image Support in Orbis AI", desc: "Orbis Chat now accepts and analyzes images alongside text — screenshots, mockups, competitor UIs, and data visualizations." },
+  { date: "Feb 2026", title: "Smart Model Routing", desc: "Orbis AI automatically picks the optimal model based on query complexity — fast responses for simple questions, deep analysis for complex strategy queries." },
   { date: "Feb 2026", title: "RLS Policy Overhaul", desc: "Fixed all database security policies across every table — conversations, backlog, reports, profiles, and more now use permissive policies for reliable access." },
   { date: "Feb 2026", title: "Full Idea Details in Backlog", desc: "Saving ideas to My Ideas now preserves description, MVP scope, and monetization — not just the name and score." },
   { date: "Feb 2026", title: "AI Handoff to External Tools", desc: "Export your full research context to ChatGPT, Claude, Gemini, Cursor, or Codex with one click from any report." },
