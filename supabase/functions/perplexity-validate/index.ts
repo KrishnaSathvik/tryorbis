@@ -92,175 +92,63 @@ Score strictly with evidence:
 - Competition (0-100, HIGHER=harder): 85+ funded incumbents, 70-84 established, 50-69 mediocre, <50 few
 - MVP Feasibility (0-100): 85+ 1-2 weeks, 70-84 2-4 weeks, 50-69 1-2 months, <50 longer
 
-Verdict: "Build" if demand≥65 AND pain≥55 AND competition<75 AND feasibility≥55. "Pivot" if pain≥45 but approach needs rethinking. "Skip" if demand<40 OR pain<35 OR competition≥80 with no differentiator.`;
+Verdict: "Build" if demand≥65 AND pain≥55 AND competition<75 AND feasibility≥55. "Pivot" if pain≥45 but approach needs rethinking. "Skip" if demand<40 OR pain<35 OR competition≥80 with no differentiator.${isDeep ? `\n\nIMPORTANT: Respond with valid JSON only (no markdown, no code fences). Use keys: scores, verdict, verdictReasoning, pros, cons, gapOpportunities, mvpWedge, killTest, competitors, marketSizing, wtpSignals, competitionDensity, marketTiming, icp, workaroundDetection, featureGapMap, platformRisk, gtmStrategy, pricingBenchmarks, defensibility.` : ''}`;
 
     const modelName = isDeep ? 'sonar-deep-research' : 'sonar-pro';
     console.log(`Starting validation with ${modelName} (mode=${mode || 'regular'}, cost=${creditCost})...`);
+
+    const jsonSchema = {
+      name: 'idea_validation',
+      schema: {
+        type: 'object',
+        properties: {
+          scores: { type: 'object', properties: { demand: { type: 'number' }, pain: { type: 'number' }, competition: { type: 'number' }, mvpFeasibility: { type: 'number' } }, required: ['demand', 'pain', 'competition', 'mvpFeasibility'] },
+          scoreJustifications: { type: 'object', properties: { demand: { type: 'string' }, pain: { type: 'string' }, competition: { type: 'string' }, mvpFeasibility: { type: 'string' } } },
+          marketSizing: { type: 'object', properties: { tam: { type: 'string' }, sam: { type: 'string' }, som: { type: 'string' }, methodology: { type: 'string' } } },
+          verdict: { type: 'string', enum: ['Build', 'Pivot', 'Skip'] },
+          verdictReasoning: { type: 'string' },
+          pros: { type: 'array', items: { type: 'string' } },
+          cons: { type: 'array', items: { type: 'string' } },
+          gapOpportunities: { type: 'array', items: { type: 'string' } },
+          mvpWedge: { type: 'string' },
+          killTest: { type: 'string' },
+          competitors: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, weakness: { type: 'string' }, pricing: { type: 'string' } } } },
+          wtpSignals: { type: 'object', properties: { strength: { type: 'string' }, signals: { type: 'array', items: { type: 'object', properties: { quote: { type: 'string' }, source: { type: 'string' }, context: { type: 'string' } } } }, priceRange: { type: 'object', properties: { low: { type: 'number' }, mid: { type: 'number' }, high: { type: 'number' }, currency: { type: 'string' } } }, summary: { type: 'string' } } },
+          competitionDensity: { type: 'object', properties: { level: { type: 'string' }, competitorCount: { type: 'number' }, totalFundingEstimate: { type: 'string' }, keyIncumbents: { type: 'array', items: { type: 'string' } }, switchingCosts: { type: 'string' }, summary: { type: 'string' } } },
+          marketTiming: { type: 'object', properties: { phase: { type: 'string' }, signals: { type: 'array', items: { type: 'string' } }, summary: { type: 'string' } } },
+          icp: { type: 'object', properties: { businessType: { type: 'string' }, companySize: { type: 'string' }, revenueRange: { type: 'string' }, industry: { type: 'string' }, techStack: { type: 'array', items: { type: 'string' } }, buyingTriggers: { type: 'array', items: { type: 'string' } }, budgetRange: { type: 'string' }, summary: { type: 'string' } } },
+          workaroundDetection: { type: 'object', properties: { severity: { type: 'string' }, workarounds: { type: 'array', items: { type: 'object', properties: { description: { type: 'string' }, source: { type: 'string' }, investmentLevel: { type: 'string' } } } }, summary: { type: 'string' } } },
+          featureGapMap: { type: 'object', properties: { gaps: { type: 'array', items: { type: 'object', properties: { feature: { type: 'string' }, competitorCoverage: { type: 'string' }, opportunity: { type: 'string' } } } }, topWedge: { type: 'string' }, summary: { type: 'string' } } },
+          platformRisk: { type: 'object', properties: { level: { type: 'string' }, signals: { type: 'array', items: { type: 'object', properties: { signal: { type: 'string' }, riskType: { type: 'string' } } } }, summary: { type: 'string' } } },
+          gtmStrategy: { type: 'object', properties: { primaryChannel: { type: 'string' }, channels: { type: 'array', items: { type: 'object', properties: { channel: { type: 'string' }, viability: { type: 'string' }, reasoning: { type: 'string' } } } }, founderLedSales: { type: 'boolean' }, seoViability: { type: 'string' }, summary: { type: 'string' } } },
+          pricingBenchmarks: { type: 'object', properties: { benchmarks: { type: 'array', items: { type: 'object', properties: { tool: { type: 'string' }, price: { type: 'string' }, model: { type: 'string' }, notes: { type: 'string' } } } }, suggestedRange: { type: 'object', properties: { low: { type: 'string' }, mid: { type: 'string' }, high: { type: 'string' } } }, pricingModel: { type: 'string' }, summary: { type: 'string' } } },
+          defensibility: { type: 'object', properties: { overallStrength: { type: 'string' }, signals: { type: 'array', items: { type: 'object', properties: { type: { type: 'string' }, description: { type: 'string' }, strength: { type: 'string' } } } }, timeToMoat: { type: 'string' }, summary: { type: 'string' } } },
+        },
+        required: ['scores', 'verdict', 'verdictReasoning', 'pros', 'cons', 'gapOpportunities', 'mvpWedge', 'killTest', 'competitors'],
+      },
+    };
+
+    const requestBody: any = {
+      model: modelName,
+      messages: [
+        { role: 'system', content: `You are a brutally honest startup advisor. Research real web data, score with evidence, never inflate. Be concise.${isDeep ? ' You MUST respond with valid JSON only — no markdown, no code fences, no extra text.' : ''}` },
+        { role: 'user', content: prompt },
+      ],
+      temperature: 0,
+    };
+
+    // sonar-deep-research does NOT support response_format json_schema
+    if (!isDeep) {
+      requestBody.response_format = { type: 'json_schema', json_schema: jsonSchema };
+    }
+
     const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: modelName,
-        messages: [
-          { role: 'system', content: 'You are a brutally honest startup advisor. Research real web data, score with evidence, never inflate. Be concise.' },
-          { role: 'user', content: prompt },
-        ],
-        temperature: 0,
-        response_format: {
-          type: 'json_schema',
-          json_schema: {
-            name: 'idea_validation',
-            schema: {
-              type: 'object',
-              properties: {
-                scores: {
-                  type: 'object',
-                  properties: {
-                    demand: { type: 'number' },
-                    pain: { type: 'number' },
-                    competition: { type: 'number' },
-                    mvpFeasibility: { type: 'number' },
-                  },
-                  required: ['demand', 'pain', 'competition', 'mvpFeasibility'],
-                },
-                scoreJustifications: {
-                  type: 'object',
-                  properties: {
-                    demand: { type: 'string' },
-                    pain: { type: 'string' },
-                    competition: { type: 'string' },
-                    mvpFeasibility: { type: 'string' },
-                  },
-                },
-                marketSizing: {
-                  type: 'object',
-                  properties: {
-                    tam: { type: 'string' },
-                    sam: { type: 'string' },
-                    som: { type: 'string' },
-                    methodology: { type: 'string' },
-                  },
-                },
-                verdict: { type: 'string', enum: ['Build', 'Pivot', 'Skip'] },
-                verdictReasoning: { type: 'string' },
-                pros: { type: 'array', items: { type: 'string' } },
-                cons: { type: 'array', items: { type: 'string' } },
-                gapOpportunities: { type: 'array', items: { type: 'string' } },
-                mvpWedge: { type: 'string' },
-                killTest: { type: 'string' },
-                competitors: {
-                  type: 'array',
-                  items: {
-                    type: 'object',
-                    properties: {
-                      name: { type: 'string' },
-                      weakness: { type: 'string' },
-                      pricing: { type: 'string' },
-                    },
-                  },
-                },
-                wtpSignals: {
-                  type: 'object',
-                  properties: {
-                    strength: { type: 'string', enum: ['strong', 'moderate', 'weak', 'none'] },
-                    signals: { type: 'array', items: { type: 'object', properties: { quote: { type: 'string' }, source: { type: 'string' }, context: { type: 'string' } } } },
-                    priceRange: { type: 'object', properties: { low: { type: 'number' }, mid: { type: 'number' }, high: { type: 'number' }, currency: { type: 'string' } } },
-                    summary: { type: 'string' },
-                  },
-                },
-                competitionDensity: {
-                  type: 'object',
-                  properties: {
-                    level: { type: 'string', enum: ['blue_ocean', 'fragmented', 'crowded', 'winner_take_most'] },
-                    competitorCount: { type: 'number' },
-                    totalFundingEstimate: { type: 'string' },
-                    keyIncumbents: { type: 'array', items: { type: 'string' } },
-                    switchingCosts: { type: 'string' },
-                    summary: { type: 'string' },
-                  },
-                },
-                marketTiming: {
-                  type: 'object',
-                  properties: {
-                    phase: { type: 'string', enum: ['emerging', 'growing', 'saturated', 'declining'] },
-                    signals: { type: 'array', items: { type: 'string' } },
-                    summary: { type: 'string' },
-                  },
-                },
-                icp: {
-                  type: 'object',
-                  properties: {
-                    businessType: { type: 'string' },
-                    companySize: { type: 'string' },
-                    revenueRange: { type: 'string' },
-                    industry: { type: 'string' },
-                    techStack: { type: 'array', items: { type: 'string' } },
-                    buyingTriggers: { type: 'array', items: { type: 'string' } },
-                    budgetRange: { type: 'string' },
-                    summary: { type: 'string' },
-                  },
-                },
-                workaroundDetection: {
-                  type: 'object',
-                  properties: {
-                    severity: { type: 'string', enum: ['strong', 'moderate', 'weak', 'none'] },
-                    workarounds: { type: 'array', items: { type: 'object', properties: { description: { type: 'string' }, source: { type: 'string' }, investmentLevel: { type: 'string', enum: ['low', 'medium', 'high'] } } } },
-                    summary: { type: 'string' },
-                  },
-                },
-                featureGapMap: {
-                  type: 'object',
-                  properties: {
-                    gaps: { type: 'array', items: { type: 'object', properties: { feature: { type: 'string' }, competitorCoverage: { type: 'string', enum: ['none', 'weak', 'strong', 'commodity'] }, opportunity: { type: 'string', enum: ['high', 'medium', 'low'] } } } },
-                    topWedge: { type: 'string' },
-                    summary: { type: 'string' },
-                  },
-                },
-                platformRisk: {
-                  type: 'object',
-                  properties: {
-                    level: { type: 'string', enum: ['low', 'medium', 'high', 'critical'] },
-                    signals: { type: 'array', items: { type: 'object', properties: { signal: { type: 'string' }, riskType: { type: 'string', enum: ['bundling', 'api_limitation', 'roadmap_overlap', 'regulation', 'dependency', 'incumbent_improvement', 'platform_consolidation'] } } } },
-                    summary: { type: 'string' },
-                  },
-                },
-                gtmStrategy: {
-                  type: 'object',
-                  properties: {
-                    primaryChannel: { type: 'string' },
-                    channels: { type: 'array', items: { type: 'object', properties: { channel: { type: 'string' }, viability: { type: 'string', enum: ['high', 'medium', 'low'] }, reasoning: { type: 'string' } } } },
-                    founderLedSales: { type: 'boolean' },
-                    seoViability: { type: 'string' },
-                    summary: { type: 'string' },
-                  },
-                },
-                pricingBenchmarks: {
-                  type: 'object',
-                  properties: {
-                    benchmarks: { type: 'array', items: { type: 'object', properties: { tool: { type: 'string' }, price: { type: 'string' }, model: { type: 'string' }, notes: { type: 'string' } } } },
-                    suggestedRange: { type: 'object', properties: { low: { type: 'string' }, mid: { type: 'string' }, high: { type: 'string' } } },
-                    pricingModel: { type: 'string' },
-                    summary: { type: 'string' },
-                  },
-                },
-                defensibility: {
-                  type: 'object',
-                  properties: {
-                    overallStrength: { type: 'string', enum: ['strong', 'moderate', 'weak', 'none'] },
-                    signals: { type: 'array', items: { type: 'object', properties: { type: { type: 'string' }, description: { type: 'string' }, strength: { type: 'string', enum: ['strong', 'moderate', 'weak', 'none'] } } } },
-                    timeToMoat: { type: 'string' },
-                    summary: { type: 'string' },
-                  },
-                },
-              },
-              required: ['scores', 'verdict', 'verdictReasoning', 'pros', 'cons', 'gapOpportunities', 'mvpWedge', 'killTest', 'competitors'],
-            },
-          },
-        },
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
