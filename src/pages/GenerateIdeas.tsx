@@ -151,7 +151,8 @@ export default function GenerateIdeas() {
         imageContext += `\n\nAttached file (${a.file.name}):\n${a.base64!.slice(0, 5000)}`;
       });
 
-      const stepInterval = setInterval(() => { setResearchStep(prev => { if (prev >= researchSteps.length - 1) { clearInterval(stepInterval); return prev; } return prev + 1; }); }, 3500);
+      const stepDelay = researchMode === 'deep' ? 8000 : 3500;
+      const stepInterval = setInterval(() => { setResearchStep(prev => { if (prev >= researchSteps.length - 1) { clearInterval(stepInterval); return prev; } return prev + 1; }); }, stepDelay);
       const { data, error } = await supabase.functions.invoke('perplexity-generate', {
         body: { persona: params.persona, category: params.category, region: params.region || undefined, platform: params.platform || undefined, context: (params.context || "") + (imageContext ? `\n\nVisual/file context:\n${imageContext}` : ""), mode: researchMode },
       });
@@ -252,7 +253,7 @@ export default function GenerateIdeas() {
         <Card className="rounded-[32px] shadow-lg"><CardContent className="p-8">
           <h2 className="text-xl font-semibold font-nunito mb-2">Researching...</h2>
           <p className="text-sm text-muted-foreground mb-4">Mining real complaints and opportunities{generatingParams ? ` for ${generatingParams.persona} in ${generatingParams.category}` : ''}.</p>
-          <ResearchTrace steps={researchSteps} currentStep={researchStep} isComplete={false} />
+          <ResearchTrace steps={researchSteps} currentStep={researchStep} isComplete={false} mode={researchMode} />
         </CardContent></Card>
       </div>
     );

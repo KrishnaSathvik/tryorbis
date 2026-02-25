@@ -186,7 +186,8 @@ export default function ValidateIdea() {
         imageContext += `\n\nAttached file (${a.file.name}):\n${a.base64!.slice(0, 5000)}`;
       });
 
-      const stepInterval = setInterval(() => { setCurrentStep(prev => { if (prev >= researchSteps.length - 1) { clearInterval(stepInterval); return prev; } return prev + 1; }); }, 3500);
+      const stepDelay = researchMode === 'deep' ? 8000 : 3500;
+      const stepInterval = setInterval(() => { setCurrentStep(prev => { if (prev >= researchSteps.length - 1) { clearInterval(stepInterval); return prev; } return prev + 1; }); }, stepDelay);
       const { data, error } = await supabase.functions.invoke('perplexity-validate', { body: { ideaText: ideaText + imageContext, mode: researchMode } });
       clearInterval(stepInterval); setCurrentStep(researchSteps.length);
       if (error) throw error;
@@ -292,7 +293,7 @@ export default function ValidateIdea() {
         <Card className="rounded-[32px] shadow-lg"><CardContent className="p-8">
           <h2 className="text-xl font-semibold font-nunito mb-2">Validating...</h2>
           <p className="text-sm text-muted-foreground mb-4">Researching demand, competition, and feasibility.</p>
-          <ResearchTrace steps={researchSteps} currentStep={currentStep} isComplete={false} />
+          <ResearchTrace steps={researchSteps} currentStep={currentStep} isComplete={false} mode={researchMode} />
         </CardContent></Card>
       </div>
     );

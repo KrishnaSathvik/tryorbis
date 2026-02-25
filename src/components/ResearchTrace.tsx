@@ -1,10 +1,11 @@
-import { Loader2, CheckCircle2, Clock, Timer } from "lucide-react";
+import { Loader2, CheckCircle2, Clock, Timer, Zap, FlaskConical } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 
 interface ResearchTraceProps {
   steps: string[];
   currentStep: number;
   isComplete: boolean;
+  mode?: 'regular' | 'deep';
 }
 
 function formatTime(seconds: number) {
@@ -13,9 +14,10 @@ function formatTime(seconds: number) {
   return m > 0 ? `${m}m ${s.toString().padStart(2, "0")}s` : `${s}s`;
 }
 
-export function ResearchTrace({ steps, currentStep, isComplete }: ResearchTraceProps) {
+export function ResearchTrace({ steps, currentStep, isComplete, mode = 'regular' }: ResearchTraceProps) {
   const [elapsed, setElapsed] = useState(0);
   const stepTimestamps = useRef<number[]>([]);
+  const isDeep = mode === 'deep';
 
   // Track when each step starts
   useEffect(() => {
@@ -32,18 +34,34 @@ export function ResearchTrace({ steps, currentStep, isComplete }: ResearchTraceP
     return () => clearInterval(interval);
   }, [isComplete]);
 
-  // Estimate remaining time based on average time per completed step
+  // Estimate remaining time — deep mode has higher baseline
   const getEstimate = () => {
-    if (isComplete || currentStep === 0) return null;
+    if (isComplete) return null;
+    if (currentStep === 0) {
+      // Before any step completes, show baseline estimate
+      return isDeep ? 55 : 15;
+    }
     const avgPerStep = elapsed / currentStep;
     const remaining = Math.max(0, Math.round(avgPerStep * (steps.length - currentStep)));
     return remaining;
   };
 
   const estimate = getEstimate();
+  const progress = isComplete
+    ? 100
+    : Math.max(5, (currentStep / steps.length) * 100);
 
   return (
     <div className="space-y-4 py-4">
+      {/* Mode badge */}
+      {isDeep && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/5 border border-primary/10">
+          <FlaskConical className="h-4 w-4 text-primary" />
+          <span className="text-xs font-semibold text-primary">Deep Research Mode</span>
+          <span className="text-xs text-muted-foreground ml-auto">Multi-query exhaustive analysis • Takes 30-90s</span>
+        </div>
+      )}
+
       {/* Timer */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-muted-foreground">
@@ -69,12 +87,8 @@ export function ResearchTrace({ steps, currentStep, isComplete }: ResearchTraceP
       {/* Progress bar */}
       <div className="h-1.5 rounded-full bg-accent overflow-hidden">
         <div
-          className="h-full rounded-full bg-primary transition-all duration-500 ease-out"
-          style={{
-            width: isComplete
-              ? "100%"
-              : `${Math.max(5, (currentStep / steps.length) * 100)}%`,
-          }}
+          className={`h-full rounded-full transition-all duration-500 ease-out ${isDeep ? 'bg-gradient-to-r from-primary via-primary to-primary/70' : 'bg-primary'}`}
+          style={{ width: `${progress}%` }}
         />
       </div>
 
