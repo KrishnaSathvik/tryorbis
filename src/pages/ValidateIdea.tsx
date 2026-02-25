@@ -18,7 +18,9 @@ import { Bookmark, Lightbulb, ThumbsUp, ThumbsDown, Target, AlertTriangle, Send,
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { FileUpload } from "@/components/FileUpload";
-import { Attachment, imageToBase64 } from "@/lib/attachments";
+import { AttachmentPreview } from "@/components/AttachmentPreview";
+import { Attachment, imageToBase64, validateFile, getAttachmentType, readTextFile, extractPdfText } from "@/lib/attachments";
+import { useDropZone } from "@/hooks/useDropZone";
 
 const sectionTooltips: Record<string, string> = {
   verdict: "Overall recommendation based on market research, demand signals, and competitive analysis.",
@@ -95,6 +97,27 @@ export default function ValidateIdea() {
   const [report, setReport] = useState<Report | null>(null);
   const [validatingParams, setValidatingParams] = useState<{ ideaText: string } | null>(null);
   const [researchMode, setResearchMode] = useState<'regular' | 'deep'>('regular');
+
+  const processDroppedFiles = async (files: File[]) => {
+    const remaining = 3 - attachments.length;
+    if (remaining <= 0) return;
+    const results: Attachment[] = [];
+    for (const file of files.slice(0, remaining)) {
+      const error = validateFile(file);
+      if (error) continue;
+      const type = getAttachmentType(file);
+      if (!type) continue;
+      const att: Attachment = { id: crypto.randomUUID(), file, preview: URL.createObjectURL(file), type };
+      try {
+        if (type === "image") att.base64 = await imageToBase64(file);
+        else if (type === "text") att.base64 = await readTextFile(file);
+        else if (type === "pdf") att.base64 = await extractPdfText(file);
+      } catch { continue; }
+      results.push(att);
+    }
+    if (results.length) setAttachments(prev => [...prev, ...results]);
+  };
+  const { isDragging, dropZoneProps } = useDropZone({ onFiles: processDroppedFiles, disabled: isTyping });
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, isTyping]);
   useEffect(() => {
@@ -203,7 +226,12 @@ export default function ValidateIdea() {
 
   if (phase === 'chat') {
     return (
-      <div className="max-w-2xl mx-auto flex flex-col h-[calc(100vh-6rem)] animate-fade-in">
+      <div className={`max-w-2xl mx-auto flex flex-col h-[calc(100vh-6rem)] animate-fade-in relative ${isDragging ? 'ring-2 ring-primary/40 ring-inset rounded-2xl' : ''}`} {...dropZoneProps}>
+        {isDragging && (
+          <div className="absolute inset-0 z-50 bg-primary/5 backdrop-blur-sm flex items-center justify-center rounded-2xl pointer-events-none">
+            <p className="text-sm font-medium text-primary">Drop files here</p>
+          </div>
+        )}
         <div className="mb-4">
           <h1 className="text-3xl font-bold tracking-tight font-nunito">Validate an Idea</h1>
           <p className="text-muted-foreground mt-1">Tell me your idea — I'll research if it's worth building.</p>
@@ -242,20 +270,7 @@ export default function ValidateIdea() {
           )}
           {/* Attachment previews */}
           {attachments.length > 0 && (
-            <div className="flex gap-2 flex-wrap">
-              {attachments.map((att) => (
-                <div key={att.id} className="relative group">
-                  {att.type === "image" ? (
-                    <img src={att.preview} alt={att.file.name} className="h-12 w-12 rounded-lg object-cover border border-border/50" />
-                  ) : (
-                    <div className="h-12 w-12 rounded-lg border border-border/50 bg-secondary/50 flex items-center justify-center">
-                      <span className="text-[8px] text-muted-foreground font-medium">{att.file.name.split(".").pop()?.toUpperCase()}</span>
-                    </div>
-                  )}
-                  <button onClick={() => setAttachments(attachments.filter(a => a.id !== att.id))} className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[8px]">✕</button>
-                </div>
-              ))}
-            </div>
+            <AttachmentPreview attachments={attachments} onRemove={(id) => setAttachments(attachments.filter(a => a.id !== id))} />
           )}
           <div className="flex gap-2">
             <FileUpload attachments={attachments} onAttachmentsChange={setAttachments} disabled={isTyping} />

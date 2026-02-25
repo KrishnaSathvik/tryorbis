@@ -62,6 +62,51 @@ export function readTextFile(file: File): Promise<string> {
   });
 }
 
+/** Extract text from a PDF using pdf.js-like approach (basic binary text extraction) */
+export function extractPdfText(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const text = extractTextFromPdfBinary(reader.result as ArrayBuffer);
+        resolve(text || `[PDF: ${file.name} — content could not be extracted. The AI will analyze it if sent as an image.]`);
+      } catch {
+        resolve(`[PDF: ${file.name} — binary content, not directly readable]`);
+      }
+    };
+    reader.onerror = () => reject(new Error("Failed to read PDF"));
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+/** Basic PDF text extraction from binary — pulls text between BT/ET operators */
+function extractTextFromPdfBinary(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let raw = "";
+  for (let i = 0; i < bytes.length; i++) {
+    raw += String.fromCharCode(bytes[i]);
+  }
+  // Extract text between parentheses in BT...ET blocks
+  const textBlocks: string[] = [];
+  const btRegex = /BT\s([\s\S]*?)ET/g;
+  let match;
+  while ((match = btRegex.exec(raw)) !== null) {
+    const block = match[1];
+    const tjRegex = /\(([^)]*)\)/g;
+    let tjMatch;
+    while ((tjMatch = tjRegex.exec(block)) !== null) {
+      const decoded = tjMatch[1]
+        .replace(/\\n/g, "\n")
+        .replace(/\\r/g, "")
+        .replace(/\\\(/g, "(")
+        .replace(/\\\)/g, ")")
+        .replace(/\\\\/g, "\\");
+      if (decoded.trim()) textBlocks.push(decoded);
+    }
+  }
+  return textBlocks.join(" ").replace(/\s+/g, " ").trim().slice(0, 10000);
+}
+
 /** Build multimodal content array for the AI API */
 export function buildMultimodalContent(
   text: string,

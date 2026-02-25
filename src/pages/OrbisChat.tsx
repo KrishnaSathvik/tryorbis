@@ -18,7 +18,10 @@ import {
   HelpCircle,
 } from "lucide-react";
 import { FileUpload } from "@/components/FileUpload";
-import { Attachment, buildMultimodalContent } from "@/lib/attachments";
+import { AttachmentPreview } from "@/components/AttachmentPreview";
+import { ImagePreviewModal } from "@/components/ImagePreviewModal";
+import { Attachment, buildMultimodalContent, validateFile, getAttachmentType, imageToBase64, readTextFile, extractPdfText } from "@/lib/attachments";
+import { useDropZone } from "@/hooks/useDropZone";
 
 interface ChatMsg {
   role: "user" | "assistant";
@@ -46,6 +49,29 @@ export default function OrbisChat() {
   const [isStreaming, setIsStreaming] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  const processDroppedFiles = async (files: File[]) => {
+    const remaining = 3 - attachments.length;
+    if (remaining <= 0) return;
+    const results: Attachment[] = [];
+    for (const file of files.slice(0, remaining)) {
+      const error = validateFile(file);
+      if (error) continue;
+      const type = getAttachmentType(file);
+      if (!type) continue;
+      const att: Attachment = { id: crypto.randomUUID(), file, preview: URL.createObjectURL(file), type };
+      try {
+        if (type === "image") att.base64 = await imageToBase64(file);
+        else if (type === "text") att.base64 = await readTextFile(file);
+        else if (type === "pdf") att.base64 = await extractPdfText(file);
+      } catch { continue; }
+      results.push(att);
+    }
+    if (results.length) setAttachments(prev => [...prev, ...results]);
+  };
+
+  const { isDragging, dropZoneProps } = useDropZone({ onFiles: processDroppedFiles, disabled: isStreaming });
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -213,7 +239,12 @@ export default function OrbisChat() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-7rem)] sm:h-[calc(100vh-8rem)] max-w-3xl mx-auto animate-fade-in overflow-hidden">
+    <div className={`flex flex-col h-[calc(100vh-7rem)] sm:h-[calc(100vh-8rem)] max-w-3xl mx-auto animate-fade-in overflow-hidden relative ${isDragging ? 'ring-2 ring-primary/40 ring-inset rounded-2xl' : ''}`} {...dropZoneProps}>
+      {isDragging && (
+        <div className="absolute inset-0 z-50 bg-primary/5 backdrop-blur-sm flex items-center justify-center rounded-2xl pointer-events-none">
+          <p className="text-sm font-medium text-primary">Drop files here</p>
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-center justify-between py-4 px-1">
         <div className="flex items-center gap-2.5">
@@ -298,7 +329,7 @@ export default function OrbisChat() {
                             {imageUrls.length > 0 && (
                               <div className="flex gap-1.5 mt-2 flex-wrap">
                                 {imageUrls.map((url: string, idx: number) => (
-                                  <img key={idx} src={url} alt="Attached" className="h-16 w-16 rounded-lg object-cover border border-primary-foreground/20" />
+                                  <img key={idx} src={url} alt="Attached" className="h-16 w-16 rounded-lg object-cover border border-primary-foreground/20 cursor-pointer hover:ring-2 hover:ring-primary-foreground/40 transition-all" onClick={() => setPreviewImage(url)} />
                                 ))}
                               </div>
                             )}
@@ -362,22 +393,8 @@ export default function OrbisChat() {
       <div className="py-3 sm:py-4 px-1 shrink-0">
         <div className="rounded-2xl border border-border/50 bg-background shadow-sm focus-within:border-primary/30 focus-within:shadow-md focus-within:shadow-primary/5 transition-all">
           {attachments.length > 0 && (
-            <div className="px-3 pt-2.5 flex gap-2 flex-wrap">
-              {attachments.map((att) => (
-                <div key={att.id} className="relative group">
-                  {att.type === "image" ? (
-                    <img src={att.preview} alt={att.file.name} className="h-14 w-14 rounded-lg object-cover border border-border/50" />
-                  ) : (
-                    <div className="h-14 w-14 rounded-lg border border-border/50 bg-secondary/50 flex flex-col items-center justify-center">
-                      <span className="text-[9px] text-muted-foreground font-medium">{att.file.name.split(".").pop()?.toUpperCase()}</span>
-                    </div>
-                  )}
-                  <button
-                    onClick={() => setAttachments(attachments.filter((a) => a.id !== att.id))}
-                    className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm text-[10px]"
-                  >✕</button>
-                </div>
-              ))}
+            <div className="px-3 pt-2.5">
+              <AttachmentPreview attachments={attachments} onRemove={(id) => setAttachments(attachments.filter(a => a.id !== id))} size="md" />
             </div>
           )}
           <div className="flex items-end gap-1.5 p-1.5">
@@ -406,6 +423,7 @@ export default function OrbisChat() {
           Orbis AI may make mistakes. Validate important insights.
         </p>
       </div>
+      <ImagePreviewModal src={previewImage} onClose={() => setPreviewImage(null)} />
     </div>
   );
 }
