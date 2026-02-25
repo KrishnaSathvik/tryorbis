@@ -17,6 +17,8 @@ import { toast } from "sonner";
 import { Bookmark, Lightbulb, ThumbsUp, ThumbsDown, Target, AlertTriangle, Send, Search, Globe, Rocket, RefreshCw, XOctagon, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { FileUpload } from "@/components/FileUpload";
+import { Attachment, imageToBase64 } from "@/lib/attachments";
 
 const sectionTooltips: Record<string, string> = {
   verdict: "Overall recommendation based on market research, demand signals, and competitive analysis.",
@@ -83,8 +85,9 @@ export default function ValidateIdea() {
 
   const prefilled = searchParams.get('idea') || "";
   const [inputValue, setInputValue] = useState(prefilled);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { id: '1', role: 'assistant', text: "Describe your idea and I'll validate it — checking demand, competition, and feasibility." },
+    { id: '1', role: 'assistant', text: "Describe your idea and I'll validate it — checking demand, competition, and feasibility. You can also attach competitor screenshots or market data." },
   ]);
   const [isTyping, setIsTyping] = useState(false);
   const [phase, setPhase] = useState<'chat' | 'researching' | 'results'>('chat');
@@ -138,8 +141,27 @@ export default function ValidateIdea() {
     if (!hasCredits) { toast.error("You're out of credits. Contact support to get more."); return; }
     setPhase('researching'); setCurrentStep(0);
     try {
+      // If there are image attachments, analyze them first via Gemini
+      let imageContext = "";
+      const imageAttachments = attachments.filter(a => a.type === "image" && a.base64);
+      if (imageAttachments.length > 0) {
+        try {
+          const { data: analysisData, error: analysisError } = await supabase.functions.invoke('analyze-images', {
+            body: { images: imageAttachments.map(a => a.base64), context: `Validating startup idea: "${ideaText}"` },
+          });
+          if (!analysisError && analysisData?.analysis) {
+            imageContext = `\n\nVisual context from user-provided images:\n${analysisData.analysis}`;
+          }
+        } catch (e) { console.error("Image analysis failed:", e); }
+      }
+      // Include text file content
+      const textAttachments = attachments.filter(a => a.type === "text" && a.base64);
+      textAttachments.forEach(a => {
+        imageContext += `\n\nAttached file (${a.file.name}):\n${a.base64!.slice(0, 5000)}`;
+      });
+
       const stepInterval = setInterval(() => { setCurrentStep(prev => { if (prev >= researchSteps.length - 1) { clearInterval(stepInterval); return prev; } return prev + 1; }); }, 3500);
-      const { data, error } = await supabase.functions.invoke('perplexity-validate', { body: { ideaText, mode: researchMode } });
+      const { data, error } = await supabase.functions.invoke('perplexity-validate', { body: { ideaText: ideaText + imageContext, mode: researchMode } });
       clearInterval(stepInterval); setCurrentStep(researchSteps.length);
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -175,8 +197,8 @@ export default function ValidateIdea() {
   };
 
   const resetChat = () => {
-    setMessages([{ id: '1', role: 'assistant', text: "Describe your idea and I'll validate it — checking demand, competition, and feasibility." }]);
-    setInputValue(""); setPhase('chat'); setReport(null); setIsTyping(false); setValidatingParams(null);
+    setMessages([{ id: '1', role: 'assistant', text: "Describe your idea and I'll validate it — checking demand, competition, and feasibility. You can also attach competitor screenshots or market data." }]);
+    setInputValue(""); setPhase('chat'); setReport(null); setIsTyping(false); setValidatingParams(null); setAttachments([]);
   };
 
   if (phase === 'chat') {
@@ -218,8 +240,26 @@ export default function ValidateIdea() {
               </Button>
             </div>
           )}
+          {/* Attachment previews */}
+          {attachments.length > 0 && (
+            <div className="flex gap-2 flex-wrap">
+              {attachments.map((att) => (
+                <div key={att.id} className="relative group">
+                  {att.type === "image" ? (
+                    <img src={att.preview} alt={att.file.name} className="h-12 w-12 rounded-lg object-cover border border-border/50" />
+                  ) : (
+                    <div className="h-12 w-12 rounded-lg border border-border/50 bg-secondary/50 flex items-center justify-center">
+                      <span className="text-[8px] text-muted-foreground font-medium">{att.file.name.split(".").pop()?.toUpperCase()}</span>
+                    </div>
+                  )}
+                  <button onClick={() => setAttachments(attachments.filter(a => a.id !== att.id))} className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[8px]">✕</button>
+                </div>
+              ))}
+            </div>
+          )}
           <div className="flex gap-2">
-            <Input ref={inputRef} value={inputValue} onChange={e => setInputValue(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleUserInput()} placeholder={validatingParams ? "Add more context or hit Start Validation..." : "e.g. AI tool that tracks subscriptions and suggests ways to save money..."} className="flex-1 rounded-xl" autoFocus disabled={isTyping} />
+            <FileUpload attachments={attachments} onAttachmentsChange={setAttachments} disabled={isTyping} />
+            <Input ref={inputRef} value={inputValue} onChange={e => setInputValue(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleUserInput()} placeholder={validatingParams ? "Add more context or hit Start Validation..." : "e.g. AI tool that tracks subscriptions..."} className="flex-1 rounded-xl" autoFocus disabled={isTyping} />
             <Button size="icon" className="rounded-xl" onClick={() => handleUserInput()} disabled={!inputValue.trim() || isTyping}><Send className="h-4 w-4" /></Button>
           </div>
         </div>
