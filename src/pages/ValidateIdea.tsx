@@ -277,8 +277,8 @@ export default function ValidateIdea() {
           )}
           <div className="flex gap-2">
             <FileUpload attachments={attachments} onAttachmentsChange={setAttachments} disabled={isTyping} />
-            <VoiceButton isListening={voice.isListening} isSupported={voice.isSupported} onStart={() => voice.startListening()} onStop={() => voice.stopListening()} disabled={isTyping} />
             <Input ref={inputRef} value={inputValue} onChange={e => setInputValue(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleUserInput()} placeholder={voice.isListening ? "Listening..." : validatingParams ? "Add more context or hit Start Validation..." : "e.g. AI tool that tracks subscriptions..."} className="flex-1 rounded-xl" autoFocus disabled={isTyping} />
+            <VoiceButton isListening={voice.isListening} isSupported={voice.isSupported} onStart={() => voice.startListening()} onStop={() => voice.stopListening()} disabled={isTyping} />
             <Button size="icon" className="rounded-xl" onClick={() => handleUserInput()} disabled={!inputValue.trim() || isTyping}><Send className="h-4 w-4" /></Button>
           </div>
         </div>

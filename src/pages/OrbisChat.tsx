@@ -407,13 +407,6 @@ export default function OrbisChat() {
           )}
           <div className="flex items-end gap-1.5 p-1.5">
             <FileUpload attachments={attachments} onAttachmentsChange={setAttachments} disabled={isStreaming} />
-            <VoiceButton
-              isListening={voice.isListening}
-              isSupported={voice.isSupported}
-              onStart={() => voice.startListening()}
-              onStop={() => voice.stopListening()}
-              disabled={isStreaming}
-            />
             <textarea
               ref={inputRef}
               value={input}
@@ -422,6 +415,13 @@ export default function OrbisChat() {
               placeholder={voice.isListening ? "Listening..." : "Ask Orbis anything..."}
               rows={1}
               className="flex-1 resize-none bg-transparent px-3 py-2.5 text-sm placeholder:text-muted-foreground/40 focus:outline-none disabled:opacity-50"
+              disabled={isStreaming}
+            />
+            <VoiceButton
+              isListening={voice.isListening}
+              isSupported={voice.isSupported}
+              onStart={() => voice.startListening()}
+              onStop={() => voice.stopListening()}
               disabled={isStreaming}
             />
             <Button
