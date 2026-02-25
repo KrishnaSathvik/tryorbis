@@ -21,6 +21,10 @@
 - **User-Aware Context** — Orbis AI dynamically adapts advice based on your account type (guest vs registered), remaining credits, and activity.
 - **Platform-Aware** — Can explain all Orbis features, guide you to the right tool, and suggest next steps based on your research progress.
 - **AI Handoff** — Export your research context to ChatGPT, Claude, Gemini, Cursor, or Codex with one click.
+- **Image & File Understanding** — Attach up to 10 images or files per message. Orbis AI can analyze screenshots, mockups, PDFs, and text files alongside your questions.
+- **Voice Input** — Speak your questions using the built-in voice button (Web Speech API — no API key required). Works in Chrome, Edge, Safari, and PWA.
+- **Smart Model Routing** — Automatically selects the right AI model based on query complexity (fast model for simple questions, powerful model for deep analysis).
+- **Drag & Drop Uploads** — Drag files directly into any chat input area for quick attachment.
 
 ### 10-Dimension Market Intelligence
 Every research run includes up to 10 intelligence layers:
@@ -64,6 +68,7 @@ Every research run includes up to 10 intelligence layers:
 - **Account Deletion** — Full data sweep (backlog, research, conversations, chat messages, profile) with typed "DELETE" confirmation.
 - **Observability Logging** — Latency, error rates, and provider tracking across all AI functions.
 - **Dark / Light Theme** — Full theme support with system preference detection.
+- **PWA Support** — Install Orbis to your home screen for a native app experience, including voice input.
 - **Anti-Abuse** — Device fingerprinting and signup limits (3 per device).
 
 ### Security
@@ -76,7 +81,8 @@ Every research run includes up to 10 intelligence layers:
 - **Frontend:** React 18 · TypeScript · Vite · Tailwind CSS · shadcn/ui · Recharts · Framer Motion
 - **Backend:** Lovable Cloud (database, auth, edge functions, secrets)
 - **AI Research:** Perplexity Sonar Pro (regular) · Sonar Deep Research (deep mode)
-- **AI Advisor:** Google Gemini 3 Flash Preview (chat) · Gemini 2.5 Pro (deep analysis)
+- **AI Advisor:** Google Gemini 3 Flash Preview (simple queries) · Gemini 2.5 Pro (complex analysis)
+- **Voice:** Web Speech API (browser-native, zero-cost)
 - **Routing:** React Router v6
 
 ## Pages
@@ -103,9 +109,21 @@ Every research run includes up to 10 intelligence layers:
 | `chat-generate` | Follow-up chat on generation results |
 | `chat-validate` | Follow-up chat on validation results |
 | `chat-followup` | General follow-up conversations |
-| `orbis-chat` | Personalized Orbis AI advisor (with user context) |
+| `orbis-chat` | Personalized Orbis AI advisor with smart model routing and multimodal support |
 | `community-stats` | Aggregated community statistics (public) |
 | `delete-account` | Full account deletion with service role data sweep |
+| `analyze-images` | Image analysis for attached screenshots and mockups |
+
+## Changelog
+
+### v2.5 — Feb 2026
+- **Voice Input** — Added browser-native voice-to-text input across all chat interfaces (Orbis Chat, Generate Ideas, Validate Idea). Uses Web Speech API — no API key needed. Works on desktop, mobile, and PWA.
+- **Multi-File Upload (up to 10)** — Increased attachment limit from 3 to 10 files per message. Supports images (JPEG, PNG, WebP, GIF), PDFs, and text files (TXT, CSV).
+- **Drag & Drop** — Drag files directly into any chat input area with a visual drop zone overlay.
+- **Image Support in Orbis AI** — Orbis Chat now accepts and analyzes images alongside text. Ask questions about screenshots, mockups, competitor UIs, or data visualizations.
+- **Smart Model Routing** — Orbis AI automatically picks the optimal model based on query complexity — fast responses for simple questions, deep analysis for complex strategy queries.
+- **Multimodal Content Fix** — Fixed edge function crashes when sending images (content format handling for multipart messages).
+- **Input Layout Refinement** — Voice button repositioned next to the send button for a cleaner input bar layout across all chat pages.
 
 ## Getting Started
 
@@ -127,12 +145,12 @@ src/
 │   ├── landing/       # Landing page sections (charts, leaderboard)
 │   └── ui/            # shadcn/ui primitives
 ├── contexts/          # Auth context (session, profile, guest mode)
-├── hooks/             # Custom hooks (credits, page title, mobile detection)
-├── lib/               # Database helpers, types, utilities
+├── hooks/             # Custom hooks (credits, page title, mobile detection, voice input, drop zone)
+├── lib/               # Database helpers, types, utilities, attachment processing
 ├── pages/             # Route pages
 └── integrations/      # Backend client config
 supabase/
-└── functions/         # Edge functions (AI endpoints, stats)
+└── functions/         # Edge functions (AI endpoints, stats, image analysis)
 public/
 ├── manifest.json      # PWA manifest
 ├── sitemap.xml        # SEO sitemap
