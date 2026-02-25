@@ -10,7 +10,7 @@ interface FileUploadProps {
   maxFiles?: number;
 }
 
-export function FileUpload({ attachments, onAttachmentsChange, disabled, maxFiles = 3 }: FileUploadProps) {
+export function FileUpload({ attachments, onAttachmentsChange, disabled, maxFiles = 10 }: FileUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const processFile = useCallback(async (file: File) => {

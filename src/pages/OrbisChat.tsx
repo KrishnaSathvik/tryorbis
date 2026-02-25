@@ -54,7 +54,7 @@ export default function OrbisChat() {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const processDroppedFiles = async (files: File[]) => {
-    const remaining = 3 - attachments.length;
+    const remaining = 10 - attachments.length;
     if (remaining <= 0) return;
     const results: Attachment[] = [];
     for (const file of files.slice(0, remaining)) {
