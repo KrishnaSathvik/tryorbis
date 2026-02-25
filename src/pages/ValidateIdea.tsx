@@ -21,6 +21,8 @@ import { FileUpload } from "@/components/FileUpload";
 import { AttachmentPreview } from "@/components/AttachmentPreview";
 import { Attachment, imageToBase64, validateFile, getAttachmentType, readTextFile, extractPdfText } from "@/lib/attachments";
 import { useDropZone } from "@/hooks/useDropZone";
+import { useVoiceInput } from "@/hooks/useVoiceInput";
+import { VoiceButton } from "@/components/VoiceButton";
 
 const sectionTooltips: Record<string, string> = {
   verdict: "Overall recommendation based on market research, demand signals, and competitive analysis.",
@@ -118,6 +120,7 @@ export default function ValidateIdea() {
     if (results.length) setAttachments(prev => [...prev, ...results]);
   };
   const { isDragging, dropZoneProps } = useDropZone({ onFiles: processDroppedFiles, disabled: isTyping });
+  const voice = useVoiceInput({ onResult: (transcript) => handleUserInput(transcript) });
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, isTyping]);
   useEffect(() => {
@@ -274,7 +277,8 @@ export default function ValidateIdea() {
           )}
           <div className="flex gap-2">
             <FileUpload attachments={attachments} onAttachmentsChange={setAttachments} disabled={isTyping} />
-            <Input ref={inputRef} value={inputValue} onChange={e => setInputValue(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleUserInput()} placeholder={validatingParams ? "Add more context or hit Start Validation..." : "e.g. AI tool that tracks subscriptions..."} className="flex-1 rounded-xl" autoFocus disabled={isTyping} />
+            <VoiceButton isListening={voice.isListening} isSupported={voice.isSupported} onStart={() => voice.startListening()} onStop={() => voice.stopListening()} disabled={isTyping} />
+            <Input ref={inputRef} value={inputValue} onChange={e => setInputValue(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleUserInput()} placeholder={voice.isListening ? "Listening..." : validatingParams ? "Add more context or hit Start Validation..." : "e.g. AI tool that tracks subscriptions..."} className="flex-1 rounded-xl" autoFocus disabled={isTyping} />
             <Button size="icon" className="rounded-xl" onClick={() => handleUserInput()} disabled={!inputValue.trim() || isTyping}><Send className="h-4 w-4" /></Button>
           </div>
         </div>
