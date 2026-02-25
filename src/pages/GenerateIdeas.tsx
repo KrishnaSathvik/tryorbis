@@ -23,6 +23,8 @@ import { FileUpload } from "@/components/FileUpload";
 import { AttachmentPreview } from "@/components/AttachmentPreview";
 import { Attachment, validateFile, getAttachmentType, imageToBase64, readTextFile, extractPdfText } from "@/lib/attachments";
 import { useDropZone } from "@/hooks/useDropZone";
+import { useVoiceInput } from "@/hooks/useVoiceInput";
+import { VoiceButton } from "@/components/VoiceButton";
 
 const researchSteps = [
   "Mining complaints from Reddit, forums & reviews...",
@@ -82,6 +84,15 @@ export default function GenerateIdeas() {
     if (results.length) setAttachments(prev => [...prev, ...results]);
   };
   const { isDragging, dropZoneProps } = useDropZone({ onFiles: processDroppedFiles, disabled: isTyping });
+  const voice = useVoiceInput({
+    onResult: (transcript) => {
+      setInputValue("");
+      const userMsg: ChatMessage = { id: crypto.randomUUID(), role: 'user', text: transcript };
+      const updated = [...messages, userMsg];
+      setMessages(updated);
+      sendToAI(updated);
+    },
+  });
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, isTyping]);
 
@@ -226,7 +237,8 @@ export default function GenerateIdeas() {
           )}
           <div className="flex gap-2">
             <FileUpload attachments={attachments} onAttachmentsChange={setAttachments} disabled={isTyping} />
-            <Input ref={inputRef} value={inputValue} onChange={e => setInputValue(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleUserInput()} placeholder={generatingParams ? "Add more context or hit Start Research..." : "e.g. I want to build a SQL prompt buddy for devs..."} className="flex-1 rounded-xl" autoFocus disabled={isTyping} />
+            <VoiceButton isListening={voice.isListening} isSupported={voice.isSupported} onStart={() => voice.startListening()} onStop={() => voice.stopListening()} disabled={isTyping} />
+            <Input ref={inputRef} value={inputValue} onChange={e => setInputValue(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleUserInput()} placeholder={voice.isListening ? "Listening..." : generatingParams ? "Add more context or hit Start Research..." : "e.g. I want to build a SQL prompt buddy for devs..."} className="flex-1 rounded-xl" autoFocus disabled={isTyping} />
             <Button size="icon" className="rounded-xl" onClick={handleUserInput} disabled={!inputValue.trim() || isTyping}><Send className="h-4 w-4" /></Button>
           </div>
         </div>
