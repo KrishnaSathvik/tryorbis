@@ -101,7 +101,7 @@ export default function ValidateIdea() {
   const [researchMode, setResearchMode] = useState<'regular' | 'deep'>('regular');
 
   const processDroppedFiles = async (files: File[]) => {
-    const remaining = 3 - attachments.length;
+    const remaining = 10 - attachments.length;
     if (remaining <= 0) return;
     const results: Attachment[] = [];
     for (const file of files.slice(0, remaining)) {
