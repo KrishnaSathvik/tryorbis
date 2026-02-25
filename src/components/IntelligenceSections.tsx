@@ -9,14 +9,14 @@ import type { WtpSignals, CompetitionDensity, MarketTiming, ICP, WorkaroundDetec
 const formatLabel = (key: string): string =>
   key.replace(/[_-]/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/\b\w/g, c => c.toUpperCase());
 
-const CARD_CLASS = "rounded-2xl border-border/50 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300";
-const CONTENT_CLASS = "p-6 space-y-4";
-const HEADER_CLASS = "flex items-center justify-between";
-const TITLE_ROW_CLASS = "flex items-center gap-2";
-const TITLE_CLASS = "font-semibold font-nunito";
-const SUMMARY_CLASS = "text-sm text-muted-foreground leading-relaxed";
-const DETAIL_LABEL_CLASS = "font-medium text-foreground";
-const DETAIL_VALUE_CLASS = "text-muted-foreground";
+const CARD_CLASS = "rounded-2xl border-border/50 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 overflow-hidden";
+const CONTENT_CLASS = "p-4 sm:p-6 space-y-3 sm:space-y-4";
+const HEADER_CLASS = "flex items-start sm:items-center justify-between gap-2";
+const TITLE_ROW_CLASS = "flex items-center gap-2 min-w-0";
+const TITLE_CLASS = "font-semibold font-nunito text-sm sm:text-base";
+const SUMMARY_CLASS = "text-xs sm:text-sm text-muted-foreground leading-relaxed";
+const DETAIL_LABEL_CLASS = "font-medium text-foreground text-xs sm:text-sm";
+const DETAIL_VALUE_CLASS = "text-muted-foreground text-xs sm:text-sm";
 const PILL_CLASS = "bg-secondary px-3 py-1 rounded-full text-xs font-medium";
 const PILL_PRIMARY_CLASS = "bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-medium";
 
@@ -222,7 +222,7 @@ export function IcpSection({ data }: { data: ICP }) {
           <h3 className={TITLE_CLASS}>Ideal Customer Profile</h3>
         </div>
         <p className={SUMMARY_CLASS}>{data.summary}</p>
-        <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 text-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
           <div><span className={DETAIL_LABEL_CLASS}>Type:</span> <span className={DETAIL_VALUE_CLASS}>{data.businessType}</span></div>
           <div><span className={DETAIL_LABEL_CLASS}>Size:</span> <span className={DETAIL_VALUE_CLASS}>{data.companySize}</span></div>
           <div><span className={DETAIL_LABEL_CLASS}>Revenue:</span> <span className={DETAIL_VALUE_CLASS}>{data.revenueRange}</span></div>
@@ -348,11 +348,11 @@ export function FeatureGapSection({ data }: { data: FeatureGapMap }) {
         {data.gaps?.length > 0 && (
           <div className="space-y-2 pt-1">
             {data.gaps.slice(0, 5).map((g, i) => (
-              <div key={i} className="flex items-center justify-between text-sm">
-                <span className={`${DETAIL_LABEL_CLASS} truncate mr-3`}>{g.feature}</span>
-                <div className="flex items-center gap-3 shrink-0">
+              <div key={i} className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-sm gap-1 sm:gap-0">
+                <span className={`${DETAIL_LABEL_CLASS} truncate`}>{g.feature}</span>
+                <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                   <span className={DETAIL_VALUE_CLASS}>{coverageLabels[g.competitorCoverage] || formatLabel(g.competitorCoverage)}</span>
-                  <span className={`font-medium capitalize ${opportunityColors[g.opportunity] || ''}`}>
+                  <span className={`font-medium capitalize text-xs ${opportunityColors[g.opportunity] || ''}`}>
                     {g.opportunity === 'high' ? '★ High' : g.opportunity === 'medium' ? '◆ Med' : '○ Low'}
                   </span>
                 </div>
@@ -494,9 +494,9 @@ export function PricingBenchmarkSection({ data }: { data: PricingBenchmarks }) {
         {data.benchmarks?.length > 0 && (
           <div className="space-y-2 pt-1">
             {data.benchmarks.slice(0, 4).map((b, i) => (
-              <div key={i} className="flex items-center justify-between text-sm">
-                <span className={`${DETAIL_LABEL_CLASS} truncate mr-3`}>{b.tool}</span>
-                <div className="flex items-center gap-3 shrink-0">
+              <div key={i} className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-sm gap-1 sm:gap-0">
+                <span className={`${DETAIL_LABEL_CLASS} truncate`}>{b.tool}</span>
+                <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                   <span className={DETAIL_VALUE_CLASS}>{b.price}</span>
                   <span className="text-muted-foreground/60 text-xs">{b.model}</span>
                 </div>

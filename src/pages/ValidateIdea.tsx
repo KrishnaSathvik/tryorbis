@@ -241,12 +241,12 @@ export default function ValidateIdea() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight font-nunito">Validation Report</h1>
-          <p className="text-muted-foreground mt-1 max-w-lg truncate">{report?.ideaText}</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight font-nunito">Validation Report</h1>
+          <p className="text-muted-foreground mt-1 text-sm truncate">{report?.ideaText}</p>
         </div>
-        <Button variant="outline" className="rounded-full" onClick={resetChat}>New Validation</Button>
+        <Button variant="outline" className="rounded-full shrink-0" onClick={resetChat}>New Validation</Button>
       </div>
 
       <div className="grid md:grid-cols-3 gap-4">
@@ -329,7 +329,7 @@ export default function ValidateIdea() {
       {(report!.wtpSignals || report!.competitionDensity || report!.marketTiming || report!.icp || report!.workaroundDetection || report!.featureGapMap || report!.platformRisk || report!.gtmStrategy || report!.pricingBenchmarks || report!.defensibility) && (
         <div>
           <h2 className="text-lg font-semibold font-nunito mb-4 flex items-center gap-2">Market Intelligence <SectionTooltip id="marketIntelligence" /></h2>
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {report!.wtpSignals && <WtpSection data={report!.wtpSignals} />}
             {report!.competitionDensity && <CompetitionDensitySection data={report!.competitionDensity} />}
             {report!.marketTiming && <MarketTimingSection data={report!.marketTiming} />}
