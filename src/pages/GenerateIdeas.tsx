@@ -19,6 +19,8 @@ import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Info } from "lucide-react";
 import type { WtpSignals, CompetitionDensity, MarketTiming, ICP, WorkaroundDetection, FeatureGapMap, PlatformRisk, GtmStrategy, PricingBenchmarks, DefensibilityAnalysis } from "@/lib/types";
+import { FileUpload } from "@/components/FileUpload";
+import { Attachment } from "@/lib/attachments";
 
 const researchSteps = [
   "Mining complaints from Reddit, forums & reviews...",
@@ -47,9 +49,10 @@ export default function GenerateIdeas() {
   const { hasCredits, deductCredit } = useCredits();
 
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { id: '1', role: 'assistant', text: "What kind of product or problem are you thinking about? Describe your idea and I'll find real problems and opportunities." },
+    { id: '1', role: 'assistant', text: "What kind of product or problem are you thinking about? You can also attach screenshots or files for context." },
   ]);
   const [inputValue, setInputValue] = useState("");
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [phase, setPhase] = useState<'chat' | 'researching' | 'results'>('chat');
   const [researchStep, setResearchStep] = useState(0);
   const [result, setResult] = useState<GeneratorResult | null>(null);
@@ -95,9 +98,28 @@ export default function GenerateIdeas() {
     if (!hasCredits) { toast.error("You're out of credits. Contact support to get more."); return; }
     setPhase('researching'); setResearchStep(0);
     try {
+      // Analyze image attachments via Gemini
+      let imageContext = "";
+      const imageAttachments = attachments.filter(a => a.type === "image" && a.base64);
+      if (imageAttachments.length > 0) {
+        try {
+          const { data: analysisData, error: analysisError } = await supabase.functions.invoke('analyze-images', {
+            body: { images: imageAttachments.map(a => a.base64), context: `Generating ideas for: ${params.persona} in ${params.category}` },
+          });
+          if (!analysisError && analysisData?.analysis) {
+            imageContext = analysisData.analysis;
+          }
+        } catch (e) { console.error("Image analysis failed:", e); }
+      }
+      // Include text file content
+      const textAttachments = attachments.filter(a => a.type === "text" && a.base64);
+      textAttachments.forEach(a => {
+        imageContext += `\n\nAttached file (${a.file.name}):\n${a.base64!.slice(0, 5000)}`;
+      });
+
       const stepInterval = setInterval(() => { setResearchStep(prev => { if (prev >= researchSteps.length - 1) { clearInterval(stepInterval); return prev; } return prev + 1; }); }, 3500);
       const { data, error } = await supabase.functions.invoke('perplexity-generate', {
-        body: { persona: params.persona, category: params.category, region: params.region || undefined, platform: params.platform || undefined, context: params.context || undefined, mode: researchMode },
+        body: { persona: params.persona, category: params.category, region: params.region || undefined, platform: params.platform || undefined, context: (params.context || "") + (imageContext ? `\n\nVisual/file context:\n${imageContext}` : ""), mode: researchMode },
       });
       clearInterval(stepInterval); setResearchStep(researchSteps.length);
       if (error) throw error;
@@ -124,8 +146,8 @@ export default function GenerateIdeas() {
   const handleValidate = (idea: any) => { navigate(`/validate?idea=${encodeURIComponent(idea.name + ': ' + idea.description)}`); };
 
   const resetChat = () => {
-    setMessages([{ id: '1', role: 'assistant', text: "What kind of product or problem are you thinking about? Describe your idea and I'll find real problems and opportunities." }]);
-    setInputValue(""); setPhase('chat'); setResult(null); setGeneratingParams(null);
+    setMessages([{ id: '1', role: 'assistant', text: "What kind of product or problem are you thinking about? You can also attach screenshots or files for context." }]);
+    setInputValue(""); setPhase('chat'); setResult(null); setGeneratingParams(null); setAttachments([]);
   };
 
   if (phase === 'chat') {
@@ -170,7 +192,25 @@ export default function GenerateIdeas() {
               </Button>
             </div>
           )}
+          {/* Attachment previews */}
+          {attachments.length > 0 && (
+            <div className="flex gap-2 flex-wrap">
+              {attachments.map((att) => (
+                <div key={att.id} className="relative group">
+                  {att.type === "image" ? (
+                    <img src={att.preview} alt={att.file.name} className="h-12 w-12 rounded-lg object-cover border border-border/50" />
+                  ) : (
+                    <div className="h-12 w-12 rounded-lg border border-border/50 bg-secondary/50 flex items-center justify-center">
+                      <span className="text-[8px] text-muted-foreground font-medium">{att.file.name.split(".").pop()?.toUpperCase()}</span>
+                    </div>
+                  )}
+                  <button onClick={() => setAttachments(attachments.filter(a => a.id !== att.id))} className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[8px]">✕</button>
+                </div>
+              ))}
+            </div>
+          )}
           <div className="flex gap-2">
+            <FileUpload attachments={attachments} onAttachmentsChange={setAttachments} disabled={isTyping} />
             <Input ref={inputRef} value={inputValue} onChange={e => setInputValue(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleUserInput()} placeholder={generatingParams ? "Add more context or hit Start Research..." : "e.g. I want to build a SQL prompt buddy for devs..."} className="flex-1 rounded-xl" autoFocus disabled={isTyping} />
             <Button size="icon" className="rounded-xl" onClick={handleUserInput} disabled={!inputValue.trim() || isTyping}><Send className="h-4 w-4" /></Button>
           </div>
