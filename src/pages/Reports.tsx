@@ -156,7 +156,7 @@ export default function Reports() {
                 <Collapsible key={idx}>
                   <Card className="rounded-2xl border-border/50 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
                     <CollapsibleTrigger className="w-full">
-                      <CardContent className="p-5 flex items-center justify-between gap-4">
+                      <CardContent className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div className="flex items-center gap-3 min-w-0">
                           <div className="h-9 w-9 rounded-xl bg-secondary flex items-center justify-center shrink-0 shadow-sm">
                             {item.type === "run" ? <Lightbulb className="h-4 w-4 text-primary" /> : <ClipboardCheck className="h-4 w-4 text-primary" />}
@@ -170,7 +170,7 @@ export default function Reports() {
                             <p className="text-xs text-muted-foreground mt-0.5">{new Date(item.date).toLocaleDateString()}</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex items-center gap-2 shrink-0 ml-12 sm:ml-0">
                           <Badge variant="secondary" className="text-[10px] uppercase tracking-wider rounded-full">
                             {item.type === "run" ? "Generator" : "Validation"}
                           </Badge>
@@ -454,7 +454,7 @@ function ValidationReportDetails({ data, onSaveIdea }: { data: any; onSaveIdea: 
       {data.market_sizing && (
         <div>
           <h3 className="text-sm font-semibold font-nunito mb-2 flex items-center gap-2"><Globe className="h-4 w-4 text-primary" /> Market Sizing</h3>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {[
               { label: 'TAM', value: data.market_sizing.tam },
               { label: 'SAM', value: data.market_sizing.sam },
@@ -541,7 +541,7 @@ function IntelligenceLayers({ data }: { data: any }) {
   return (
     <div>
       <h3 className="text-sm font-semibold font-nunito mb-3">Market Intelligence</h3>
-      <div className="grid sm:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {data.wtp_signals && <WtpSection data={data.wtp_signals} />}
         {data.competition_density && <CompetitionDensitySection data={data.competition_density} />}
         {data.market_timing && <MarketTimingSection data={data.market_timing} />}
