@@ -9,8 +9,20 @@ const corsHeaders = {
 
 // ─── Smart Model Routing ───
 // Classify query complexity to pick the right model
-function classifyQuery(messages: Array<{ role: string; content: string }>): "simple" | "complex" {
-  const lastUserMsg = [...messages].reverse().find((m) => m.role === "user")?.content?.toLowerCase() || "";
+function classifyQuery(messages: Array<{ role: string; content: any }>): "simple" | "complex" {
+  const lastMsg = [...messages].reverse().find((m) => m.role === "user");
+  let lastUserMsg = "";
+  if (lastMsg) {
+    if (typeof lastMsg.content === "string") {
+      lastUserMsg = lastMsg.content.toLowerCase();
+    } else if (Array.isArray(lastMsg.content)) {
+      lastUserMsg = lastMsg.content
+        .filter((p: any) => p.type === "text")
+        .map((p: any) => p.text || "")
+        .join(" ")
+        .toLowerCase();
+    }
+  }
   
   const complexSignals = [
     "strategy", "gtm", "go-to-market", "pricing model", "business model",
