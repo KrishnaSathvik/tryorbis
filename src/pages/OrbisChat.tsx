@@ -17,10 +17,12 @@ import {
   Rocket,
   HelpCircle,
 } from "lucide-react";
+import { FileUpload } from "@/components/FileUpload";
+import { Attachment, buildMultimodalContent } from "@/lib/attachments";
 
 interface ChatMsg {
   role: "user" | "assistant";
-  content: string;
+  content: string | any[];
 }
 
 const SUGGESTIONS = [
@@ -40,6 +42,7 @@ export default function OrbisChat() {
   const [activeConvoId, setActiveConvoId] = useState<string | null>(searchParams.get("c"));
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState("");
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -98,6 +101,8 @@ export default function OrbisChat() {
     const text = (overrideText || input).trim();
     if (!text || isStreaming) return;
     setInput("");
+    const currentAttachments = [...attachments];
+    setAttachments([]);
 
     let convoId = activeConvoId;
     if (!convoId) { skipNextLoad.current = true; convoId = await createConversation(text); if (!convoId) return; }
@@ -129,7 +134,14 @@ export default function OrbisChat() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ messages: allMessages.map((m) => ({ role: m.role, content: m.content })) }),
+        body: JSON.stringify({
+          messages: allMessages.map((m, idx) => ({
+            role: m.role,
+            content: idx === allMessages.length - 1 && m.role === "user" && currentAttachments.length > 0
+              ? buildMultimodalContent(typeof m.content === 'string' ? m.content : '', currentAttachments)
+              : m.content,
+          })),
+        }),
       });
 
       if (!resp.ok) {
@@ -251,9 +263,16 @@ export default function OrbisChat() {
           ) : (
             <div className="space-y-5">
               {messages.map((msg, i) => {
-                const isUser = msg.role === "user";
+    const isUser = msg.role === "user";
+                const hasImageContent = Array.isArray(msg.content);
+                const textContent = hasImageContent
+                  ? (msg.content as any[]).find((p: any) => p.type === "text")?.text || ""
+                  : msg.content;
+                const imageUrls = hasImageContent
+                  ? (msg.content as any[]).filter((p: any) => p.type === "image_url").map((p: any) => p.image_url.url)
+                  : [];
                 const isLastAssistant = !isUser && (i === messages.length - 1 || messages.slice(i + 1).every(m => m.role === "user"));
-                const lowerContent = msg.content.toLowerCase();
+                const lowerContent = (typeof msg.content === 'string' ? msg.content : textContent).toLowerCase();
                 const showGenerate = !isUser && isLastAssistant && !isStreaming && (lowerContent.includes("generate") || lowerContent.includes("idea") || lowerContent.includes("pain point") || lowerContent.includes("unmet need"));
                 const showValidate = !isUser && isLastAssistant && !isStreaming && (lowerContent.includes("validate") || lowerContent.includes("verdict") || lowerContent.includes("build") || lowerContent.includes("pivot"));
                 return (
@@ -274,10 +293,19 @@ export default function OrbisChat() {
                           : "bg-secondary/60 text-foreground rounded-tl-md"
                       }`}>
                         {isUser ? (
-                          <p className="whitespace-pre-wrap">{msg.content}</p>
+                          <div>
+                            <p className="whitespace-pre-wrap">{typeof msg.content === 'string' ? msg.content : textContent}</p>
+                            {imageUrls.length > 0 && (
+                              <div className="flex gap-1.5 mt-2 flex-wrap">
+                                {imageUrls.map((url: string, idx: number) => (
+                                  <img key={idx} src={url} alt="Attached" className="h-16 w-16 rounded-lg object-cover border border-primary-foreground/20" />
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         ) : (
                           <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:mb-2 [&>p:last-child]:mb-0 [&>ul]:mb-2 [&>ol]:mb-2 [&>strong]:text-foreground">
-                            <ReactMarkdown>{msg.content}</ReactMarkdown>
+                            <ReactMarkdown>{typeof msg.content === 'string' ? msg.content : textContent}</ReactMarkdown>
                           </div>
                         )}
                       </div>
@@ -332,25 +360,47 @@ export default function OrbisChat() {
 
       {/* Input area */}
       <div className="py-3 sm:py-4 px-1 shrink-0">
-        <div className="flex items-end gap-2.5 p-1.5 rounded-2xl border border-border/50 bg-background shadow-sm focus-within:border-primary/30 focus-within:shadow-md focus-within:shadow-primary/5 transition-all">
-          <textarea
-            ref={inputRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask Orbis anything..."
-            rows={1}
-            className="flex-1 resize-none bg-transparent px-3 py-2.5 text-sm placeholder:text-muted-foreground/40 focus:outline-none disabled:opacity-50"
-            disabled={isStreaming}
-          />
-          <Button
-            size="icon"
-            onClick={() => sendMessage()}
-            disabled={!input.trim() || isStreaming}
-            className="h-9 w-9 rounded-xl shrink-0 shadow-none"
-          >
-            <Send className="h-3.5 w-3.5" />
-          </Button>
+        <div className="rounded-2xl border border-border/50 bg-background shadow-sm focus-within:border-primary/30 focus-within:shadow-md focus-within:shadow-primary/5 transition-all">
+          {attachments.length > 0 && (
+            <div className="px-3 pt-2.5 flex gap-2 flex-wrap">
+              {attachments.map((att) => (
+                <div key={att.id} className="relative group">
+                  {att.type === "image" ? (
+                    <img src={att.preview} alt={att.file.name} className="h-14 w-14 rounded-lg object-cover border border-border/50" />
+                  ) : (
+                    <div className="h-14 w-14 rounded-lg border border-border/50 bg-secondary/50 flex flex-col items-center justify-center">
+                      <span className="text-[9px] text-muted-foreground font-medium">{att.file.name.split(".").pop()?.toUpperCase()}</span>
+                    </div>
+                  )}
+                  <button
+                    onClick={() => setAttachments(attachments.filter((a) => a.id !== att.id))}
+                    className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm text-[10px]"
+                  >✕</button>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="flex items-end gap-1.5 p-1.5">
+            <FileUpload attachments={attachments} onAttachmentsChange={setAttachments} disabled={isStreaming} />
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask Orbis anything..."
+              rows={1}
+              className="flex-1 resize-none bg-transparent px-3 py-2.5 text-sm placeholder:text-muted-foreground/40 focus:outline-none disabled:opacity-50"
+              disabled={isStreaming}
+            />
+            <Button
+              size="icon"
+              onClick={() => sendMessage()}
+              disabled={!input.trim() || isStreaming}
+              className="h-9 w-9 rounded-xl shrink-0 shadow-none"
+            >
+              <Send className="h-3.5 w-3.5" />
+            </Button>
+          </div>
         </div>
         <p className="text-[10px] text-muted-foreground/40 text-center mt-2">
           Orbis AI may make mistakes. Validate important insights.
