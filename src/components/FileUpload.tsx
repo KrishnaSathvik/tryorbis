@@ -1,7 +1,7 @@
 import { useRef, useCallback } from "react";
 import { toast } from "sonner";
 import { Paperclip } from "lucide-react";
-import { Attachment, getAttachmentType, validateFile, imageToBase64, readTextFile } from "@/lib/attachments";
+import { Attachment, getAttachmentType, validateFile, imageToBase64, readTextFile, extractPdfText } from "@/lib/attachments";
 
 interface FileUploadProps {
   attachments: Attachment[];
@@ -32,6 +32,8 @@ export function FileUpload({ attachments, onAttachmentsChange, disabled, maxFile
         attachment.base64 = await imageToBase64(file);
       } else if (type === "text") {
         attachment.base64 = await readTextFile(file);
+      } else if (type === "pdf") {
+        attachment.base64 = await extractPdfText(file);
       }
     } catch {
       toast.error(`Failed to process ${file.name}`);
