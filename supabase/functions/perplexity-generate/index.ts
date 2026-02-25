@@ -93,160 +93,83 @@ Search Reddit, G2, Capterra, Trustpilot, Twitter/X, HN, Indie Hackers, app store
 - Platform risks: bundling, API deprecations
 - Defensibility: network effects, switching costs, data moats
 
-Group complaints into 4-6 thematic clusters ranked by severity × frequency. Generate 4-6 product ideas with unique brandable names (like "Loom", "Notion"). Score demand strictly: 85-95 massive, 70-84 strong, 55-69 moderate, 40-54 weak, <40 minimal.`;
+Group complaints into 4-6 thematic clusters ranked by severity × frequency. Generate 4-6 product ideas with unique brandable names (like "Loom", "Notion"). Score demand strictly: 85-95 massive, 70-84 strong, 55-69 moderate, 40-54 weak, <40 minimal.${isDeep ? `\n\nIMPORTANT: Respond with valid JSON only (no markdown, no code fences). Use keys: problemClusters, ideaSuggestions, wtpSignals, competitionDensity, marketTiming, icp, workaroundDetection, featureGapMap, platformRisk, gtmStrategy, pricingBenchmarks, defensibility.` : ''}`;
 
     const modelName = isDeep ? 'sonar-deep-research' : 'sonar-pro';
     console.log(`Starting research with ${modelName} (mode=${mode || 'regular'}, cost=${creditCost})...`);
+
+    const jsonSchema = {
+      name: 'market_research',
+      schema: {
+        type: 'object',
+        properties: {
+          problemClusters: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                id: { type: 'string' },
+                theme: { type: 'string' },
+                painSummary: { type: 'string' },
+                complaintCount: { type: 'number' },
+                evidenceLinks: { type: 'array', items: { type: 'string' } },
+                complaints: { type: 'array', items: { type: 'string' } },
+              },
+              required: ['id', 'theme', 'painSummary', 'complaintCount', 'complaints'],
+            },
+          },
+          ideaSuggestions: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                id: { type: 'string' },
+                clusterId: { type: 'string' },
+                name: { type: 'string' },
+                description: { type: 'string' },
+                mvpScope: { type: 'string' },
+                monetization: { type: 'string' },
+                demandScore: { type: 'number' },
+              },
+              required: ['id', 'name', 'description', 'mvpScope', 'demandScore'],
+            },
+          },
+          wtpSignals: { type: 'object', properties: { strength: { type: 'string' }, signals: { type: 'array', items: { type: 'object', properties: { quote: { type: 'string' }, source: { type: 'string' }, context: { type: 'string' } } } }, priceRange: { type: 'object', properties: { low: { type: 'number' }, mid: { type: 'number' }, high: { type: 'number' }, currency: { type: 'string' } } }, summary: { type: 'string' } } },
+          competitionDensity: { type: 'object', properties: { level: { type: 'string' }, competitorCount: { type: 'number' }, totalFundingEstimate: { type: 'string' }, keyIncumbents: { type: 'array', items: { type: 'string' } }, switchingCosts: { type: 'string' }, summary: { type: 'string' } } },
+          marketTiming: { type: 'object', properties: { phase: { type: 'string' }, signals: { type: 'array', items: { type: 'string' } }, summary: { type: 'string' } } },
+          icp: { type: 'object', properties: { businessType: { type: 'string' }, companySize: { type: 'string' }, revenueRange: { type: 'string' }, industry: { type: 'string' }, techStack: { type: 'array', items: { type: 'string' } }, buyingTriggers: { type: 'array', items: { type: 'string' } }, budgetRange: { type: 'string' }, summary: { type: 'string' } } },
+          workaroundDetection: { type: 'object', properties: { severity: { type: 'string' }, workarounds: { type: 'array', items: { type: 'object', properties: { description: { type: 'string' }, source: { type: 'string' }, investmentLevel: { type: 'string' } } } }, summary: { type: 'string' } } },
+          featureGapMap: { type: 'object', properties: { gaps: { type: 'array', items: { type: 'object', properties: { feature: { type: 'string' }, competitorCoverage: { type: 'string' }, opportunity: { type: 'string' } } } }, topWedge: { type: 'string' }, summary: { type: 'string' } } },
+          platformRisk: { type: 'object', properties: { level: { type: 'string' }, signals: { type: 'array', items: { type: 'object', properties: { signal: { type: 'string' }, riskType: { type: 'string' } } } }, summary: { type: 'string' } } },
+          gtmStrategy: { type: 'object', properties: { primaryChannel: { type: 'string' }, channels: { type: 'array', items: { type: 'object', properties: { channel: { type: 'string' }, viability: { type: 'string' }, reasoning: { type: 'string' } } } }, founderLedSales: { type: 'boolean' }, seoViability: { type: 'string' }, summary: { type: 'string' } } },
+          pricingBenchmarks: { type: 'object', properties: { benchmarks: { type: 'array', items: { type: 'object', properties: { tool: { type: 'string' }, price: { type: 'string' }, model: { type: 'string' }, notes: { type: 'string' } } } }, suggestedRange: { type: 'object', properties: { low: { type: 'string' }, mid: { type: 'string' }, high: { type: 'string' } } }, pricingModel: { type: 'string' }, summary: { type: 'string' } } },
+          defensibility: { type: 'object', properties: { overallStrength: { type: 'string' }, signals: { type: 'array', items: { type: 'object', properties: { type: { type: 'string' }, description: { type: 'string' }, strength: { type: 'string' } } } }, timeToMoat: { type: 'string' }, summary: { type: 'string' } } },
+        },
+        required: ['problemClusters', 'ideaSuggestions'],
+      },
+    };
+
+    const requestBody: any = {
+      model: modelName,
+      messages: [
+        { role: 'system', content: `You are a market research analyst. Research real web data, cite sources, never fabricate. Be thorough but concise.${isDeep ? ' You MUST respond with valid JSON only — no markdown, no code fences, no extra text.' : ''}` },
+        { role: 'user', content: prompt },
+      ],
+      temperature: 0,
+    };
+
+    // sonar-deep-research does NOT support response_format json_schema
+    if (!isDeep) {
+      requestBody.response_format = { type: 'json_schema', json_schema: jsonSchema };
+    }
+
     const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: modelName,
-        messages: [
-          { role: 'system', content: 'You are a market research analyst. Research real web data, cite sources, never fabricate. Be thorough but concise.' },
-          { role: 'user', content: prompt },
-        ],
-        temperature: 0,
-        response_format: {
-          type: 'json_schema',
-          json_schema: {
-            name: 'market_research',
-            schema: {
-              type: 'object',
-              properties: {
-                problemClusters: {
-                  type: 'array',
-                  items: {
-                    type: 'object',
-                    properties: {
-                      id: { type: 'string' },
-                      theme: { type: 'string' },
-                      painSummary: { type: 'string' },
-                      complaintCount: { type: 'number' },
-                      evidenceLinks: { type: 'array', items: { type: 'string' } },
-                      complaints: { type: 'array', items: { type: 'string' } },
-                    },
-                    required: ['id', 'theme', 'painSummary', 'complaintCount', 'complaints'],
-                  },
-                },
-                ideaSuggestions: {
-                  type: 'array',
-                  items: {
-                    type: 'object',
-                    properties: {
-                      id: { type: 'string' },
-                      clusterId: { type: 'string' },
-                      name: { type: 'string' },
-                      description: { type: 'string' },
-                      mvpScope: { type: 'string' },
-                      monetization: { type: 'string' },
-                      demandScore: { type: 'number' },
-                    },
-                    required: ['id', 'name', 'description', 'mvpScope', 'demandScore'],
-                  },
-                },
-                wtpSignals: {
-                  type: 'object',
-                  properties: {
-                    strength: { type: 'string', enum: ['strong', 'moderate', 'weak', 'none'] },
-                    signals: { type: 'array', items: { type: 'object', properties: { quote: { type: 'string' }, source: { type: 'string' }, context: { type: 'string' } } } },
-                    priceRange: { type: 'object', properties: { low: { type: 'number' }, mid: { type: 'number' }, high: { type: 'number' }, currency: { type: 'string' } } },
-                    summary: { type: 'string' },
-                  },
-                },
-                competitionDensity: {
-                  type: 'object',
-                  properties: {
-                    level: { type: 'string', enum: ['blue_ocean', 'fragmented', 'crowded', 'winner_take_most'] },
-                    competitorCount: { type: 'number' },
-                    totalFundingEstimate: { type: 'string' },
-                    keyIncumbents: { type: 'array', items: { type: 'string' } },
-                    switchingCosts: { type: 'string' },
-                    summary: { type: 'string' },
-                  },
-                },
-                marketTiming: {
-                  type: 'object',
-                  properties: {
-                    phase: { type: 'string', enum: ['emerging', 'growing', 'saturated', 'declining'] },
-                    signals: { type: 'array', items: { type: 'string' } },
-                    summary: { type: 'string' },
-                  },
-                },
-                icp: {
-                  type: 'object',
-                  properties: {
-                    businessType: { type: 'string' },
-                    companySize: { type: 'string' },
-                    revenueRange: { type: 'string' },
-                    industry: { type: 'string' },
-                    techStack: { type: 'array', items: { type: 'string' } },
-                    buyingTriggers: { type: 'array', items: { type: 'string' } },
-                    budgetRange: { type: 'string' },
-                    summary: { type: 'string' },
-                  },
-                },
-                workaroundDetection: {
-                  type: 'object',
-                  properties: {
-                    severity: { type: 'string', enum: ['strong', 'moderate', 'weak', 'none'] },
-                    workarounds: { type: 'array', items: { type: 'object', properties: { description: { type: 'string' }, source: { type: 'string' }, investmentLevel: { type: 'string', enum: ['low', 'medium', 'high'] } } } },
-                    summary: { type: 'string' },
-                  },
-                },
-                featureGapMap: {
-                  type: 'object',
-                  properties: {
-                    gaps: { type: 'array', items: { type: 'object', properties: { feature: { type: 'string' }, competitorCoverage: { type: 'string', enum: ['none', 'weak', 'strong', 'commodity'] }, opportunity: { type: 'string', enum: ['high', 'medium', 'low'] } } } },
-                    topWedge: { type: 'string' },
-                    summary: { type: 'string' },
-                  },
-                },
-                platformRisk: {
-                  type: 'object',
-                  properties: {
-                    level: { type: 'string', enum: ['low', 'medium', 'high', 'critical'] },
-                    signals: { type: 'array', items: { type: 'object', properties: { signal: { type: 'string' }, riskType: { type: 'string', enum: ['bundling', 'api_limitation', 'roadmap_overlap', 'regulation', 'dependency', 'incumbent_improvement', 'platform_consolidation'] } } } },
-                    summary: { type: 'string' },
-                  },
-                },
-                gtmStrategy: {
-                  type: 'object',
-                  properties: {
-                    primaryChannel: { type: 'string' },
-                    channels: { type: 'array', items: { type: 'object', properties: { channel: { type: 'string' }, viability: { type: 'string', enum: ['high', 'medium', 'low'] }, reasoning: { type: 'string' } } } },
-                    founderLedSales: { type: 'boolean' },
-                    seoViability: { type: 'string' },
-                    summary: { type: 'string' },
-                  },
-                },
-                pricingBenchmarks: {
-                  type: 'object',
-                  properties: {
-                    benchmarks: { type: 'array', items: { type: 'object', properties: { tool: { type: 'string' }, price: { type: 'string' }, model: { type: 'string' }, notes: { type: 'string' } } } },
-                    suggestedRange: { type: 'object', properties: { low: { type: 'string' }, mid: { type: 'string' }, high: { type: 'string' } } },
-                    pricingModel: { type: 'string' },
-                    summary: { type: 'string' },
-                  },
-                },
-                defensibility: {
-                  type: 'object',
-                  properties: {
-                    overallStrength: { type: 'string', enum: ['strong', 'moderate', 'weak', 'none'] },
-                    signals: { type: 'array', items: { type: 'object', properties: { type: { type: 'string' }, description: { type: 'string' }, strength: { type: 'string', enum: ['strong', 'moderate', 'weak', 'none'] } } } },
-                    timeToMoat: { type: 'string' },
-                    summary: { type: 'string' },
-                  },
-                },
-              },
-              required: ['problemClusters', 'ideaSuggestions'],
-            },
-          },
-        },
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
