@@ -172,7 +172,7 @@ export default function GenerateIdeas() {
       try { await saveGeneratorRunDb(run); } catch (e) { console.error("Failed to save:", e); }
       setResult(run); setPhase('results');
     } catch (err: any) { toast.error("Generation failed: " + (err.message || "Unknown error")); setPhase('chat'); }
-  }, [hasCredits, deductCredit]);
+  }, [hasCredits, deductCredit, researchMode, attachments]);
 
   const handleAddToBacklog = async (idea: any) => {
     try { await addToBacklogDb({ ideaName: idea.name, source: 'Generated', demandScore: idea.demandScore, status: 'New', description: idea.description, mvpScope: idea.mvpScope, monetization: idea.monetization }); toast.success(`"${idea.name}" saved to My Ideas`); } catch { toast.error("Failed to save"); }

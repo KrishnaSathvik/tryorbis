@@ -213,7 +213,7 @@ export default function ValidateIdea() {
       try { await saveValidationReportDb(r); } catch (e) { console.error("Failed to save to DB:", e); }
       setReport(r); setPhase('results');
     } catch (err: any) { toast.error("Validation failed: " + (err.message || "Unknown error")); setPhase('chat'); }
-  }, [hasCredits, deductCredit]);
+  }, [hasCredits, deductCredit, researchMode, attachments]);
 
   const handleAddToBacklog = async () => {
     if (!report) return;
