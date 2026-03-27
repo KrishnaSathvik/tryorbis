@@ -21,7 +21,7 @@ function WaitlistForm() {
 
     setStatus("loading");
     try {
-      const { error } = await supabase.from("waitlist").insert({ email: email.trim().toLowerCase() });
+      const { error } = await (supabase.from as any)("waitlist").insert({ email: email.trim().toLowerCase() });
       if (error) {
         if (error.code === "23505") {
           // unique constraint — already on list

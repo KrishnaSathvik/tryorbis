@@ -27,7 +27,7 @@ export function UpgradeModal({ open, onOpenChange }: UpgradeModalProps) {
 
     setLoading(true);
     try {
-      const { error } = await supabase.from("waitlist").insert({
+      const { error } = await (supabase.from as any)("waitlist").insert({
         email: waitlistEmail,
         user_id: user?.id ?? null,
       });
