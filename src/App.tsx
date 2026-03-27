@@ -18,6 +18,8 @@ const Backlog = React.lazy(() => import("./pages/Backlog"));
 const Reports = React.lazy(() => import("./pages/Reports"));
 const Analytics = React.lazy(() => import("./pages/Analytics"));
 const OrbisChat = React.lazy(() => import("./pages/OrbisChat"));
+const Features = React.lazy(() => import("./pages/Features"));
+const Community = React.lazy(() => import("./pages/Community"));
 const Examples = React.lazy(() => import("./pages/Examples"));
 const NotFound = React.lazy(() => import("./pages/NotFound"));
 
@@ -40,6 +42,8 @@ const AppRoutes = () => (
     <OnboardingTour />
     <Routes>
       <Route path="/" element={<Landing />} />
+      <Route path="/features" element={<Features />} />
+      <Route path="/community" element={<Community />} />
       <Route path="/examples" element={<Examples />} />
       <Route path="/auth" element={<Auth />} />
       <Route path="/try" element={<Navigate to="/auth?mode=guest" replace />} />

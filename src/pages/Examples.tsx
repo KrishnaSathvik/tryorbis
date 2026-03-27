@@ -1,16 +1,21 @@
+import { useEffect, useState } from "react";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScoreBar } from "@/components/ScoreBar";
 import { VerdictBadge } from "@/components/VerdictBadge";
+import { fetchShowcaseReports, type ShowcaseReport } from "@/lib/showcase";
 
 import { ArrowRight, Sparkles, Zap, CheckCircle2, Clock } from "lucide-react";
 import orbisLogo from "@/assets/orbis-logo.png";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { FeedbackDrawer } from "@/components/FeedbackDrawer";
 
-const exampleReports = [
+/* ─────────────────────────────────────────────
+   FALLBACK — used when no showcase reports exist
+   ───────────────────────────────────────────── */
+const fallbackReports = [
   {
     id: "build",
     idea: "AI-powered subscription tracker that analyzes spending patterns and auto-negotiates better rates",
@@ -46,6 +51,26 @@ const exampleReports = [
   },
 ];
 
+function mapDbReport(r: ShowcaseReport) {
+  const ms = r.market_sizing as Record<string, string> | null;
+  return {
+    id: r.id,
+    idea: r.idea_text,
+    verdict: r.verdict as "Build" | "Pivot" | "Skip",
+    scores: {
+      demand: r.scores?.demand ?? 0,
+      pain: r.scores?.pain ?? 0,
+      competition: r.scores?.competition ?? 0,
+      mvpFeasibility: r.scores?.mvpFeasibility ?? 0,
+    },
+    pros: Array.isArray(r.pros) ? r.pros as string[] : [],
+    cons: Array.isArray(r.cons) ? r.cons as string[] : [],
+    tam: ms?.tam || "N/A",
+    sam: ms?.sam || "N/A",
+    som: ms?.som || "N/A",
+  };
+}
+
 const changelog = [
   { date: "Feb 2026", title: "Deep Research Fix", desc: "Fixed stale closure bug that caused Deep Research mode to silently fall back to regular mode. Now correctly uses sonar-deep-research model (30-90s+ analysis)." },
   { date: "Feb 2026", title: "Voice Input", desc: "Added browser-native voice-to-text input across all chat interfaces — Orbis Chat, Generate Ideas, and Validate Idea. No API key needed." },
@@ -56,9 +81,9 @@ const changelog = [
   { date: "Feb 2026", title: "RLS Policy Overhaul", desc: "Fixed all database security policies across every table — conversations, backlog, reports, profiles, and more now use permissive policies for reliable access." },
   { date: "Feb 2026", title: "Full Idea Details in Backlog", desc: "Saving ideas to My Ideas now preserves description, MVP scope, and monetization — not just the name and score." },
   { date: "Feb 2026", title: "AI Handoff to External Tools", desc: "Export your full research context to ChatGPT, Claude, Gemini, Cursor, or Codex with one click from any report." },
-  { date: "Feb 2026", title: "Profile Sheet", desc: "New profile drawer accessible from sidebar — view credits, account info, feedback, sign out, and delete account all in one place." },
+  { date: "Feb 2026", title: "Profile Sheet", desc: "New profile drawer accessible from sidebar — view report usage, account info, feedback, sign out, and delete account all in one place." },
   { date: "Feb 2026", title: "Delete Account", desc: "Full account deletion flow with typed confirmation. Permanently removes all data including ideas, reports, conversations, and profile." },
-  { date: "Feb 2026", title: "Orbis AI Intelligence Upgrade", desc: "Smart routing between flash and pro models, Perplexity-powered research grounding, and context-aware responses with credit and history awareness." },
+  { date: "Feb 2026", title: "Orbis AI Intelligence Upgrade", desc: "Smart routing between flash and pro models, Perplexity-powered research grounding, and context-aware responses with usage and history awareness." },
   { date: "Feb 2026", title: "Guest Upgrade Flow", desc: "Guest users can now upgrade to a full account from the profile sheet without errors or white screens." },
   { date: "Feb 2026", title: "Onboarding Tour Fix", desc: "Tour steps no longer trigger page loading — smooth overlay transitions between steps." },
   { date: "Feb 2026", title: "Mobile Sidebar Fix", desc: "Sidebar navigation on mobile now opens pages instantly without delay." },
@@ -70,15 +95,20 @@ const changelog = [
   { date: "Jan 2026", title: "Market Intelligence v1", desc: "WTP signals, Competition Density, Market Timing, and ICP Precision." },
 ];
 
-const verdictColors = {
-  Build: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
-  Pivot: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
-  Skip: "bg-rose-500/10 text-rose-700 dark:text-rose-400",
-};
-
 export default function Examples() {
   usePageTitle("Examples & Changelog");
   const navigate = useNavigate();
+  const [reports, setReports] = useState(fallbackReports);
+  const [reportsLoading, setReportsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchShowcaseReports().then((data) => {
+      if (data.length > 0) {
+        setReports(data.slice(0, 3).map(mapDbReport));
+      }
+      setReportsLoading(false);
+    });
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -94,35 +124,6 @@ export default function Examples() {
       </header>
 
       <div className="max-w-5xl mx-auto px-6 py-16 space-y-20">
-        {/* Changelog */}
-        <section className="space-y-8">
-          <div className="text-center space-y-3">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-sm text-primary font-medium">
-              <Zap className="h-3.5 w-3.5" />
-              What's New
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-bold font-nunito">Changelog</h2>
-            <p className="text-muted-foreground max-w-lg mx-auto">Recent updates and improvements to Orbis.</p>
-          </div>
-          <div className="max-w-2xl mx-auto space-y-0">
-            {changelog.map((entry, i) => (
-              <div key={i} className="flex gap-4 group">
-                <div className="flex flex-col items-center">
-                  <div className="h-3 w-3 rounded-full bg-primary/20 border-2 border-primary shrink-0 mt-1.5 group-hover:scale-125 transition-transform" />
-                  {i < changelog.length - 1 && <div className="w-px flex-1 bg-border/50" />}
-                </div>
-                <div className="pb-8">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{entry.date}</span>
-                  </div>
-                  <h4 className="font-semibold text-sm font-nunito">{entry.title}</h4>
-                  <p className="text-sm text-muted-foreground mt-0.5">{entry.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
         {/* Example Reports */}
         <section className="space-y-8">
           <div className="text-center space-y-3">
@@ -131,11 +132,11 @@ export default function Examples() {
               Sample Output
             </div>
             <h2 className="text-3xl sm:text-4xl font-bold font-nunito">Example Reports</h2>
-            <p className="text-muted-foreground max-w-lg mx-auto">See the kind of insights Orbis delivers — no credits needed.</p>
+            <p className="text-muted-foreground max-w-lg mx-auto">See the kind of insights Orbis delivers — free to browse.</p>
           </div>
 
-          <div className="space-y-8">
-            {exampleReports.map((r) => (
+          <div className={`space-y-8 transition-opacity duration-500 ${reportsLoading ? "opacity-60 animate-pulse" : "opacity-100"}`}>
+            {reports.map((r) => (
               <Card key={r.id} className="rounded-2xl border-border/50 overflow-hidden">
                 <CardContent className="p-0">
                   {/* Header */}
@@ -192,7 +193,6 @@ export default function Examples() {
                         <div key={m.label} className="flex items-center gap-2 bg-secondary/60 rounded-full px-3 py-1.5">
                           <span className="text-[10px] font-bold text-primary">{m.label}</span>
                           <span className="text-xs font-medium">{m.value}</span>
-                          
                         </div>
                       ))}
                     </div>
@@ -206,6 +206,35 @@ export default function Examples() {
             <Button size="lg" className="rounded-full bg-foreground text-background hover:bg-foreground/90 gap-2" onClick={() => navigate("/auth")}>
               Try It Yourself — Free <ArrowRight className="h-4 w-4" />
             </Button>
+          </div>
+        </section>
+
+        {/* Changelog */}
+        <section className="space-y-8">
+          <div className="text-center space-y-3">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-sm text-primary font-medium">
+              <Zap className="h-3.5 w-3.5" />
+              What's New
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-bold font-nunito">Changelog</h2>
+            <p className="text-muted-foreground max-w-lg mx-auto">Recent updates and improvements to Orbis.</p>
+          </div>
+          <div className="max-w-2xl mx-auto space-y-0">
+            {changelog.map((entry, i) => (
+              <div key={i} className="flex gap-4 group">
+                <div className="flex flex-col items-center">
+                  <div className="h-3 w-3 rounded-full bg-primary/20 border-2 border-primary shrink-0 mt-1.5 group-hover:scale-125 transition-transform" />
+                  {i < changelog.length - 1 && <div className="w-px flex-1 bg-border/50" />}
+                </div>
+                <div className="pb-8">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{entry.date}</span>
+                  </div>
+                  <h4 className="font-semibold text-sm font-nunito">{entry.title}</h4>
+                  <p className="text-sm text-muted-foreground mt-0.5">{entry.desc}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </section>
       </div>

@@ -23,7 +23,6 @@ export function ResearchModeToggle({ mode, onChange }: ResearchModeToggleProps) 
           >
             <Zap className="h-3.5 w-3.5" />
             Regular
-            <span className="text-[10px] opacity-60">1 credit</span>
           </button>
         </PopoverTrigger>
         <PopoverContent side="bottom" className="text-xs max-w-[200px] p-2">
@@ -44,7 +43,6 @@ export function ResearchModeToggle({ mode, onChange }: ResearchModeToggleProps) 
           >
             <Microscope className="h-3.5 w-3.5" />
             Deep Research
-            <span className="text-[10px] opacity-60">3 credits</span>
           </button>
         </PopoverTrigger>
         <PopoverContent side="bottom" className="text-xs max-w-[220px] p-2">

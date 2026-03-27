@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { ResearchTrace } from "@/components/ResearchTrace";
 import { ScoreBar } from "@/components/ScoreBar";
 import { VerdictBadge } from "@/components/VerdictBadge";
+import { ValidationScorecard } from "@/components/ValidationScorecard";
 import { AIHandoff } from "@/components/AIHandoff";
 import { FollowUpChat } from "@/components/FollowUpChat";
 import { WtpSection, CompetitionDensitySection, MarketTimingSection, IcpSection, WorkaroundSection, FeatureGapSection, PlatformRiskSection, GtmStrategySection, PricingBenchmarkSection, DefensibilitySection } from "@/components/IntelligenceSections";
@@ -23,6 +24,7 @@ import { Attachment, imageToBase64, validateFile, getAttachmentType, readTextFil
 import { useDropZone } from "@/hooks/useDropZone";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
 import { VoiceButton } from "@/components/VoiceButton";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 const sectionTooltips: Record<string, string> = {
   verdict: "Overall recommendation based on market research, demand signals, and competitive analysis.",
@@ -86,6 +88,7 @@ export default function ValidateIdea() {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { hasCredits, deductCredit } = useCredits();
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const prefilled = searchParams.get('idea') || "";
   const [inputValue, setInputValue] = useState(prefilled);
@@ -142,7 +145,7 @@ export default function ValidateIdea() {
         if (error.message?.includes('429') || (data as any)?.error?.includes('rate limit')) {
           toast.error("Rate limit reached — please wait a moment and try again.");
         } else if (error.message?.includes('402') || (data as any)?.error?.includes('usage limit')) {
-          toast.error("AI usage limit reached. Please add credits to continue.");
+          toast.error("AI usage limit reached. Please try again later.");
         } else {
           throw error;
         }
@@ -164,7 +167,7 @@ export default function ValidateIdea() {
   };
 
   const triggerValidation = useCallback(async (ideaText: string) => {
-    if (!hasCredits) { toast.error("You're out of credits. Contact support to get more."); return; }
+    if (!hasCredits) { setUpgradeOpen(true); return; }
     setPhase('researching'); setCurrentStep(0);
     try {
       // If there are image attachments, analyze them first via Gemini
@@ -268,7 +271,7 @@ export default function ValidateIdea() {
               </div>
               <ResearchModeToggle mode={researchMode} onChange={setResearchMode} />
               <Button className="w-full rounded-full" size="sm" onClick={() => triggerValidation(validatingParams.ideaText)}>
-                <Search className="h-3.5 w-3.5 mr-1" /> Start Validation {researchMode === 'deep' ? '(3 credits)' : '(1 credit)'}
+                <Search className="h-3.5 w-3.5 mr-1" /> Start Validation
               </Button>
             </div>
           )}
@@ -352,6 +355,9 @@ export default function ValidateIdea() {
           </CardContent>
         </Card>
       </div>
+
+      {/* ─── "Should you build this?" Scorecard ─── */}
+      <ValidationScorecard report={report!} />
 
       <div>
         <h2 className="text-lg font-semibold font-nunito mb-4">Strategy</h2>
@@ -483,6 +489,8 @@ export default function ValidateIdea() {
       {report && (
         <AIHandoff context={`Validation Report for: "${report.ideaText}"\n\nVerdict: ${report.verdict}\nDemand: ${report.scores.demand}/100, Pain: ${report.scores.pain}/100, Competition: ${report.scores.competition}/100, Feasibility: ${report.scores.mvpFeasibility}/100\n\nPros: ${report.pros.join(', ')}\nCons: ${report.cons.join(', ')}\nMVP Wedge: ${report.mvpWedge}\n\nHelp me build this product.`} />
       )}
+
+      <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} />
     </div>
   );
 }

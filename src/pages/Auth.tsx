@@ -90,7 +90,7 @@ export default function Auth() {
 
             <div className="flex items-center gap-2 text-xs text-muted-foreground bg-primary/5 rounded-xl p-3">
               <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
-              <span>Continue as guest with free credits. <strong className="text-foreground">No account needed.</strong></span>
+              <span>Try 2 free reports instantly. <strong className="text-foreground">No account needed.</strong></span>
             </div>
 
             <form onSubmit={handleGuest} className="space-y-3">
@@ -99,7 +99,7 @@ export default function Auth() {
                 <Input value={guestName} onChange={e => setGuestName(e.target.value)} placeholder="e.g. Explorer" className="rounded-xl" autoFocus />
               </div>
               <Button type="submit" className="w-full rounded-full bg-foreground text-background hover:bg-foreground/90" disabled={loading}>
-                {loading ? "Creating your guest workspace…" : "Start instantly with 5 credits →"}
+                {loading ? "Creating your guest workspace…" : "Start instantly — 2 free reports →"}
               </Button>
               <p className="text-center text-[11px] text-muted-foreground">Upgrade later to save your research.</p>
             </form>
@@ -156,7 +156,7 @@ export default function Auth() {
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground bg-primary/5 rounded-xl p-3">
                   <Zap className="h-3.5 w-3.5 text-primary shrink-0" />
-                  <span>You'll get <strong className="text-foreground">20 free credits</strong> to explore Orbis</span>
+                  <span>You'll get <strong className="text-foreground">2 free reports</strong> to explore Orbis</span>
                 </div>
                 <Button type="submit" className="w-full rounded-full bg-foreground text-background hover:bg-foreground/90" disabled={loading}>
                   {loading ? "Creating account..." : "Create Account →"}
@@ -193,7 +193,7 @@ export default function Auth() {
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground bg-warning/10 rounded-xl p-3">
                   <Zap className="h-3.5 w-3.5 text-warning shrink-0" />
-                  <span>Guest accounts get <strong className="text-foreground">5 credits</strong>. Sign up later to upgrade & keep your data.</span>
+                  <span>Guest accounts get <strong className="text-foreground">2 free reports</strong>. Sign up later to keep your data.</span>
                 </div>
                 <Button type="submit" variant="outline" className="w-full rounded-full" disabled={loading}>
                   {loading ? "Starting..." : "Try as Guest →"}

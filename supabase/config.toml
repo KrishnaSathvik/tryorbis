@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.analyze-images]
 verify_jwt = false
+
+[functions.showcase-reports]
+verify_jwt = false

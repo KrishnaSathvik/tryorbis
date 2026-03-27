@@ -324,7 +324,6 @@ export type Database = {
           icp: Json | null
           id: string
           idea_text: string
-          is_showcase: boolean
           kill_test: string | null
           market_sizing: Json | null
           market_timing: Json | null
@@ -351,7 +350,6 @@ export type Database = {
           icp?: Json | null
           id?: string
           idea_text: string
-          is_showcase?: boolean
           kill_test?: string | null
           market_sizing?: Json | null
           market_timing?: Json | null
@@ -378,7 +376,6 @@ export type Database = {
           icp?: Json | null
           id?: string
           idea_text?: string
-          is_showcase?: boolean
           kill_test?: string | null
           market_sizing?: Json | null
           market_timing?: Json | null
@@ -391,27 +388,6 @@ export type Database = {
           verdict?: string
           workaround_detection?: Json | null
           wtp_signals?: Json | null
-        }
-        Relationships: []
-      }
-      waitlist: {
-        Row: {
-          created_at: string | null
-          email: string
-          id: string
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          email: string
-          id?: string
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          email?: string
-          id?: string
-          user_id?: string | null
         }
         Relationships: []
       }

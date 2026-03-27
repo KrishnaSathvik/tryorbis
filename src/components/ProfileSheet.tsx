@@ -10,13 +10,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
   Mail,
-  Zap,
+  FileText,
   ArrowUpCircle,
   MessageSquareText,
   Trash2,
   LogOut,
   Shield,
-  Clock,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -37,7 +36,7 @@ interface ProfileSheetProps {
 
 export function ProfileSheet({ children }: ProfileSheetProps) {
   const { user, profile, signOut, isGuest } = useAuth();
-  const { credits, maxCredits, timeLeft } = useCredits();
+  const { reportsUsed, maxReports, credits } = useCredits();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -52,7 +51,7 @@ export function ProfileSheet({ children }: ProfileSheetProps) {
     .toUpperCase()
     .slice(0, 2);
 
-  const creditPercent = maxCredits > 0 ? (credits / maxCredits) * 100 : 0;
+  const reportPercent = maxReports > 0 ? (reportsUsed / maxReports) * 100 : 0;
 
   const handleDeleteAccount = async () => {
     if (!user || deleteConfirmText !== "DELETE") return;
@@ -117,26 +116,20 @@ export function ProfileSheet({ children }: ProfileSheetProps) {
 
           <Separator />
 
-          {/* Credits Section */}
+          {/* Reports Section */}
           <div className="px-6 py-5 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-sm font-medium">
-                <Zap className="h-4 w-4 text-primary" />
-                Credits
+                <FileText className="h-4 w-4 text-primary" />
+                Free Reports
               </div>
               <span className="text-sm font-bold text-primary">
-                {credits} / {maxCredits}
+                {reportsUsed} / {maxReports} used
               </span>
             </div>
-            <Progress value={creditPercent} className="h-2 rounded-full" />
-            {credits === 0 && timeLeft && (
-              <div className="flex items-center gap-1.5 text-xs text-warning">
-                <Clock className="h-3 w-3" />
-                Resets in {timeLeft}
-              </div>
-            )}
+            <Progress value={reportPercent} className="h-2 rounded-full" />
             <p className="text-[11px] text-muted-foreground leading-relaxed">
-              Generate Ideas costs 1 credit (3 for Deep Research). Validate Idea costs 1 credit. Credits auto-refill 24h after depletion.
+              You get 2 free reports. Upgrade for unlimited access.
             </p>
           </div>
 
@@ -157,7 +150,7 @@ export function ProfileSheet({ children }: ProfileSheetProps) {
 
             <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-muted-foreground">
               <Shield className="h-4 w-4 shrink-0" />
-              <span>{isGuest ? "Guest (5 credits)" : "Registered (20 credits)"}</span>
+              <span>Free Plan (2 reports)</span>
             </div>
 
             {isGuest && (
@@ -213,7 +206,7 @@ export function ProfileSheet({ children }: ProfileSheetProps) {
                       <li>All saved ideas and backlog items</li>
                       <li>All research reports (Generate & Validate)</li>
                       <li>All chat conversations</li>
-                      <li>Your profile and credits</li>
+                      <li>Your profile data</li>
                     </ul>
                     <span className="block font-semibold text-destructive">
                       ⚠ This action cannot be undone.

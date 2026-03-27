@@ -8,6 +8,7 @@ import { ResearchTrace } from "@/components/ResearchTrace";
 import { ScoreBar } from "@/components/ScoreBar";
 import { AIHandoff } from "@/components/AIHandoff";
 import { FollowUpChat } from "@/components/FollowUpChat";
+import { UpgradeModal } from "@/components/UpgradeModal";
 import { WtpSection, CompetitionDensitySection, MarketTimingSection, IcpSection, WorkaroundSection, FeatureGapSection, PlatformRiskSection, GtmStrategySection, PricingBenchmarkSection, DefensibilitySection } from "@/components/IntelligenceSections";
 import { useCredits } from "@/hooks/useCredits";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -51,6 +52,7 @@ export default function GenerateIdeas() {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { hasCredits, deductCredit } = useCredits();
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const [messages, setMessages] = useState<ChatMessage[]>([
     { id: '1', role: 'assistant', text: "What kind of product or problem are you thinking about? You can also attach screenshots or files for context." },
@@ -106,7 +108,7 @@ export default function GenerateIdeas() {
         if (error.message?.includes('429') || (data as any)?.error?.includes('rate limit')) {
           toast.error("Rate limit reached — please wait a moment and try again.");
         } else if (error.message?.includes('402') || (data as any)?.error?.includes('usage limit')) {
-          toast.error("AI usage limit reached. Please add credits to continue.");
+          toast.error("AI usage limit reached. Please try again later.");
         } else {
           throw error;
         }
@@ -129,7 +131,7 @@ export default function GenerateIdeas() {
   };
 
   const triggerGenerate = useCallback(async (params: any) => {
-    if (!hasCredits) { toast.error("You're out of credits. Contact support to get more."); return; }
+    if (!hasCredits) { setUpgradeOpen(true); return; }
     setPhase('researching'); setResearchStep(0);
     try {
       // Analyze image attachments via Gemini
@@ -228,7 +230,7 @@ export default function GenerateIdeas() {
               </div>
               <ResearchModeToggle mode={researchMode} onChange={setResearchMode} />
               <Button className="w-full rounded-full" size="sm" onClick={() => triggerGenerate(generatingParams)}>
-                <Rocket className="h-3.5 w-3.5 mr-1" /> Start Research {researchMode === 'deep' ? '(3 credits)' : '(1 credit)'}
+                <Rocket className="h-3.5 w-3.5 mr-1" /> Start Research
               </Button>
             </div>
           )}
@@ -263,45 +265,75 @@ export default function GenerateIdeas() {
     <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight font-nunito">Results</h1>
-          <p className="text-muted-foreground mt-1 text-sm truncate">{result?.persona} × {result?.category} — {result?.ideaSuggestions.length} ideas found</p>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight font-nunito">Research Results</h1>
+          <p className="text-muted-foreground mt-1 text-sm truncate">{result?.persona} × {result?.category}</p>
         </div>
         <Button variant="outline" className="rounded-full shrink-0" onClick={resetChat}>New Search</Button>
       </div>
 
+      {/* ─── Quick Summary ─── */}
+      <Card className="rounded-2xl border-border/50 bg-secondary/30">
+        <CardContent className="p-5">
+          <div className="grid grid-cols-3 gap-4 text-center">
+            <div>
+              <p className="text-2xl font-bold font-nunito">{result?.problemClusters.length || 0}</p>
+              <p className="text-xs text-muted-foreground">Problems Found</p>
+            </div>
+            <div>
+              <p className="text-2xl font-bold font-nunito">{result?.ideaSuggestions.length || 0}</p>
+              <p className="text-xs text-muted-foreground">Ideas Generated</p>
+            </div>
+            <div>
+              <p className="text-2xl font-bold font-nunito">{result?.ideaSuggestions.length ? Math.max(...result.ideaSuggestions.map((i: any) => i.demandScore || 0)) : 0}<span className="text-sm text-muted-foreground font-normal">/100</span></p>
+              <p className="text-xs text-muted-foreground">Top Score</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <div>
-        <h2 className="text-lg font-semibold font-nunito mb-4">Problem Themes</h2>
+        <div className="flex items-center gap-2 mb-4">
+          <h2 className="text-lg font-semibold font-nunito">Real Problems Found</h2>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+            </PopoverTrigger>
+            <PopoverContent side="top" className="max-w-[260px] p-2">
+              <p className="text-xs">These are real complaints and frustrations mined from Reddit, forums, and reviews — grouped by theme. Click to see the actual quotes.</p>
+            </PopoverContent>
+          </Popover>
+        </div>
         <div className="space-y-3">
           {result?.problemClusters.map((cluster: any) => (
             <Collapsible key={cluster.id}>
               <Card className="rounded-2xl border-border/50">
                 <CollapsibleTrigger className="w-full">
-                  <CardContent className="p-4 flex items-center justify-between">
-                    <div className="text-left">
-                      <p className="font-medium text-sm">{cluster.theme}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{cluster.painSummary}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <span className="text-xs text-muted-foreground flex items-center gap-1 cursor-help">
-                            {cluster.complaintCount} signals
-                            <Info className="h-3 w-3" />
-                          </span>
-                        </PopoverTrigger>
-                        <PopoverContent side="top" className="max-w-[220px] p-2">
-                          <p className="text-xs">Number of real complaints, posts, and reviews found online that relate to this problem theme.</p>
-                        </PopoverContent>
-                      </Popover>
-                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="text-left flex-1 min-w-0">
+                        <p className="font-medium text-sm">{cluster.theme}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{cluster.painSummary}</p>
+                        {/* Show first complaint as preview */}
+                        {cluster.complaints?.[0] && (
+                          <p className="text-xs text-muted-foreground/60 italic mt-2 truncate">"{cluster.complaints[0]}"</p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-[11px] font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full whitespace-nowrap">
+                          {cluster.complaintCount} complaints
+                        </span>
+                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                      </div>
                     </div>
                   </CardContent>
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   <div className="px-4 pb-4 space-y-2 border-t border-border/50 pt-3">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Real quotes found online</p>
                     {cluster.complaints?.map((c: string, i: number) => (<p key={i} className="text-xs text-muted-foreground italic">"{c}"</p>))}
                     {cluster.evidenceLinks?.length > 0 && (
-                      <div className="space-y-1 mt-2">
+                      <div className="space-y-1 mt-3">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Sources</p>
                         {cluster.evidenceLinks.map((link: string, i: number) => {
                           let displayUrl = link;
                           let hostname = '';
@@ -324,22 +356,49 @@ export default function GenerateIdeas() {
       </div>
 
       <div>
-        <h2 className="text-lg font-semibold font-nunito mb-4">Idea Suggestions</h2>
+        <h2 className="text-lg font-semibold font-nunito mb-4">Product Ideas</h2>
         <div className="grid md:grid-cols-2 gap-4">
-          {result?.ideaSuggestions.map((idea: any) => (
-            <Card key={idea.id} className="rounded-2xl border-border/50 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
-              <CardContent className="p-5 space-y-3">
-                <h3 className="font-semibold font-nunito">{idea.name}</h3>
-                <p className="text-sm text-muted-foreground">{idea.description}</p>
-                <ScoreBar label="Opportunity Score" value={idea.demandScore} />
-                <div className="text-xs space-y-1 text-muted-foreground">
-                  <p><span className="font-medium text-foreground">MVP:</span> {idea.mvpScope}</p>
-                  <p><span className="font-medium text-foreground">Monetization:</span> {idea.monetization}</p>
+          {result?.ideaSuggestions
+            .sort((a: any, b: any) => (b.demandScore || 0) - (a.demandScore || 0))
+            .map((idea: any, idx: number) => (
+            <Card key={idea.id} className="rounded-2xl border-border/50 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
+              <CardContent className="p-0">
+                {/* Score header bar */}
+                <div className="px-5 pt-4 pb-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-muted-foreground/50">#{idx + 1}</span>
+                    <h3 className="font-semibold font-nunito text-sm">{idea.name}</h3>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className={`text-lg font-bold tabular-nums ${idea.demandScore >= 80 ? 'text-emerald-600' : idea.demandScore >= 60 ? 'text-primary' : 'text-amber-600'}`}>{idea.demandScore}</span>
+                    <span className="text-[10px] text-muted-foreground">/100</span>
+                  </div>
                 </div>
-                <div className="flex gap-2 pt-2">
-                  <Button size="sm" variant="outline" className="rounded-full" onClick={() => handleValidate(idea)}><ClipboardCheck className="h-3 w-3 mr-1" /> Validate</Button>
-                  <Button size="sm" variant="outline" className="rounded-full" onClick={() => handleAddToBacklog(idea)}><Bookmark className="h-3 w-3 mr-1" /> Save</Button>
-                  <Button size="sm" variant="ghost" className="rounded-full" onClick={() => { navigator.clipboard.writeText(`Build a ${idea.name}: ${idea.description}\nMVP: ${idea.mvpScope}`); toast.success("Copied PRD prompt"); }}><Copy className="h-3 w-3" /></Button>
+                {/* Score bar full width */}
+                <div className="h-1 bg-secondary">
+                  <div
+                    className={`h-full transition-all duration-500 ${idea.demandScore >= 80 ? 'bg-emerald-500' : idea.demandScore >= 60 ? 'bg-primary' : 'bg-amber-500'}`}
+                    style={{ width: `${idea.demandScore}%` }}
+                  />
+                </div>
+                {/* Content */}
+                <div className="px-5 pt-3 pb-4 space-y-3">
+                  <p className="text-sm text-muted-foreground leading-relaxed">{idea.description}</p>
+                  <div className="space-y-1.5">
+                    <div className="flex items-start gap-2">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground shrink-0 mt-0.5 w-20">MVP</span>
+                      <p className="text-xs text-muted-foreground">{idea.mvpScope}</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground shrink-0 mt-0.5 w-20">Revenue</span>
+                      <p className="text-xs text-muted-foreground">{idea.monetization}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 pt-1">
+                    <Button size="sm" variant="default" className="rounded-full text-xs h-7" onClick={() => handleValidate(idea)}><ClipboardCheck className="h-3 w-3 mr-1" /> Validate</Button>
+                    <Button size="sm" variant="outline" className="rounded-full text-xs h-7" onClick={() => handleAddToBacklog(idea)}><Bookmark className="h-3 w-3 mr-1" /> Save</Button>
+                    <Button size="sm" variant="ghost" className="rounded-full text-xs h-7" onClick={() => { navigator.clipboard.writeText(`Build a ${idea.name}: ${idea.description}\nMVP: ${idea.mvpScope}`); toast.success("Copied PRD prompt"); }}><Copy className="h-3 w-3" /></Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -350,7 +409,8 @@ export default function GenerateIdeas() {
       {/* ─── Intelligence Layers (Phase 1 + 2 + 3) ─── */}
       {result && (result.wtpSignals || result.competitionDensity || result.marketTiming || result.icp || result.workaroundDetection || result.featureGapMap || result.platformRisk || result.gtmStrategy || result.pricingBenchmarks || result.defensibility) && (
         <div>
-          <h2 className="text-lg font-semibold font-nunito mb-4">Market Intelligence</h2>
+          <h2 className="text-lg font-semibold font-nunito mb-1">Market Intelligence</h2>
+          <p className="text-xs text-muted-foreground mb-4">Deep research for the <span className="font-medium text-foreground">{result.category}</span> market targeting <span className="font-medium text-foreground">{result.persona}</span>.</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {result.wtpSignals && <WtpSection data={result.wtpSignals} />}
             {result.competitionDensity && <CompetitionDensitySection data={result.competitionDensity} />}
@@ -376,6 +436,8 @@ export default function GenerateIdeas() {
       {result && (
         <AIHandoff context={`I discovered these product opportunities for ${result.persona} in ${result.category}:\n\n${result.ideaSuggestions.map((i: any) => `- ${i.name}: ${i.description} (Score: ${i.demandScore}/100)`).join('\n')}\n\nHelp me build an MVP for the top opportunity.`} />
       )}
+
+      <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} />
     </div>
   );
 }
