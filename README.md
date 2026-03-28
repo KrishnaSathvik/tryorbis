@@ -12,13 +12,13 @@
 - **Problem Discovery** — Automatically mine real complaints from forums, reviews, and social media.
 - **Pain Point Clustering** — AI groups raw complaints into thematic clusters with evidence links and complaint counts.
 - **Idea Generation** — Get actionable product ideas ranked by opportunity score, backed by real evidence.
-- **Deep Research Mode** — Toggle between regular (1 credit) and deep research (3 credits) for more thorough analysis using advanced AI models.
+- **Deep Research Mode** — Toggle between regular and deep research. Deep mode runs 3 sequential stages (sonar-pro) with progressive result rendering instead of a single slow call.
 - **Full Validation Reports** — Competitor analysis, pros & cons, evidence links, and a Build / Pivot / Skip verdict.
 - **Full Idea Persistence** — Save ideas to backlog with complete details: description, MVP scope, and monetization strategy.
 
 ### Orbis AI Advisor
-- **Personalized Strategic Chat** — An always-on AI advisor that knows your credits, saved ideas, and research history to give tailored guidance.
-- **User-Aware Context** — Orbis AI dynamically adapts advice based on your account type (guest vs registered), remaining credits, and activity.
+- **Personalized Strategic Chat** — An always-on AI advisor that knows your saved ideas and research history to give tailored guidance.
+- **User-Aware Context** — Orbis AI dynamically adapts advice based on your account type and activity.
 - **Platform-Aware** — Can explain all Orbis features, guide you to the right tool, and suggest next steps based on your research progress.
 - **AI Handoff** — Export your research context to ChatGPT, Claude, Gemini, Cursor, or Codex with one click.
 - **Image & File Understanding** — Attach up to 10 images or files per message. Orbis AI can analyze screenshots, mockups, PDFs, and text files alongside your questions.
@@ -47,24 +47,23 @@ Every research run includes up to 10 intelligence layers:
 - **Market Sizing (TAM/SAM/SOM)** — Estimated market size with methodology transparency.
 - **Evidence Attribution** — Research sources with clickable URLs and site favicons.
 
-### Credit System
-- **Guest Mode** — Try free with 5 credits, no signup required (just a nickname).
-- **Registered Users** — Sign up to get 20 credits with auto-refill.
-- **24-Hour Auto-Refill** — When credits hit zero, a timer starts and credits refill to max after 24 hours.
-- **Live Countdown** — Sidebar shows "Resets in Xh Ym Zs" when credits are depleted.
-- **Additive Upgrade** — Guest-to-registered upgrade adds 20 credits to existing balance.
+### Access
+- **Free Tier** — 2 free research reports (Generate or Validate), no signup required.
+- **Unlimited Plan** — $19/month for unlimited research, deep research mode, and priority support.
+- **Waitlist** — Join the waitlist for early access to the unlimited plan.
 
 ### Platform
 - **My Ideas (Backlog)** — Save, rename, and track ideas with status workflow (New → Exploring → Testing → Validated → Archived), inline notes with formatting, and keyboard shortcuts. Full idea metadata (description, MVP, monetization) is preserved.
 - **History** — Dual archive for research runs and Orbis AI conversations, with deletion and chronological sorting.
 - **Analytics Dashboard** — Personal stats: verdict distribution, average scores, category trends, build rate.
-- **Community Trends** — Live aggregate stats showing what the community is researching.
+- **Community Trends** — Live trends showing what categories and personas the community is researching.
 - **Competitive Comparison** — Side-by-side feature comparison against IdeaBuddy, Validator AI, DimeADozen, Informly, and IdeaProof.
 - **Founder Success Tracking** — Pipeline funnel, progression rate, and build rate metrics.
 - **Top Ideas Leaderboard** — Community-ranked ideas by validation score.
-- **Examples & Changelog** — Sample reports and product update timeline.
+- **Examples** — Sample reports showing what Orbis delivers.
+- **Changelog** — Dedicated product update timeline with all recent changes.
 - **Feedback Widget** — In-app feedback submission (Bug / Feature Request / General).
-- **Profile Sheet** — Sidebar drawer for credits, account info, guest upgrade, and account deletion.
+- **Profile Sheet** — Sidebar drawer for account info, plan status, and account deletion.
 - **Account Deletion** — Full data sweep (backlog, research, conversations, chat messages, profile) with typed "DELETE" confirmation.
 - **Observability Logging** — Latency, error rates, and provider tracking across all AI functions.
 - **Dark / Light Theme** — Full theme support with system preference detection.
@@ -80,7 +79,7 @@ Every research run includes up to 10 intelligence layers:
 
 - **Frontend:** React 18 · TypeScript · Vite · Tailwind CSS · shadcn/ui · Recharts · Framer Motion
 - **Backend:** Lovable Cloud (database, auth, edge functions, secrets)
-- **AI Research:** Perplexity Sonar Pro (regular) · Sonar Deep Research (deep mode)
+- **AI Research:** Perplexity Sonar Pro (regular + deep multi-stage)
 - **AI Advisor:** Google Gemini 3 Flash Preview (simple queries) · Gemini 2.5 Pro (complex analysis)
 - **Voice:** Web Speech API (browser-native, zero-cost)
 - **Routing:** React Router v6
@@ -89,8 +88,9 @@ Every research run includes up to 10 intelligence layers:
 
 | Route | Page | Description |
 |-------|------|-------------|
-| `/` | Landing | Public marketing page with live community stats |
-| `/examples` | Examples & Changelog | Sample reports and recent product updates |
+| `/` | Landing | Public marketing page with feature highlights and waitlist |
+| `/examples` | Examples | Sample validation reports |
+| `/changelog` | Changelog | Product update timeline |
 | `/auth` | Auth | Sign up / sign in / guest mode |
 | `/dashboard` | Dashboard | Welcome screen with quick stats and CTA cards |
 | `/chat` | Orbis AI | Personalized AI advisor for strategy and brainstorming |
@@ -99,6 +99,8 @@ Every research run includes up to 10 intelligence layers:
 | `/ideas` | My Ideas | Backlog of saved ideas with status tracking |
 | `/history` | History | Past research runs and AI conversations |
 | `/analytics` | Analytics | Personal usage analytics |
+| `/features` | Features | Detailed feature breakdown with interactive demos |
+| `/community` | Community Trends | Live research trends, category breakdown, and top ideas |
 
 ## Edge Functions
 
@@ -113,8 +115,28 @@ Every research run includes up to 10 intelligence layers:
 | `community-stats` | Aggregated community statistics (public) |
 | `delete-account` | Full account deletion with service role data sweep |
 | `analyze-images` | Image analysis for attached screenshots and mockups |
+| `showcase-reports` | Curated showcase reports for the landing page |
 
 ## Changelog
+
+### v2.7 — Mar 2026
+- **Multi-Stage Deep Research** — Replaced single `sonar-deep-research` call (2-5 min, frequent timeouts) with 3 fast sequential `sonar-pro` stages (~15s each). Results appear progressively as each stage completes.
+- **Progressive Result Rendering** — Deep mode switches to results view after stage 1, then loads additional sections (ideas/competitors, intelligence) with loading indicators as subsequent stages finish.
+- **Mobile Responsiveness** — Fixed landing page headline wrapping, Examples page card layout, market sizing pill overflow, and responsive padding/font sizes across pages.
+- **Go Pro Upgrade Flow** — New upgrade modal accessible to all users (guest + registered) via sidebar Go Pro button.
+- **Double Credit Fix** — Fixed bug where deep research could deduct credits multiple times; credits now only deducted on the first stage.
+- **Accessibility Fixes** — Resolved Radix UI `DialogDescription` warnings across all modal components.
+- **Community Trends Privacy** — Removed raw usage counts from community trends; now shows percentages only.
+
+### v2.6 — Mar 2026
+- **Free Reports + Waitlist Model** — Replaced credit system with 2 free research reports and a $19/month unlimited waitlist.
+- **Features Page** — New `/features` page with interactive feature breakdown and comparison.
+- **Community Trends Page** — New `/community` page with live research trends, category breakdown, verdict distribution, and top-scored ideas leaderboard.
+- **GenerateIdeas Redesign** — Quick summary card, "Real Problems Found" with preview quotes, restructured ranked idea cards with color-coded scores, market intelligence context subtitle.
+- **ValidationScorecard Redesign** — Cleaner layout with larger score display, improved evidence section, and streamlined verdict presentation.
+- **Edge Function Auth Fix** — Fixed authentication in all edge functions (replaced broken `getClaims` with `getUser`).
+- **Upgrade Modal** — New modal for prompting users to join the unlimited plan waitlist.
+- **Profile Sheet Update** — Replaced credit display with plan status and upgrade CTA.
 
 ### v2.5 — Feb 2026
 - **Voice Input** — Added browser-native voice-to-text input across all chat interfaces (Orbis Chat, Generate Ideas, Validate Idea). Uses Web Speech API — no API key needed. Works on desktop, mobile, and PWA.

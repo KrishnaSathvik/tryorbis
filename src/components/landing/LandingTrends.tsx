@@ -26,6 +26,26 @@ const tooltipStyle = {
   itemStyle: { color: "hsl(220 20% 10%)" },
 };
 
+function TrendTooltip({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null;
+  const gen = payload.find((p: any) => p.dataKey === "generated")?.value ?? 0;
+  const val = payload.find((p: any) => p.dataKey === "validated")?.value ?? 0;
+  const total = gen + val;
+  return (
+    <div style={{ background: "hsl(0 0% 100% / 0.95)", border: "1px solid hsl(220 13% 91%)", borderRadius: "8px", fontSize: "12px", boxShadow: "0 4px 12px hsl(0 0% 0% / 0.08)", padding: "6px 10px" }}>
+      <p style={{ color: "hsl(220 10% 46%)", margin: "0 0 2px", fontWeight: 600 }}>{label}</p>
+      {total > 0 ? (
+        <>
+          <p style={{ color: "hsl(220, 70%, 50%)", margin: 0 }}>Generated: {Math.round((gen / total) * 100)}%</p>
+          <p style={{ color: "hsl(142, 72%, 40%)", margin: 0 }}>Validated: {Math.round((val / total) * 100)}%</p>
+        </>
+      ) : (
+        <p style={{ color: "hsl(220 10% 46%)", margin: 0 }}>No activity</p>
+      )}
+    </div>
+  );
+}
+
 export function LandingTrends({ trendData }: Props) {
   if (!trendData || trendData.length < 2) return null;
 
@@ -51,7 +71,7 @@ export function LandingTrends({ trendData }: Props) {
             <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(220 13% 91%)" />
             <XAxis dataKey="label" tick={{ fontSize: 11, fill: "hsl(220 10% 46%)" }} axisLine={false} tickLine={false} />
             <YAxis allowDecimals={false} hide />
-            <Tooltip {...tooltipStyle} />
+            <Tooltip content={<TrendTooltip />} />
             <Area type="monotone" dataKey="generated" name="Generated" stroke="hsl(220, 70%, 50%)" fill="url(#gradGenerated)" strokeWidth={2} dot={false} />
             <Area type="monotone" dataKey="validated" name="Validated" stroke="hsl(142, 72%, 40%)" fill="url(#gradValidated)" strokeWidth={2} dot={false} />
           </AreaChart>

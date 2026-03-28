@@ -21,6 +21,7 @@ const OrbisChat = React.lazy(() => import("./pages/OrbisChat"));
 const Features = React.lazy(() => import("./pages/Features"));
 const Community = React.lazy(() => import("./pages/Community"));
 const Examples = React.lazy(() => import("./pages/Examples"));
+const Changelog = React.lazy(() => import("./pages/Changelog"));
 const NotFound = React.lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -45,6 +46,7 @@ const AppRoutes = () => (
       <Route path="/features" element={<Features />} />
       <Route path="/community" element={<Community />} />
       <Route path="/examples" element={<Examples />} />
+      <Route path="/changelog" element={<Changelog />} />
       <Route path="/auth" element={<Auth />} />
       <Route path="/try" element={<Navigate to="/auth?mode=guest" replace />} />
       <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>

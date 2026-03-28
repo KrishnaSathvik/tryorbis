@@ -3,9 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { LandingComparison } from "@/components/landing/LandingComparison";
-import orbisLogo from "@/assets/orbis-logo.png";
+import { PublicHeader } from "@/components/PublicHeader";
+import { PublicFooter } from "@/components/PublicFooter";
 import {
   ArrowRight,
   Search,
@@ -34,23 +34,7 @@ export default function Features() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* ── NAV ── */}
-      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border/50">
-        <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
-          <a href="/" className="flex items-center gap-2">
-            <img src={orbisLogo} alt="Orbis" className="h-6 w-6 sm:h-7 sm:w-7 dark-invert" />
-            <span className="text-lg sm:text-xl font-bold tracking-tight font-nunito text-gradient-primary">Orbis</span>
-          </a>
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" className="hidden sm:inline-flex rounded-full" onClick={() => navigate("/")}>Home</Button>
-            <Button variant="ghost" size="sm" className="hidden sm:inline-flex rounded-full" onClick={() => navigate("/community")}>Community</Button>
-            <ThemeToggle />
-            <Button onClick={handleCta} size="sm" className="rounded-full bg-foreground text-background hover:bg-foreground/90">
-              {user ? "Dashboard" : "Try Free"}
-            </Button>
-          </div>
-        </div>
-      </header>
+      <PublicHeader />
 
       {/* ── HERO ── */}
       <section className="relative overflow-hidden">
@@ -198,75 +182,6 @@ export default function Features() {
       {/* ── COMPETITIVE COMPARISON ── */}
       <LandingComparison />
 
-      {/* ── CHANGELOG ── */}
-      <section className="max-w-3xl mx-auto px-6 py-16 space-y-8">
-        <div className="text-center space-y-2">
-          <p className="text-xs font-bold tracking-widest uppercase text-muted-foreground">Updates</p>
-          <h2 className="text-2xl sm:text-3xl font-bold font-nunito">Changelog</h2>
-        </div>
-        <div className="space-y-6">
-          {[
-            {
-              version: "v2.6", date: "Mar 2026",
-              items: [
-                "Validation Scorecard — 7-dimension 'Should you build this?' visual scorecard",
-                "New landing page with embedded example report",
-                "Waitlist for upcoming unlimited plan",
-                "Improved SEO with noscript fallback content",
-              ],
-            },
-            {
-              version: "v2.5", date: "Feb 2026",
-              items: [
-                "Voice input — browser-native voice-to-text across all chat interfaces",
-                "Multi-file upload (up to 10) — images, PDFs, text files",
-                "Drag & drop file uploads with visual drop zone overlay",
-                "Image support in Orbis AI — analyze screenshots and mockups",
-                "Smart model routing — auto-selects optimal AI model by query complexity",
-              ],
-            },
-            {
-              version: "v2.0", date: "Jan 2026",
-              items: [
-                "10-dimension market intelligence (WTP, competition, timing, ICP, workarounds, feature gaps, platform risk, GTM, pricing, defensibility)",
-                "Orbis AI advisor with personalized context",
-                "Deep Research mode for thorough analysis",
-                "Market sizing with TAM/SAM/SOM",
-                "AI Handoff to ChatGPT, Claude, Gemini, Cursor, Codex",
-              ],
-            },
-            {
-              version: "v1.0", date: "Dec 2025",
-              items: [
-                "Initial launch — idea validation with Build / Pivot / Skip verdict",
-                "Demand, Pain, Competition, MVP Feasibility scoring",
-                "Pros & cons, gap opportunities, kill test",
-                "Competitor analysis with pricing",
-                "Evidence links with source attribution",
-              ],
-            },
-          ].map((release) => (
-            <div key={release.version} className="flex gap-4">
-              <div className="flex flex-col items-center">
-                <div className="h-3 w-3 rounded-full bg-primary shrink-0 mt-1.5" />
-                <div className="w-px flex-1 bg-border/50" />
-              </div>
-              <div className="pb-6">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-sm font-bold font-nunito">{release.version}</span>
-                  <span className="text-xs text-muted-foreground">{release.date}</span>
-                </div>
-                <ul className="space-y-1">
-                  {release.items.map((item, i) => (
-                    <li key={i} className="text-sm text-muted-foreground leading-relaxed">• {item}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
       {/* ── CTA ── */}
       <section className="relative py-16 text-center px-6 overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,hsl(var(--primary)/0.04)_0%,transparent_60%)]" />
@@ -278,21 +193,7 @@ export default function Features() {
         </div>
       </section>
 
-      {/* ── FOOTER ── */}
-      <footer className="border-t border-border/50 py-8">
-        <div className="max-w-5xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <a href="/" className="flex items-center gap-2">
-            <img src={orbisLogo} alt="Orbis" className="h-5 w-5 dark-invert" />
-            <span className="font-bold font-nunito text-gradient-primary text-sm">Orbis</span>
-          </a>
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <button onClick={() => navigate("/")} className="hover:text-foreground transition-colors">Home</button>
-            <button onClick={() => navigate("/community")} className="hover:text-foreground transition-colors">Community</button>
-            <button onClick={() => navigate("/examples")} className="hover:text-foreground transition-colors">Examples</button>
-          </div>
-          <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} Orbis</p>
-        </div>
-      </footer>
+      <PublicFooter />
     </div>
   );
 }

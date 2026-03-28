@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Flame, Users, FolderOpen, Zap, Target } from "lucide-react";
+import { Flame, Users, FolderOpen } from "lucide-react";
 
 interface TrendingNow {
   categories: { name: string; count: number }[];
@@ -20,19 +20,13 @@ interface TickerItem {
 }
 
 export function LandingTicker({ trendingNow }: Props) {
-  const { categories, personas, recentIdeas, recentValidations, recentRuns } = trendingNow;
+  const { categories, personas } = trendingNow;
 
-  // Build ticker items
+  // Build ticker items — show trends without exposing raw counts
   const items: TickerItem[] = [];
 
-  if (recentIdeas > 0) {
-    items.push({ icon: Zap, text: `${recentIdeas} ideas generated in 24h`, color: "hsl(220, 70%, 50%)" });
-  }
-  if (recentValidations > 0) {
-    items.push({ icon: Target, text: `${recentValidations} validations in 24h`, color: "hsl(142, 72%, 40%)" });
-  }
   for (const cat of categories.slice(0, 3)) {
-    items.push({ icon: FolderOpen, text: `"${cat.name}" trending (${cat.count} runs)`, color: "hsl(262, 60%, 55%)" });
+    items.push({ icon: FolderOpen, text: `"${cat.name}" trending`, color: "hsl(262, 60%, 55%)" });
   }
   for (const persona of personas.slice(0, 2)) {
     items.push({ icon: Users, text: `"${persona.name}" being researched`, color: "hsl(38, 92%, 50%)" });

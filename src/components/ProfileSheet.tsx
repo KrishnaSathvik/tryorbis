@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from "@/components/ui/sheet";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
@@ -8,6 +9,7 @@ import { useCredits } from "@/hooks/useCredits";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { UpgradeModal } from "@/components/UpgradeModal";
 import {
   Mail,
   FileText,
@@ -16,6 +18,7 @@ import {
   Trash2,
   LogOut,
   Shield,
+  Sparkles,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -42,6 +45,7 @@ export function ProfileSheet({ children }: ProfileSheetProps) {
   const [deleting, setDeleting] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const displayName = profile?.display_name || "User";
   const initials = displayName
@@ -97,7 +101,8 @@ export function ProfileSheet({ children }: ProfileSheetProps) {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>{children}</SheetTrigger>
-      <SheetContent side="left" className="w-[340px] sm:w-[380px] p-0 rounded-r-2xl border-r-0 overflow-y-auto">
+      <SheetContent side="left" className="w-[340px] sm:w-[380px] p-0 rounded-r-2xl border-r-0 overflow-y-auto" aria-describedby={undefined}>
+        <VisuallyHidden><SheetTitle>Profile</SheetTitle></VisuallyHidden>
         <div className="flex flex-col h-full">
           {/* Header / Avatar */}
           <div className="flex flex-col items-center pt-8 pb-6 px-6">
@@ -166,6 +171,14 @@ export function ProfileSheet({ children }: ProfileSheetProps) {
                 Upgrade to Full Account
               </Button>
             )}
+
+            <Button
+              className="w-full rounded-xl gap-2 mt-2 bg-foreground text-background hover:bg-foreground/90"
+              onClick={() => setUpgradeOpen(true)}
+            >
+              <Sparkles className="h-4 w-4" />
+              Go Pro — Unlimited Reports
+            </Button>
           </div>
 
           <Separator />
@@ -246,6 +259,8 @@ export function ProfileSheet({ children }: ProfileSheetProps) {
             </p>
           </div>
         </div>
+
+        <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} />
       </SheetContent>
     </Sheet>
   );

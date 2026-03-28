@@ -15,7 +15,7 @@ import { useCredits } from "@/hooks/useCredits";
 import { supabase } from "@/integrations/supabase/client";
 import { saveValidationReportDb, addToBacklogDb } from "@/lib/db";
 import { toast } from "sonner";
-import { Bookmark, Lightbulb, ThumbsUp, ThumbsDown, Target, AlertTriangle, Send, Search, Globe, Rocket, RefreshCw, XOctagon, Info } from "lucide-react";
+import { Bookmark, Lightbulb, ThumbsUp, ThumbsDown, Target, AlertTriangle, Send, Search, Globe, Rocket, RefreshCw, XOctagon, Info, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { FileUpload } from "@/components/FileUpload";
@@ -87,7 +87,7 @@ export default function ValidateIdea() {
   const navigate = useNavigate();
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const { hasCredits, deductCredit } = useCredits();
+  const { hasCredits, refreshCredits } = useCredits();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const prefilled = searchParams.get('idea') || "";
@@ -102,6 +102,7 @@ export default function ValidateIdea() {
   const [report, setReport] = useState<Report | null>(null);
   const [validatingParams, setValidatingParams] = useState<{ ideaText: string } | null>(null);
   const [researchMode, setResearchMode] = useState<'regular' | 'deep'>('regular');
+  const [deepStage, setDeepStage] = useState<'core' | 'competitors' | 'intelligence' | null>(null);
 
   const processDroppedFiles = async (files: File[]) => {
     const remaining = 10 - attachments.length;
@@ -166,57 +167,113 @@ export default function ValidateIdea() {
     const updated = [...messages, userMsg]; setMessages(updated); sendToAI(updated);
   };
 
+  const getImageContext = useCallback(async (ideaText: string) => {
+    let imageContext = "";
+    const imageAttachments = attachments.filter(a => a.type === "image" && a.base64);
+    if (imageAttachments.length > 0) {
+      try {
+        const { data: analysisData, error: analysisError } = await supabase.functions.invoke('analyze-images', {
+          body: { images: imageAttachments.map(a => a.base64), context: `Validating startup idea: "${ideaText}"` },
+        });
+        if (!analysisError && analysisData?.analysis) imageContext = `\n\nVisual context from user-provided images:\n${analysisData.analysis}`;
+      } catch (e) { console.error("Image analysis failed:", e); }
+    }
+    const textAttachments = attachments.filter(a => a.type === "text" && a.base64);
+    textAttachments.forEach(a => { imageContext += `\n\nAttached file (${a.file.name}):\n${a.base64!.slice(0, 5000)}`; });
+    return imageContext;
+  }, [attachments]);
+
   const triggerValidation = useCallback(async (ideaText: string) => {
     if (!hasCredits) { setUpgradeOpen(true); return; }
-    setPhase('researching'); setCurrentStep(0);
+    setPhase('researching'); setCurrentStep(0); setDeepStage(null);
     try {
-      // If there are image attachments, analyze them first via Gemini
-      let imageContext = "";
-      const imageAttachments = attachments.filter(a => a.type === "image" && a.base64);
-      if (imageAttachments.length > 0) {
-        try {
-          const { data: analysisData, error: analysisError } = await supabase.functions.invoke('analyze-images', {
-            body: { images: imageAttachments.map(a => a.base64), context: `Validating startup idea: "${ideaText}"` },
-          });
-          if (!analysisError && analysisData?.analysis) {
-            imageContext = `\n\nVisual context from user-provided images:\n${analysisData.analysis}`;
-          }
-        } catch (e) { console.error("Image analysis failed:", e); }
-      }
-      // Include text file content
-      const textAttachments = attachments.filter(a => a.type === "text" && a.base64);
-      textAttachments.forEach(a => {
-        imageContext += `\n\nAttached file (${a.file.name}):\n${a.base64!.slice(0, 5000)}`;
-      });
+      const imageContext = await getImageContext(ideaText);
 
-      const stepDelay = researchMode === 'deep' ? 8000 : 3500;
-      const stepInterval = setInterval(() => { setCurrentStep(prev => { if (prev >= researchSteps.length - 1) { clearInterval(stepInterval); return prev; } return prev + 1; }); }, stepDelay);
-      const { data, error } = await supabase.functions.invoke('perplexity-validate', { body: { ideaText: ideaText + imageContext, mode: researchMode } });
-      clearInterval(stepInterval); setCurrentStep(researchSteps.length);
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      await deductCredit(); // refresh client-side credit count
-      const r: Report = {
-        ideaText, scores: data.scores || { demand: 0, pain: 0, competition: 0, mvpFeasibility: 0 },
-        verdict: data.verdict || 'Skip', pros: data.pros || [], cons: data.cons || [],
-        gapOpportunities: data.gapOpportunities || [], mvpWedge: data.mvpWedge || '', killTest: data.killTest || '',
-        competitors: data.competitors || [], evidenceLinks: data.evidenceLinks || [],
-        marketSizing: data.marketSizing || undefined,
-        wtpSignals: data.wtpSignals || undefined,
-        competitionDensity: data.competitionDensity || undefined,
-        marketTiming: data.marketTiming || undefined,
-        icp: data.icp || undefined,
-        workaroundDetection: data.workaroundDetection || undefined,
-        featureGapMap: data.featureGapMap || undefined,
-        platformRisk: data.platformRisk || undefined,
-        gtmStrategy: data.gtmStrategy || undefined,
-        pricingBenchmarks: data.pricingBenchmarks || undefined,
-        defensibility: data.defensibility || undefined,
-      };
-      try { await saveValidationReportDb(r); } catch (e) { console.error("Failed to save to DB:", e); }
-      setReport(r); setPhase('results');
-    } catch (err: any) { toast.error("Validation failed: " + (err.message || "Unknown error")); setPhase('chat'); }
-  }, [hasCredits, deductCredit, researchMode, attachments]);
+      if (researchMode === 'deep') {
+        // ── Multi-stage deep validation (3 x sonar-pro, ~15s each) ──
+        setDeepStage('core');
+
+        // Stage 1: Core validation (scores, verdict, strategy)
+        const { data: s1, error: e1 } = await supabase.functions.invoke('perplexity-validate', {
+          body: { ideaText: ideaText + imageContext, mode: 'deep', stage: 'core' },
+        });
+        if (e1) throw e1;
+        if (s1?.error) throw new Error(s1.error);
+
+        // Show core results immediately
+        const partialReport: Report = {
+          ideaText,
+          scores: s1.scores || { demand: 0, pain: 0, competition: 0, mvpFeasibility: 0 },
+          verdict: s1.verdict || 'Skip', pros: s1.pros || [], cons: s1.cons || [],
+          gapOpportunities: s1.gapOpportunities || [], mvpWedge: s1.mvpWedge || '', killTest: s1.killTest || '',
+          competitors: [], evidenceLinks: s1.evidenceLinks || [],
+        };
+        setReport(partialReport); setPhase('results'); setDeepStage('competitors');
+        refreshCredits();
+
+        const coreSummary = `Verdict: ${s1.verdict}, Demand: ${s1.scores?.demand}, Pain: ${s1.scores?.pain}, Competition: ${s1.scores?.competition}, Feasibility: ${s1.scores?.mvpFeasibility}. Pros: ${(s1.pros || []).join('; ')}. Cons: ${(s1.cons || []).join('; ')}.`;
+
+        // Stage 2: Competitors & market sizing
+        const { data: s2, error: e2 } = await supabase.functions.invoke('perplexity-validate', {
+          body: { ideaText, mode: 'deep', stage: 'competitors', previousContext: coreSummary },
+        });
+        if (e2) throw e2;
+        if (s2?.error) throw new Error(s2.error);
+
+        setReport(prev => prev ? { ...prev, competitors: s2.competitors || [], marketSizing: s2.marketSizing } : prev);
+        setDeepStage('intelligence');
+
+        // Stage 3: Market intelligence
+        const competitorNames = (s2.competitors || []).map((c: any) => c.name).join(', ');
+        const { data: s3, error: e3 } = await supabase.functions.invoke('perplexity-validate', {
+          body: { ideaText, mode: 'deep', stage: 'intelligence', previousContext: `${coreSummary}\nCompetitors: ${competitorNames}` },
+        });
+        if (e3) throw e3;
+        if (s3?.error) throw new Error(s3.error);
+
+        const finalReport: Report = {
+          ...partialReport,
+          competitors: s2.competitors || [], marketSizing: s2.marketSizing,
+          wtpSignals: s3.wtpSignals, competitionDensity: s3.competitionDensity, marketTiming: s3.marketTiming,
+          icp: s3.icp, workaroundDetection: s3.workaroundDetection, featureGapMap: s3.featureGapMap,
+          platformRisk: s3.platformRisk, gtmStrategy: s3.gtmStrategy, pricingBenchmarks: s3.pricingBenchmarks,
+          defensibility: s3.defensibility,
+        };
+        setReport(finalReport); setDeepStage(null);
+        try { await saveValidationReportDb(finalReport); } catch (e) { console.error("Failed to save to DB:", e); }
+
+      } else {
+        // ── Regular mode (single call) ──
+        const stepInterval = setInterval(() => { setCurrentStep(prev => { if (prev >= researchSteps.length - 1) { clearInterval(stepInterval); return prev; } return prev + 1; }); }, 3500);
+        const { data, error } = await supabase.functions.invoke('perplexity-validate', { body: { ideaText: ideaText + imageContext, mode: researchMode } });
+        clearInterval(stepInterval); setCurrentStep(researchSteps.length);
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+        refreshCredits();
+        const r: Report = {
+          ideaText, scores: data.scores || { demand: 0, pain: 0, competition: 0, mvpFeasibility: 0 },
+          verdict: data.verdict || 'Skip', pros: data.pros || [], cons: data.cons || [],
+          gapOpportunities: data.gapOpportunities || [], mvpWedge: data.mvpWedge || '', killTest: data.killTest || '',
+          competitors: data.competitors || [], evidenceLinks: data.evidenceLinks || [],
+          marketSizing: data.marketSizing, wtpSignals: data.wtpSignals, competitionDensity: data.competitionDensity,
+          marketTiming: data.marketTiming, icp: data.icp, workaroundDetection: data.workaroundDetection,
+          featureGapMap: data.featureGapMap, platformRisk: data.platformRisk, gtmStrategy: data.gtmStrategy,
+          pricingBenchmarks: data.pricingBenchmarks, defensibility: data.defensibility,
+        };
+        try { await saveValidationReportDb(r); } catch (e) { console.error("Failed to save to DB:", e); }
+        setReport(r); setPhase('results');
+      }
+    } catch (err: any) {
+      const msg = err.message || "Unknown error";
+      if (msg.includes("unable_to_fulfill") || msg.includes("timed out") || msg.includes("deadline") || msg.includes("FUNCTION_INVOCATION_TIMEOUT")) {
+        toast.error("Deep research timed out — this model needs more time than the server allows. Try Regular mode instead.", { duration: 6000 });
+      } else {
+        toast.error("Validation failed: " + msg);
+      }
+      setDeepStage(null);
+      setPhase('chat');
+    }
+  }, [hasCredits, refreshCredits, researchMode, getImageContext]);
 
   const handleAddToBacklog = async () => {
     if (!report) return;
@@ -228,7 +285,7 @@ export default function ValidateIdea() {
 
   const resetChat = () => {
     setMessages([{ id: '1', role: 'assistant', text: "Describe your idea and I'll validate it — checking demand, competition, and feasibility. You can also attach competitor screenshots or market data." }]);
-    setInputValue(""); setPhase('chat'); setReport(null); setIsTyping(false); setValidatingParams(null); setAttachments([]);
+    setInputValue(""); setPhase('chat'); setReport(null); setIsTyping(false); setValidatingParams(null); setAttachments([]); setDeepStage(null);
   };
 
   if (phase === 'chat') {
@@ -294,9 +351,43 @@ export default function ValidateIdea() {
     return (
       <div className="max-w-lg mx-auto mt-20 animate-fade-in">
         <Card className="rounded-[32px] shadow-lg"><CardContent className="p-8">
-          <h2 className="text-xl font-semibold font-nunito mb-2">Validating...</h2>
-          <p className="text-sm text-muted-foreground mb-4">Researching demand, competition, and feasibility.</p>
-          <ResearchTrace steps={researchSteps} currentStep={currentStep} isComplete={false} mode={researchMode} />
+          <h2 className="text-xl font-semibold font-nunito mb-2">
+            {deepStage === 'core' ? 'Stage 1/3 — Core Validation...' : 'Validating...'}
+          </h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            {deepStage === 'core'
+              ? 'Scoring demand, pain, competition & feasibility. Results will appear progressively.'
+              : 'Researching demand, competition, and feasibility.'}
+          </p>
+          {deepStage ? (
+            <div className="space-y-4 py-4">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/5 border border-primary/10">
+                <Loader2 className="h-4 w-4 text-primary animate-spin" />
+                <span className="text-xs font-semibold text-primary">Deep Validation — 3 Stages</span>
+                <span className="text-xs text-muted-foreground ml-auto">~45s total</span>
+              </div>
+              {['core', 'competitors', 'intelligence'].map((s, i) => (
+                <div key={s} className="flex items-center gap-3">
+                  {deepStage === s ? (
+                    <Loader2 className="h-5 w-5 text-primary animate-spin shrink-0" />
+                  ) : i < ['core', 'competitors', 'intelligence'].indexOf(deepStage) ? (
+                    <div className="h-5 w-5 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
+                      <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                    </div>
+                  ) : (
+                    <div className="h-5 w-5 rounded-full border-2 border-accent shrink-0" />
+                  )}
+                  <span className={`text-sm ${deepStage === s ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
+                    {s === 'core' && 'Scoring & verdict analysis'}
+                    {s === 'competitors' && 'Competitor & market sizing research'}
+                    {s === 'intelligence' && 'Deep market intelligence'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <ResearchTrace steps={researchSteps} currentStep={currentStep} isComplete={false} mode={researchMode} />
+          )}
         </CardContent></Card>
       </div>
     );
@@ -391,6 +482,17 @@ export default function ValidateIdea() {
         </CardContent></Card>
       )}
 
+      {/* ─── Intelligence loading indicator ─── */}
+      {deepStage === 'intelligence' && (
+        <div className="flex items-center gap-3 p-4 rounded-2xl bg-secondary/40 border border-border/50 animate-pulse">
+          <Loader2 className="h-5 w-5 text-primary animate-spin shrink-0" />
+          <div>
+            <p className="text-sm font-medium">Analyzing market intelligence...</p>
+            <p className="text-xs text-muted-foreground">Researching WTP signals, competition density, timing, ICP, pricing, and defensibility.</p>
+          </div>
+        </div>
+      )}
+
       {/* ─── Intelligence Layers (Phase 1 + 2 + 3) ─── */}
       {(report!.wtpSignals || report!.competitionDensity || report!.marketTiming || report!.icp || report!.workaroundDetection || report!.featureGapMap || report!.platformRisk || report!.gtmStrategy || report!.pricingBenchmarks || report!.defensibility) && (
         <div>
@@ -434,6 +536,16 @@ export default function ValidateIdea() {
           {report!.marketSizing.methodology && (
             <p className="text-xs text-muted-foreground mt-3 leading-relaxed italic">{report!.marketSizing.methodology}</p>
           )}
+        </div>
+      )}
+
+      {deepStage === 'competitors' && report!.competitors.length === 0 && (
+        <div className="flex items-center gap-3 p-4 rounded-2xl bg-secondary/40 border border-border/50 animate-pulse">
+          <Loader2 className="h-5 w-5 text-primary animate-spin shrink-0" />
+          <div>
+            <p className="text-sm font-medium">Researching competitors & market size...</p>
+            <p className="text-xs text-muted-foreground">Finding real company names, pricing, and TAM/SAM/SOM data.</p>
+          </div>
         </div>
       )}
 

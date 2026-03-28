@@ -63,9 +63,7 @@ function TreemapCell(props: any) {
               {line}
             </text>
           ))}
-          <text x={x + width / 2} y={startY + lines.length * lineHeight} textAnchor="middle" dominantBaseline="central" fill="hsl(0 0% 100% / 0.8)" fontSize={11}>
-            {count ?? ""}
-          </text>
+          {/* count label removed to avoid exposing raw usage numbers */}
         </>
       )}
     </g>
@@ -80,9 +78,21 @@ interface Props {
   };
 }
 
+function PercentTooltip({ active, payload, label, total }: any) {
+  if (!active || !payload?.length) return null;
+  const pct = total > 0 ? Math.round((payload[0].value / total) * 100) : 0;
+  return (
+    <div style={{ background: "hsl(0 0% 100% / 0.95)", border: "1px solid hsl(220 13% 91%)", borderRadius: "8px", fontSize: "12px", boxShadow: "0 4px 12px hsl(0 0% 0% / 0.08)", padding: "6px 10px" }}>
+      <p style={{ color: "hsl(220 20% 10%)", margin: 0 }}>{payload[0]?.payload?.name ?? label}: {pct}%</p>
+    </div>
+  );
+}
+
 export function LandingCharts({ stats }: Props) {
   const { personaData, categoryData, verdictData } = stats;
   const verdictTotal = verdictData.reduce((s, d) => s + d.value, 0);
+  const personaTotal = personaData.reduce((s, d) => s + d.count, 0);
+  const categoryTotal = categoryData.reduce((s, d) => s + d.count, 0);
 
   return (
     <div className="space-y-6">
@@ -99,7 +109,7 @@ export function LandingCharts({ stats }: Props) {
                   <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke="hsl(220 13% 91%)" />
                   <XAxis type="number" hide />
                   <YAxis dataKey="name" type="category" width={130} tick={{ fontSize: 12, fill: "hsl(220 10% 46%)" }} axisLine={false} tickLine={false} />
-                  <Tooltip {...tooltipStyle} cursor={{ fill: "hsl(220 70% 50% / 0.06)" }} />
+                  <Tooltip content={<PercentTooltip total={personaTotal} />} cursor={{ fill: "hsl(220 70% 50% / 0.06)" }} />
                   <Bar dataKey="count" radius={[0, 6, 6, 0]} barSize={24}>
                     {personaData.map((_, i) => (
                       <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} fillOpacity={0.85} />
@@ -163,7 +173,7 @@ export function LandingCharts({ stats }: Props) {
                 stroke="hsl(0 0% 100%)"
                 content={<TreemapCell />}
               >
-                <Tooltip {...tooltipStyle} />
+                <Tooltip content={<PercentTooltip total={categoryTotal} />} />
               </Treemap>
             </ResponsiveContainer>
           </CardContent>

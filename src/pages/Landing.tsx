@@ -5,7 +5,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { PublicHeader } from "@/components/PublicHeader";
+import { PublicFooter } from "@/components/PublicFooter";
 
 /* ─────────────────────────────────────────────
    WAITLIST FORM
@@ -75,8 +76,6 @@ function WaitlistForm() {
     </form>
   );
 }
-import { FeedbackDrawer } from "@/components/FeedbackDrawer";
-import orbisLogo from "@/assets/orbis-logo.png";
 import {
   ArrowRight,
   Search,
@@ -144,51 +143,13 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* ── NAV ── */}
-      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border/50">
-        <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
-          <a href="/" className="flex items-center gap-2">
-            <img src={orbisLogo} alt="Orbis" className="h-6 w-6 sm:h-7 sm:w-7 dark-invert" />
-            <span className="text-lg sm:text-xl font-bold tracking-tight font-nunito text-gradient-primary">Orbis</span>
-          </a>
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="hidden sm:inline-flex rounded-full"
-              onClick={() => navigate("/features")}
-            >
-              Features
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="hidden sm:inline-flex rounded-full"
-              onClick={() => navigate("/community")}
-            >
-              Community
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="hidden sm:inline-flex rounded-full"
-              onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })}
-            >
-              How It Works
-            </Button>
-            <ThemeToggle />
-            <Button onClick={handleCta} size="sm" className="rounded-full bg-foreground text-background hover:bg-foreground/90">
-              {user ? "Dashboard" : "Try Free"}
-            </Button>
-          </div>
-        </div>
-      </header>
+      <PublicHeader />
 
       {/* ── HERO ── */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.06)_0%,transparent_60%)]" />
         <div className="max-w-3xl mx-auto text-center py-20 sm:py-28 px-6 space-y-6 relative">
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.08] font-nunito">
+          <h1 className="text-[1.85rem] sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.08] font-nunito">
             Validate your startup idea
             <br />
             <span className="text-gradient-primary">before you write code.</span>
@@ -421,39 +382,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── FOOTER ── */}
-      <footer className="border-t border-border/50 py-8">
-        <div className="max-w-5xl mx-auto px-6 space-y-4">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <a href="/" className="flex items-center gap-2">
-              <img src={orbisLogo} alt="Orbis" className="h-5 w-5 dark-invert" />
-              <span className="font-bold font-nunito text-gradient-primary text-sm">Orbis</span>
-            </a>
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => navigate("/features")}
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Features
-              </button>
-              <button
-                onClick={() => navigate("/community")}
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Community
-              </button>
-              <button
-                onClick={() => navigate("/examples")}
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Examples
-              </button>
-              <FeedbackDrawer />
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground text-center">© {new Date().getFullYear()} Orbis. All rights reserved.</p>
-        </div>
-      </footer>
+      <PublicFooter />
     </div>
   );
 }

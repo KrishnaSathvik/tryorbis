@@ -12,7 +12,7 @@ import { UpgradeModal } from "@/components/UpgradeModal";
 import { WtpSection, CompetitionDensitySection, MarketTimingSection, IcpSection, WorkaroundSection, FeatureGapSection, PlatformRiskSection, GtmStrategySection, PricingBenchmarkSection, DefensibilitySection } from "@/components/IntelligenceSections";
 import { useCredits } from "@/hooks/useCredits";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, Bookmark, ClipboardCheck, Copy, Send, User, FolderOpen, Monitor, Globe, Rocket, Search } from "lucide-react";
+import { ChevronDown, Bookmark, ClipboardCheck, Copy, Send, User, FolderOpen, Monitor, Globe, Rocket, Search, Loader2 } from "lucide-react";
 import { ResearchModeToggle } from "@/components/ResearchModeToggle";
 import { supabase } from "@/integrations/supabase/client";
 import { saveGeneratorRunDb, addToBacklogDb } from "@/lib/db";
@@ -51,7 +51,7 @@ export default function GenerateIdeas() {
   const navigate = useNavigate();
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const { hasCredits, deductCredit } = useCredits();
+  const { hasCredits, refreshCredits } = useCredits();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -65,6 +65,7 @@ export default function GenerateIdeas() {
   const [isTyping, setIsTyping] = useState(false);
   const [generatingParams, setGeneratingParams] = useState<any>(null);
   const [researchMode, setResearchMode] = useState<'regular' | 'deep'>('regular');
+  const [deepStage, setDeepStage] = useState<'problems' | 'ideas' | 'intelligence' | null>(null);
 
   const processDroppedFiles = async (files: File[]) => {
     const remaining = 10 - attachments.length;
@@ -130,51 +131,110 @@ export default function GenerateIdeas() {
     const updated = [...messages, userMsg]; setMessages(updated); sendToAI(updated);
   };
 
+  const getImageContext = useCallback(async (params: any) => {
+    let imageContext = "";
+    const imageAttachments = attachments.filter(a => a.type === "image" && a.base64);
+    if (imageAttachments.length > 0) {
+      try {
+        const { data: analysisData, error: analysisError } = await supabase.functions.invoke('analyze-images', {
+          body: { images: imageAttachments.map(a => a.base64), context: `Generating ideas for: ${params.persona} in ${params.category}` },
+        });
+        if (!analysisError && analysisData?.analysis) imageContext = analysisData.analysis;
+      } catch (e) { console.error("Image analysis failed:", e); }
+    }
+    const textAttachments = attachments.filter(a => a.type === "text" && a.base64);
+    textAttachments.forEach(a => { imageContext += `\n\nAttached file (${a.file.name}):\n${a.base64!.slice(0, 5000)}`; });
+    return imageContext;
+  }, [attachments]);
+
   const triggerGenerate = useCallback(async (params: any) => {
     if (!hasCredits) { setUpgradeOpen(true); return; }
-    setPhase('researching'); setResearchStep(0);
+    setPhase('researching'); setResearchStep(0); setDeepStage(null);
     try {
-      // Analyze image attachments via Gemini
-      let imageContext = "";
-      const imageAttachments = attachments.filter(a => a.type === "image" && a.base64);
-      if (imageAttachments.length > 0) {
-        try {
-          const { data: analysisData, error: analysisError } = await supabase.functions.invoke('analyze-images', {
-            body: { images: imageAttachments.map(a => a.base64), context: `Generating ideas for: ${params.persona} in ${params.category}` },
-          });
-          if (!analysisError && analysisData?.analysis) {
-            imageContext = analysisData.analysis;
-          }
-        } catch (e) { console.error("Image analysis failed:", e); }
-      }
-      // Include text file content
-      const textAttachments = attachments.filter(a => a.type === "text" && a.base64);
-      textAttachments.forEach(a => {
-        imageContext += `\n\nAttached file (${a.file.name}):\n${a.base64!.slice(0, 5000)}`;
-      });
+      const imageContext = await getImageContext(params);
+      const baseBody = { persona: params.persona, category: params.category, region: params.region || undefined, platform: params.platform || undefined };
 
-      const stepDelay = researchMode === 'deep' ? 8000 : 3500;
-      const stepInterval = setInterval(() => { setResearchStep(prev => { if (prev >= researchSteps.length - 1) { clearInterval(stepInterval); return prev; } return prev + 1; }); }, stepDelay);
-      const { data, error } = await supabase.functions.invoke('perplexity-generate', {
-        body: { persona: params.persona, category: params.category, region: params.region || undefined, platform: params.platform || undefined, context: (params.context || "") + (imageContext ? `\n\nVisual/file context:\n${imageContext}` : ""), mode: researchMode },
-      });
-      clearInterval(stepInterval); setResearchStep(researchSteps.length);
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      await deductCredit(); // refresh client-side credit count
-      const run: GeneratorResult = {
-        persona: params.persona, category: params.category,
-        region: params.region || undefined, platform: params.platform || undefined,
-        problemClusters: data.problemClusters || [], ideaSuggestions: data.ideaSuggestions || [],
-        wtpSignals: data.wtpSignals || undefined, competitionDensity: data.competitionDensity || undefined,
-        marketTiming: data.marketTiming || undefined, icp: data.icp || undefined,
-        workaroundDetection: data.workaroundDetection || undefined, featureGapMap: data.featureGapMap || undefined, platformRisk: data.platformRisk || undefined,
-        gtmStrategy: data.gtmStrategy || undefined, pricingBenchmarks: data.pricingBenchmarks || undefined, defensibility: data.defensibility || undefined,
-      };
-      try { await saveGeneratorRunDb(run); } catch (e) { console.error("Failed to save:", e); }
-      setResult(run); setPhase('results');
-    } catch (err: any) { toast.error("Generation failed: " + (err.message || "Unknown error")); setPhase('chat'); }
-  }, [hasCredits, deductCredit, researchMode, attachments]);
+      if (researchMode === 'deep') {
+        // ── Multi-stage deep research (3 x sonar-pro, ~15s each) ──
+        setDeepStage('problems');
+
+        // Stage 1: Mine complaints
+        const { data: s1, error: e1 } = await supabase.functions.invoke('perplexity-generate', {
+          body: { ...baseBody, context: (params.context || "") + (imageContext ? `\n\nVisual/file context:\n${imageContext}` : ""), mode: 'deep', stage: 'problems' },
+        });
+        if (e1) throw e1;
+        if (s1?.error) throw new Error(s1.error);
+
+        // Show problems immediately → switch to results
+        const partialResult: GeneratorResult = { ...baseBody, problemClusters: s1.problemClusters || [], ideaSuggestions: [] };
+        setResult(partialResult); setPhase('results'); setDeepStage('ideas');
+        refreshCredits();
+
+        const problemsSummary = (s1.problemClusters || []).map((c: any) => `- ${c.theme}: ${c.painSummary} (${c.complaintCount} complaints)`).join('\n');
+
+        // Stage 2: Generate ideas
+        const { data: s2, error: e2 } = await supabase.functions.invoke('perplexity-generate', {
+          body: { ...baseBody, mode: 'deep', stage: 'ideas', previousContext: problemsSummary },
+        });
+        if (e2) throw e2;
+        if (s2?.error) throw new Error(s2.error);
+
+        setResult(prev => prev ? { ...prev, ideaSuggestions: s2.ideaSuggestions || [] } : prev);
+        setDeepStage('intelligence');
+
+        const ideasSummary = (s2.ideaSuggestions || []).map((i: any) => `- ${i.name}: ${i.description} (Score: ${i.demandScore})`).join('\n');
+
+        // Stage 3: Market intelligence
+        const { data: s3, error: e3 } = await supabase.functions.invoke('perplexity-generate', {
+          body: { ...baseBody, mode: 'deep', stage: 'intelligence', previousContext: `Problems:\n${problemsSummary}\n\nIdeas:\n${ideasSummary}` },
+        });
+        if (e3) throw e3;
+        if (s3?.error) throw new Error(s3.error);
+
+        const finalResult: GeneratorResult = {
+          ...baseBody,
+          problemClusters: s1.problemClusters || [], ideaSuggestions: s2.ideaSuggestions || [],
+          wtpSignals: s3.wtpSignals, competitionDensity: s3.competitionDensity, marketTiming: s3.marketTiming,
+          icp: s3.icp, workaroundDetection: s3.workaroundDetection, featureGapMap: s3.featureGapMap,
+          platformRisk: s3.platformRisk, gtmStrategy: s3.gtmStrategy, pricingBenchmarks: s3.pricingBenchmarks,
+          defensibility: s3.defensibility,
+        };
+        setResult(finalResult); setDeepStage(null);
+        try { await saveGeneratorRunDb(finalResult); } catch (e) { console.error("Failed to save:", e); }
+
+      } else {
+        // ── Regular mode (single call) ──
+        const stepInterval = setInterval(() => { setResearchStep(prev => { if (prev >= researchSteps.length - 1) { clearInterval(stepInterval); return prev; } return prev + 1; }); }, 3500);
+        const { data, error } = await supabase.functions.invoke('perplexity-generate', {
+          body: { ...baseBody, context: (params.context || "") + (imageContext ? `\n\nVisual/file context:\n${imageContext}` : ""), mode: researchMode },
+        });
+        clearInterval(stepInterval); setResearchStep(researchSteps.length);
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+        refreshCredits();
+        const run: GeneratorResult = {
+          ...baseBody,
+          problemClusters: data.problemClusters || [], ideaSuggestions: data.ideaSuggestions || [],
+          wtpSignals: data.wtpSignals || undefined, competitionDensity: data.competitionDensity || undefined,
+          marketTiming: data.marketTiming || undefined, icp: data.icp || undefined,
+          workaroundDetection: data.workaroundDetection || undefined, featureGapMap: data.featureGapMap || undefined,
+          platformRisk: data.platformRisk || undefined, gtmStrategy: data.gtmStrategy || undefined,
+          pricingBenchmarks: data.pricingBenchmarks || undefined, defensibility: data.defensibility || undefined,
+        };
+        try { await saveGeneratorRunDb(run); } catch (e) { console.error("Failed to save:", e); }
+        setResult(run); setPhase('results');
+      }
+    } catch (err: any) {
+      const msg = err.message || "Unknown error";
+      if (msg.includes("unable_to_fulfill") || msg.includes("timed out") || msg.includes("deadline") || msg.includes("FUNCTION_INVOCATION_TIMEOUT")) {
+        toast.error("Deep research timed out — this model needs more time than the server allows. Try Regular mode instead.", { duration: 6000 });
+      } else {
+        toast.error("Generation failed: " + msg);
+      }
+      setDeepStage(null);
+      setPhase('chat');
+    }
+  }, [hasCredits, refreshCredits, researchMode, getImageContext]);
 
   const handleAddToBacklog = async (idea: any) => {
     try { await addToBacklogDb({ ideaName: idea.name, source: 'Generated', demandScore: idea.demandScore, status: 'New', description: idea.description, mvpScope: idea.mvpScope, monetization: idea.monetization }); toast.success(`"${idea.name}" saved to My Ideas`); } catch { toast.error("Failed to save"); }
@@ -184,7 +244,7 @@ export default function GenerateIdeas() {
 
   const resetChat = () => {
     setMessages([{ id: '1', role: 'assistant', text: "What kind of product or problem are you thinking about? You can also attach screenshots or files for context." }]);
-    setInputValue(""); setPhase('chat'); setResult(null); setGeneratingParams(null); setAttachments([]);
+    setInputValue(""); setPhase('chat'); setResult(null); setGeneratingParams(null); setAttachments([]); setDeepStage(null);
   };
 
   if (phase === 'chat') {
@@ -253,9 +313,43 @@ export default function GenerateIdeas() {
     return (
       <div className="max-w-lg mx-auto mt-20 animate-fade-in">
         <Card className="rounded-[32px] shadow-lg"><CardContent className="p-8">
-          <h2 className="text-xl font-semibold font-nunito mb-2">Researching...</h2>
-          <p className="text-sm text-muted-foreground mb-4">Mining real complaints and opportunities{generatingParams ? ` for ${generatingParams.persona} in ${generatingParams.category}` : ''}.</p>
-          <ResearchTrace steps={researchSteps} currentStep={researchStep} isComplete={false} mode={researchMode} />
+          <h2 className="text-xl font-semibold font-nunito mb-2">
+            {deepStage === 'problems' ? 'Stage 1/3 — Mining Complaints...' : 'Researching...'}
+          </h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            {deepStage === 'problems'
+              ? 'Searching Reddit, forums & reviews for real pain points. Results will appear progressively.'
+              : `Mining real complaints and opportunities${generatingParams ? ` for ${generatingParams.persona} in ${generatingParams.category}` : ''}.`}
+          </p>
+          {deepStage ? (
+            <div className="space-y-4 py-4">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/5 border border-primary/10">
+                <Loader2 className="h-4 w-4 text-primary animate-spin" />
+                <span className="text-xs font-semibold text-primary">Deep Research — 3 Stages</span>
+                <span className="text-xs text-muted-foreground ml-auto">~45s total</span>
+              </div>
+              {['problems', 'ideas', 'intelligence'].map((s, i) => (
+                <div key={s} className="flex items-center gap-3">
+                  {deepStage === s ? (
+                    <Loader2 className="h-5 w-5 text-primary animate-spin shrink-0" />
+                  ) : i < ['problems', 'ideas', 'intelligence'].indexOf(deepStage) ? (
+                    <div className="h-5 w-5 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
+                      <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                    </div>
+                  ) : (
+                    <div className="h-5 w-5 rounded-full border-2 border-accent shrink-0" />
+                  )}
+                  <span className={`text-sm ${deepStage === s ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
+                    {s === 'problems' && 'Mining complaints & pain points'}
+                    {s === 'ideas' && 'Generating product ideas'}
+                    {s === 'intelligence' && 'Analyzing market intelligence'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <ResearchTrace steps={researchSteps} currentStep={researchStep} isComplete={false} mode={researchMode} />
+          )}
         </CardContent></Card>
       </div>
     );
@@ -357,6 +451,15 @@ export default function GenerateIdeas() {
 
       <div>
         <h2 className="text-lg font-semibold font-nunito mb-4">Product Ideas</h2>
+        {deepStage === 'ideas' && (!result?.ideaSuggestions || result.ideaSuggestions.length === 0) && (
+          <div className="flex items-center gap-3 p-4 rounded-2xl bg-secondary/40 border border-border/50 animate-pulse">
+            <Loader2 className="h-5 w-5 text-primary animate-spin shrink-0" />
+            <div>
+              <p className="text-sm font-medium">Generating product ideas...</p>
+              <p className="text-xs text-muted-foreground">Creating brandable names and MVP scopes based on discovered problems.</p>
+            </div>
+          </div>
+        )}
         <div className="grid md:grid-cols-2 gap-4">
           {result?.ideaSuggestions
             .sort((a: any, b: any) => (b.demandScore || 0) - (a.demandScore || 0))
@@ -405,6 +508,17 @@ export default function GenerateIdeas() {
           ))}
         </div>
       </div>
+
+      {/* ─── Intelligence loading indicator ─── */}
+      {deepStage === 'intelligence' && (
+        <div className="flex items-center gap-3 p-4 rounded-2xl bg-secondary/40 border border-border/50 animate-pulse">
+          <Loader2 className="h-5 w-5 text-primary animate-spin shrink-0" />
+          <div>
+            <p className="text-sm font-medium">Analyzing market intelligence...</p>
+            <p className="text-xs text-muted-foreground">Researching WTP signals, competition, timing, ICP, pricing, and defensibility.</p>
+          </div>
+        </div>
+      )}
 
       {/* ─── Intelligence Layers (Phase 1 + 2 + 3) ─── */}
       {result && (result.wtpSignals || result.competitionDensity || result.marketTiming || result.icp || result.workaroundDetection || result.featureGapMap || result.platformRisk || result.gtmStrategy || result.pricingBenchmarks || result.defensibility) && (

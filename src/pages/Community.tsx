@@ -4,12 +4,12 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { LandingCharts } from "@/components/landing/LandingCharts";
+import { PublicHeader } from "@/components/PublicHeader";
+import { PublicFooter } from "@/components/PublicFooter";
 import { LandingLeaderboard } from "@/components/landing/LandingLeaderboard";
 import { LandingTrends } from "@/components/landing/LandingTrends";
 import { LandingTicker } from "@/components/landing/LandingTicker";
-import orbisLogo from "@/assets/orbis-logo.png";
 import { ArrowRight, TrendingUp, Sparkles } from "lucide-react";
 
 export default function Community() {
@@ -47,23 +47,7 @@ export default function Community() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* ── NAV ── */}
-      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border/50">
-        <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
-          <a href="/" className="flex items-center gap-2">
-            <img src={orbisLogo} alt="Orbis" className="h-6 w-6 sm:h-7 sm:w-7 dark-invert" />
-            <span className="text-lg sm:text-xl font-bold tracking-tight font-nunito text-gradient-primary">Orbis</span>
-          </a>
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" className="hidden sm:inline-flex rounded-full" onClick={() => navigate("/")}>Home</Button>
-            <Button variant="ghost" size="sm" className="hidden sm:inline-flex rounded-full" onClick={() => navigate("/features")}>Features</Button>
-            <ThemeToggle />
-            <Button onClick={handleCta} size="sm" className="rounded-full bg-foreground text-background hover:bg-foreground/90">
-              {user ? "Dashboard" : "Try Free"}
-            </Button>
-          </div>
-        </div>
-      </header>
+      <PublicHeader />
 
       {/* ── HERO ── */}
       <section className="relative overflow-hidden">
@@ -116,7 +100,7 @@ export default function Community() {
             {/* Trend lines */}
             {stats?.trendData && (
               <div>
-                <h2 className="text-lg font-semibold font-nunito mb-4">Category Trends</h2>
+                <h2 className="text-lg font-semibold font-nunito mb-4">Research Activity</h2>
                 <LandingTrends trendData={stats.trendData} />
               </div>
             )}
@@ -142,20 +126,7 @@ export default function Community() {
       </section>
 
       {/* ── FOOTER ── */}
-      <footer className="border-t border-border/50 py-8">
-        <div className="max-w-5xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <a href="/" className="flex items-center gap-2">
-            <img src={orbisLogo} alt="Orbis" className="h-5 w-5 dark-invert" />
-            <span className="font-bold font-nunito text-gradient-primary text-sm">Orbis</span>
-          </a>
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <button onClick={() => navigate("/")} className="hover:text-foreground transition-colors">Home</button>
-            <button onClick={() => navigate("/features")} className="hover:text-foreground transition-colors">Features</button>
-            <button onClick={() => navigate("/examples")} className="hover:text-foreground transition-colors">Examples</button>
-          </div>
-          <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} Orbis</p>
-        </div>
-      </footer>
+      <PublicFooter />
     </div>
   );
 }
