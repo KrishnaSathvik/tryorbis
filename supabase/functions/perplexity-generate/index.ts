@@ -317,7 +317,7 @@ Group complaints into 4-6 thematic clusters ranked by severity x frequency. Gene
       if (fetchErr.name === 'AbortError') {
         // Refund credit on timeout (only if this was the credit-deducting stage)
         if (!stage || stage === 'problems') {
-          await serviceClient.rpc('refund_credit', { p_user_id: userId, p_amount: creditCost }).catch(() => {});
+          try { await serviceClient.rpc('refund_credit', { p_user_id: userId, p_amount: creditCost }); } catch {};
         }
         console.error(`Research timed out after ${timeoutMs}ms — credit refunded`);
         return new Response(JSON.stringify({ error: 'Research timed out. Your credit has been refunded. Try Regular mode for faster results.' }), {
