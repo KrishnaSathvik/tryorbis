@@ -279,7 +279,7 @@ Verdict: "Build" if demand>=65 AND pain>=55 AND competition<75 AND feasibility>=
       clearTimeout(timeout);
       if (fetchErr.name === 'AbortError') {
         if (!stage || stage === 'core') {
-          await serviceClient.rpc('refund_credit', { p_user_id: userId, p_amount: creditCost }).catch(() => {});
+          try { await serviceClient.rpc('refund_credit', { p_user_id: userId, p_amount: creditCost }); } catch {};
         }
         console.error(`Validation timed out after ${timeoutMs}ms — credit refunded`);
         return new Response(JSON.stringify({ error: 'Research timed out. Your credit has been refunded. Try Regular mode for faster results.' }), {
