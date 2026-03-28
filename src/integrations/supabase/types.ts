@@ -430,6 +430,10 @@ export type Database = {
         Returns: boolean
       }
       cleanup_old_request_logs: { Args: never; Returns: undefined }
+      refund_credit: {
+        Args: { p_amount?: number; p_user_id: string }
+        Returns: undefined
+      }
       try_deduct_credit: { Args: { p_user_id: string }; Returns: boolean }
       try_deduct_credits: {
         Args: { p_amount?: number; p_user_id: string }
