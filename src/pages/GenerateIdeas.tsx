@@ -12,6 +12,9 @@ import { UpgradeModal } from "@/components/UpgradeModal";
 import { WtpSection, CompetitionDensitySection, MarketTimingSection, IcpSection, WorkaroundSection, FeatureGapSection, PlatformRiskSection, GtmStrategySection, PricingBenchmarkSection, DefensibilitySection } from "@/components/IntelligenceSections";
 import { useCredits } from "@/hooks/useCredits";
 import { useFocusComposerOnArrive } from "@/hooks/useFocusComposerOnArrive";
+import { StarterChips } from "@/components/StarterChips";
+import { GENERATE_STARTER_CHIPS } from "@/lib/starterChips";
+import { focusComposerAndPlaceCaret } from "@/lib/focusComposer";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, Bookmark, ClipboardCheck, Copy, Send, User, FolderOpen, Monitor, Globe, Rocket, Search, Loader2 } from "lucide-react";
 import { ResearchModeToggle } from "@/components/ResearchModeToggle";
@@ -250,6 +253,21 @@ export default function GenerateIdeas() {
     setInputValue(""); setPhase('chat'); setResult(null); setGeneratingParams(null); setAttachments([]); setDeepStage(null);
   };
 
+  const hasUserMessage = messages.some((m) => m.role === "user");
+  const showStarterChips =
+    !hasUserMessage &&
+    !inputValue.trim() &&
+    attachments.length === 0 &&
+    !isTyping &&
+    !voice.isListening &&
+    !generatingParams;
+
+  const handleStarterSelect = (item: (typeof GENERATE_STARTER_CHIPS)[number]) => {
+    if (inputValue.trim() || attachments.length > 0 || isTyping || hasUserMessage) return;
+    setInputValue(item.value);
+    focusComposerAndPlaceCaret(inputRef.current);
+  };
+
   if (phase === 'chat') {
     return (
       <div className={`max-w-2xl mx-auto flex flex-col h-[calc(100vh-6rem)] animate-fade-in relative ${isDragging ? 'ring-2 ring-primary/40 ring-inset rounded-2xl' : ''}`} {...dropZoneProps}>
@@ -270,6 +288,14 @@ export default function GenerateIdeas() {
               </div>
             </div>
           ))}
+          {showStarterChips && (
+            <StarterChips
+              items={GENERATE_STARTER_CHIPS}
+              onSelect={handleStarterSelect}
+              ariaLabel="Generate idea starters"
+              className="pt-2"
+            />
+          )}
           {isTyping && (
             <div className="flex justify-start">
               <div className="bg-secondary rounded-2xl rounded-bl-md px-4 py-3 flex gap-1.5 items-center">
