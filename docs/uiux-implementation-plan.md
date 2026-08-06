@@ -344,12 +344,13 @@ Avoid dead ends; keep user in product momentum even when paid research is gated.
 **Workstream:** WS6 / WS10  
 **Estimated size:** S  
 **Dependencies:** None  
+**Status:** Implemented — see [`docs/implementation/orb-ux-004-shared-starter-chips.md`](./implementation/orb-ux-004-shared-starter-chips.md)
 
 ### Problem
 Chat has starters; Generate/Validate empty states are sparse.
 
 ### Proposed change
-`StarterChips` with tool-specific examples; clicking fills composer / sends.
+`StarterChips` with tool-specific examples; Generate/Validate fill + focus (no auto-send); Chat preserves send-once.
 
 ### Repository areas
 New `components/StarterChips.tsx`; `GenerateIdeas.tsx`, `ValidateIdea.tsx`, `OrbisChat.tsx`

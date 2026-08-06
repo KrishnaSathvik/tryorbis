@@ -14,8 +14,6 @@ import {
   User,
   Lightbulb,
   Target,
-  Rocket,
-  HelpCircle,
 } from "lucide-react";
 import { FileUpload } from "@/components/FileUpload";
 import { AttachmentPreview } from "@/components/AttachmentPreview";
@@ -25,18 +23,13 @@ import { useDropZone } from "@/hooks/useDropZone";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
 import { VoiceButton } from "@/components/VoiceButton";
 import { useFocusComposerOnArrive } from "@/hooks/useFocusComposerOnArrive";
+import { StarterChips } from "@/components/StarterChips";
+import { CHAT_STARTER_CHIPS } from "@/lib/starterChips";
 
 interface ChatMsg {
   role: "user" | "assistant";
   content: string | any[];
 }
-
-const SUGGESTIONS = [
-  { text: "I have an idea for a SaaS tool — help me think it through", icon: Lightbulb },
-  { text: "What industries have the most unmet needs right now?", icon: Target },
-  { text: "How do I find my first 100 users?", icon: Rocket },
-  { text: "Help me decide between two startup ideas", icon: HelpCircle },
-];
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/orbis-chat`;
 
@@ -52,6 +45,7 @@ export default function OrbisChat() {
   const [isStreaming, setIsStreaming] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const sendingRef = useRef(false);
   useFocusComposerOnArrive(inputRef);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
@@ -129,39 +123,69 @@ export default function OrbisChat() {
     return data.id;
   };
 
-  const persistMessage = async (convoId: string, role: "user" | "assistant", content: string) => {
-    await supabase.from("chat_messages").insert({ conversation_id: convoId, role, content });
+  const persistMessage = async (
+    convoId: string,
+    role: "user" | "assistant",
+    content: string,
+  ) => {
+    const failCode =
+      role === "user"
+        ? "USER_MESSAGE_PERSIST_FAILED"
+        : "ASSISTANT_MESSAGE_PERSIST_FAILED";
+    try {
+      const { error } = await supabase.from("chat_messages").insert({
+        conversation_id: convoId,
+        role,
+        content,
+      });
+      if (error) throw new Error(failCode);
+    } catch (err: unknown) {
+      if (err instanceof Error && err.message === failCode) throw err;
+      throw new Error(failCode);
+    }
   };
 
   const sendMessage = async (overrideText?: string) => {
     const text = (overrideText || input).trim();
-    if (!text || isStreaming) return;
-    setInput("");
-    const currentAttachments = [...attachments];
-    setAttachments([]);
-
-    let convoId = activeConvoId;
-    if (!convoId) { skipNextLoad.current = true; convoId = await createConversation(text); if (!convoId) return; }
-
-    const userMsg: ChatMsg = { role: "user", content: text };
-    const allMessages = [...messages, userMsg];
-    setMessages(allMessages);
+    if (!text || isStreaming || sendingRef.current) return;
+    // Guard immediately so rapid double-activation cannot duplicate sends
+    sendingRef.current = true;
     setIsStreaming(true);
-    await persistMessage(convoId, "user", text);
-
-    let assistantContent = "";
-    const upsertAssistant = (chunk: string) => {
-      assistantContent += chunk;
-      setMessages((prev) => {
-        const last = prev[prev.length - 1];
-        if (last?.role === "assistant") {
-          return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantContent } : m);
-        }
-        return [...prev, { role: "assistant", content: assistantContent }];
-      });
-    };
+    const currentAttachments = [...attachments];
 
     try {
+      let convoId = activeConvoId;
+      if (!convoId) {
+        skipNextLoad.current = true;
+        convoId = await createConversation(text);
+        if (!convoId) {
+          // Preserve draft for typed sends; place starter text when send used overrideText.
+          if (overrideText) setInput(text);
+          return;
+        }
+      }
+
+      // Persist before clearing draft / optimistic UI so a failed insert keeps composer content.
+      await persistMessage(convoId, "user", text);
+
+      setInput("");
+      setAttachments([]);
+      const userMsg: ChatMsg = { role: "user", content: text };
+      const allMessages = [...messages, userMsg];
+      setMessages(allMessages);
+
+      let assistantContent = "";
+      const upsertAssistant = (chunk: string) => {
+        assistantContent += chunk;
+        setMessages((prev) => {
+          const last = prev[prev.length - 1];
+          if (last?.role === "assistant") {
+            return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantContent } : m);
+          }
+          return [...prev, { role: "assistant", content: assistantContent }];
+        });
+      };
+
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       const resp = await fetch(CHAT_URL, {
@@ -225,15 +249,43 @@ export default function OrbisChat() {
             const parsed = JSON.parse(jsonStr);
             const content = parsed.choices?.[0]?.delta?.content;
             if (content) upsertAssistant(content);
-          } catch {}
+          } catch { /* ignore partial trailing frames */ }
         }
       }
 
-      if (assistantContent) await persistMessage(convoId, "assistant", assistantContent);
-      await supabase.from("conversations").update({ updated_at: new Date().toISOString() }).eq("id", convoId);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to get response");
+      if (assistantContent) {
+        try {
+          await persistMessage(convoId, "assistant", assistantContent);
+        } catch {
+          toast.error("The reply was shown, but it could not be saved to history.");
+        }
+      }
+
+      const { error: timestampError } = await supabase
+        .from("conversations")
+        .update({ updated_at: new Date().toISOString() })
+        .eq("id", convoId);
+      if (timestampError) {
+        // Non-fatal: messages remain visible; do not surface as a response failure.
+      }
+    } catch (err: unknown) {
+      const code = err instanceof Error ? err.message : "";
+      if (code === "USER_MESSAGE_PERSIST_FAILED") {
+        toast.error("We couldn't send your message. Please try again.");
+        setInput(text);
+        setAttachments(currentAttachments);
+      } else {
+        const message =
+          err instanceof Error && err.message ? err.message : "Failed to get response";
+        if (
+          message !== "ASSISTANT_MESSAGE_PERSIST_FAILED" &&
+          message !== "USER_MESSAGE_PERSIST_FAILED"
+        ) {
+          toast.error(message);
+        }
+      }
     } finally {
+      sendingRef.current = false;
       setIsStreaming(false);
     }
   };
@@ -245,6 +297,8 @@ export default function OrbisChat() {
   const startNewChat = () => {
     setActiveConvoId(null);
     setMessages([]);
+    setInput("");
+    setAttachments([]);
     setSearchParams({});
   };
 
@@ -280,7 +334,7 @@ export default function OrbisChat() {
       {/* Messages */}
       <ScrollArea className="flex-1 -mx-1 min-h-0">
         <div className="px-1 py-4">
-          {messages.length === 0 && !isStreaming ? (
+          {messages.length === 0 && !isStreaming && !input.trim() && attachments.length === 0 ? (
             <div className="flex flex-col items-center justify-center min-h-[55vh] space-y-8 animate-fade-in">
               <div className="text-center space-y-2">
                 <h2 className="text-xl font-bold font-nunito tracking-tight">What's on your mind?</h2>
@@ -288,18 +342,14 @@ export default function OrbisChat() {
                   Let's brainstorm ideas, analyze markets, or sharpen your strategy.
                 </p>
               </div>
-              <div className="grid grid-cols-2 gap-2.5 w-full max-w-md">
-                {SUGGESTIONS.map((s) => (
-                  <button
-                    key={s.text}
-                    onClick={() => sendMessage(s.text)}
-                    className="group text-left text-[13px] leading-snug px-4 py-3.5 rounded-2xl border border-border/40 bg-background/80 text-muted-foreground hover:text-foreground hover:border-primary/25 hover:shadow-md hover:shadow-primary/5 hover:-translate-y-0.5 transition-all duration-200"
-                  >
-                    <s.icon className="h-4 w-4 text-primary/60 group-hover:text-primary mb-2 transition-colors" />
-                    <span>{s.text}</span>
-                  </button>
-                ))}
-              </div>
+              <StarterChips
+                items={CHAT_STARTER_CHIPS}
+                onSelect={(item) => void sendMessage(item.value)}
+                ariaLabel="Orbis AI starters"
+                disabled={isStreaming}
+                className="max-w-md"
+                heading=""
+              />
             </div>
           ) : (
             <div className="space-y-5">

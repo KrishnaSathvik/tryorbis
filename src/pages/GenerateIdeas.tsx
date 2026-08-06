@@ -12,6 +12,9 @@ import { UpgradeModal } from "@/components/UpgradeModal";
 import { WtpSection, CompetitionDensitySection, MarketTimingSection, IcpSection, WorkaroundSection, FeatureGapSection, PlatformRiskSection, GtmStrategySection, PricingBenchmarkSection, DefensibilitySection } from "@/components/IntelligenceSections";
 import { useCredits } from "@/hooks/useCredits";
 import { useFocusComposerOnArrive } from "@/hooks/useFocusComposerOnArrive";
+import { StarterChips } from "@/components/StarterChips";
+import { GENERATE_STARTER_CHIPS } from "@/lib/starterChips";
+import { scheduleFocusComposerAtEnd } from "@/lib/focusComposer";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, Bookmark, ClipboardCheck, Copy, Send, User, FolderOpen, Monitor, Globe, Rocket, Search, Loader2 } from "lucide-react";
 import { ResearchModeToggle } from "@/components/ResearchModeToggle";
@@ -52,7 +55,15 @@ export default function GenerateIdeas() {
   const navigate = useNavigate();
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const cancelPendingFocusRef = useRef<(() => void) | null>(null);
   useFocusComposerOnArrive(inputRef);
+
+  useEffect(() => {
+    return () => {
+      cancelPendingFocusRef.current?.();
+      cancelPendingFocusRef.current = null;
+    };
+  }, []);
   const { hasCredits, refreshCredits, loading: creditsLoading, unavailable: creditsUnavailable } = useCredits();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
@@ -250,6 +261,25 @@ export default function GenerateIdeas() {
     setInputValue(""); setPhase('chat'); setResult(null); setGeneratingParams(null); setAttachments([]); setDeepStage(null);
   };
 
+  const hasUserMessage = messages.some((m) => m.role === "user");
+  const showStarterChips =
+    !hasUserMessage &&
+    !inputValue.trim() &&
+    attachments.length === 0 &&
+    !isTyping &&
+    !voice.isListening &&
+    !generatingParams;
+
+  const handleStarterSelect = (item: (typeof GENERATE_STARTER_CHIPS)[number]) => {
+    if (inputValue.trim() || attachments.length > 0 || isTyping || hasUserMessage) return;
+    setInputValue(item.value);
+    cancelPendingFocusRef.current?.();
+    cancelPendingFocusRef.current = scheduleFocusComposerAtEnd(
+      () => inputRef.current,
+      item.value,
+    );
+  };
+
   if (phase === 'chat') {
     return (
       <div className={`max-w-2xl mx-auto flex flex-col h-[calc(100vh-6rem)] animate-fade-in relative ${isDragging ? 'ring-2 ring-primary/40 ring-inset rounded-2xl' : ''}`} {...dropZoneProps}>
@@ -270,6 +300,14 @@ export default function GenerateIdeas() {
               </div>
             </div>
           ))}
+          {showStarterChips && (
+            <StarterChips
+              items={GENERATE_STARTER_CHIPS}
+              onSelect={handleStarterSelect}
+              ariaLabel="Generate idea starters"
+              className="pt-2"
+            />
+          )}
           {isTyping && (
             <div className="flex justify-start">
               <div className="bg-secondary rounded-2xl rounded-bl-md px-4 py-3 flex gap-1.5 items-center">
