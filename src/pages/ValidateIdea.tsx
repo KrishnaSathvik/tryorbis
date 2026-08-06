@@ -87,7 +87,7 @@ export default function ValidateIdea() {
   const navigate = useNavigate();
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const { hasCredits, refreshCredits } = useCredits();
+  const { hasCredits, refreshCredits, loading: creditsLoading, unavailable: creditsUnavailable } = useCredits();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const prefilled = searchParams.get('idea') || "";
@@ -184,6 +184,7 @@ export default function ValidateIdea() {
   }, [attachments]);
 
   const triggerValidation = useCallback(async (ideaText: string) => {
+    if (creditsLoading || creditsUnavailable) return;
     if (!hasCredits) { setUpgradeOpen(true); return; }
     setPhase('researching'); setCurrentStep(0); setDeepStage(null);
     try {
@@ -273,7 +274,7 @@ export default function ValidateIdea() {
       setDeepStage(null);
       setPhase('chat');
     }
-  }, [hasCredits, refreshCredits, researchMode, getImageContext]);
+  }, [hasCredits, creditsLoading, creditsUnavailable, refreshCredits, researchMode, getImageContext]);
 
   const handleAddToBacklog = async () => {
     if (!report) return;

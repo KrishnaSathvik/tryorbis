@@ -38,9 +38,10 @@
 
 ## Synchronization
 
-- Single source of truth remains `profiles.credits` / `max_credits` via `useCredits`.
-- Generate/Validate already call `refreshCredits()` after successful research; meter re-renders from the same hook pattern when those pages refresh their own hook instance, and AppSidebar’s instance refreshes on auth/user changes and after `fetchCredits` triggered by session lifecycle.
-- No optimistic local counter separate from the hook.
+- Single source of truth remains `profiles.credits` / `max_credits`.
+- **ORB-UX-001 caveat (fixed in ORB-UX-001A):** the original meter wired `useCredits()` separately in AppSidebar vs Generate/Validate/ProfileSheet. Each call owned independent React state, so `refreshCredits()` on a research page did **not** update the sidebar meter until auth lifecycle refetch.
+- **ORB-UX-001A:** one `CreditsProvider` in `AppLayout` owns fetched state; all surfaces consume the same context via `useCredits()`. See `docs/implementation/orb-ux-001a-shared-credit-state.md`.
+- No optimistic local counter separate from the provider.
 
 ## Tests run
 
@@ -76,7 +77,7 @@ All passed (12 vitest tests).
 
 ## Limitations / follow-ups
 
-- `AppSidebar` and `ProfileSheet` each call `useCredits` (two fetches). Sharing via context would be a separate cleanup ticket.
+- ~~`AppSidebar` and `ProfileSheet` each call `useCredits` (two fetches). Sharing via context would be a separate cleanup ticket.~~ **Addressed in ORB-UX-001A** (shared `CreditsProvider`).
 - No real unlimited plan field in profiles — unlimited meter branch is ready but unused.
-- Full live credit deduction after a real research run was not burned against shared quota; sync relies on existing `refreshCredits` call sites + mocked zero-state verification.
+- Full live credit deduction after a real research run was not burned against shared quota in ORB-UX-001; ORB-UX-001A verified live sidebar sync via a production-faithful mocked Validate + shared `refreshCredits()`.
 - Did not start `ORB-UX-002` or other Phase A tickets.
