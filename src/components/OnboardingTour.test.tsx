@@ -3,10 +3,21 @@ import { render, screen, fireEvent, waitFor, within } from "@testing-library/rea
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 
 const useAuthMock = vi.fn();
+const trackMock = vi.fn();
 
 vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => useAuthMock(),
 }));
+
+vi.mock("@/lib/analytics", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/analytics")>(
+    "@/lib/analytics",
+  );
+  return {
+    ...actual,
+    track: (...args: unknown[]) => trackMock(...args),
+  };
+});
 
 import { OnboardingTour } from "./OnboardingTour";
 import {
@@ -213,5 +224,60 @@ describe("OnboardingTour goal routing", () => {
     useAuthMock.mockReturnValue({ user: { id: "user-b" }, loading: false });
     renderTour();
     expect(await screen.findByRole("dialog", { name: /what do you want to do first/i })).toBeInTheDocument();
+  });
+});
+
+describe("OnboardingTour analytics", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    trackMock.mockClear();
+    useAuthMock.mockReturnValue({
+      user: { id: "user-a" },
+      loading: false,
+    });
+  });
+
+  afterEach(() => {
+    localStorage.clear();
+    trackMock.mockClear();
+  });
+
+  it.each([
+    [/find product ideas/i, "generate"],
+    [/validate an idea/i, "validate"],
+    [/talk to orbis ai/i, "chat"],
+  ] as const)("emits onboarding_goal_select for %s", async (label, goal) => {
+    renderTour();
+    fireEvent.click(await screen.findByRole("button", { name: label }));
+    await waitFor(() => {
+      expect(trackMock).toHaveBeenCalledWith("onboarding_goal_select", { goal });
+    });
+    expect(trackMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("emits onboarding_skip once from Skip", async () => {
+    renderTour();
+    fireEvent.click(await screen.findByRole("button", { name: /^skip$/i }));
+    await waitFor(() => {
+      expect(trackMock).toHaveBeenCalledWith("onboarding_skip");
+    });
+    expect(trackMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not duplicate Skip on Escape dismissal", async () => {
+    renderTour();
+    const dialog = await screen.findByRole("dialog", { name: /what do you want to do first/i });
+    fireEvent.keyDown(dialog, { key: "Escape", code: "Escape" });
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+    expect(trackMock).toHaveBeenCalledWith("onboarding_skip");
+    expect(trackMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not emit on render alone", async () => {
+    renderTour();
+    await screen.findByRole("dialog", { name: /what do you want to do first/i });
+    expect(trackMock).not.toHaveBeenCalled();
   });
 });

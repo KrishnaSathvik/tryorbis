@@ -10,6 +10,7 @@ const toastSuccess = vi.fn();
 const toastInfo = vi.fn();
 const toastError = vi.fn();
 const navigateMock = vi.fn();
+const trackMock = vi.fn();
 
 vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => useAuthMock(),
@@ -26,6 +27,16 @@ vi.mock("@/integrations/supabase/client", () => ({
     }),
   },
 }));
+
+vi.mock("@/lib/analytics", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/analytics")>(
+    "@/lib/analytics",
+  );
+  return {
+    ...actual,
+    track: (...args: unknown[]) => trackMock(...args),
+  };
+});
 
 vi.mock("sonner", () => ({
   toast: {
@@ -250,5 +261,62 @@ describe("UpgradeModal", () => {
     fireEvent.click(chat);
     expect(onOpenChange).toHaveBeenCalledWith(false);
     expect(navigateMock).toHaveBeenCalledWith("/chat", expect.any(Object));
+  });
+});
+
+describe("UpgradeModal analytics", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    clearWaitlistJoined("user-1");
+    useAuthMock.mockReturnValue({
+      user: { id: "user-1" },
+      profile: { email: "user@example.com", display_name: "Test" },
+      isGuest: false,
+    });
+    useCreditsMock.mockReturnValue({
+      remaining: 0,
+      loading: false,
+      unavailable: false,
+    });
+    insertMock.mockResolvedValue({ error: null });
+  });
+
+  it("emits waitlist_join once on successful insert", async () => {
+    renderModal({ mode: "quota_exhausted", source: "generate" });
+    fireEvent.click(screen.getByRole("button", { name: /join.*waitlist/i }));
+    await waitFor(() => {
+      expect(trackMock).toHaveBeenCalledWith("waitlist_join", {
+        source: "upgrade_exhausted",
+      });
+    });
+    expect(trackMock).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(trackMock.mock.calls)).not.toMatch(/user@example\.com|user-1/);
+  });
+
+  it("does not emit waitlist_join on failed insert", async () => {
+    insertMock.mockResolvedValue({ error: { message: "network boom" } });
+    renderModal({ mode: "quota_exhausted" });
+    fireEvent.click(screen.getByRole("button", { name: /join.*waitlist/i }));
+    await waitFor(() => expect(toastError).toHaveBeenCalled());
+    expect(trackMock).not.toHaveBeenCalled();
+  });
+
+  it("does not emit waitlist_join on duplicate response", async () => {
+    insertMock.mockResolvedValue({ error: { message: "duplicate key value" } });
+    renderModal({ mode: "quota_exhausted" });
+    fireEvent.click(screen.getByRole("button", { name: /join.*waitlist/i }));
+    await waitFor(() => expect(screen.getByText(/you.?re on the waitlist/i)).toBeInTheDocument());
+    expect(trackMock).not.toHaveBeenCalled();
+  });
+
+  it("emits post_quota_chat_click from exhausted Continue with Orbis AI", () => {
+    renderModal({ mode: "quota_exhausted" });
+    fireEvent.click(screen.getByRole("button", { name: /continue with orbis ai/i }));
+    expect(trackMock).toHaveBeenCalledWith("post_quota_chat_click");
+  });
+
+  it("does not emit on modal render alone", () => {
+    renderModal({ mode: "quota_exhausted" });
+    expect(trackMock).not.toHaveBeenCalled();
   });
 });

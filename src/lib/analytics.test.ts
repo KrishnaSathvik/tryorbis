@@ -1,0 +1,191 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  __resetAnalyticsForTests,
+  classifyResearchFailure,
+  monotonicNow,
+  normalizeCreditsLeft,
+  normalizeDurationMs,
+  setAnalyticsSink,
+  track,
+  type AnalyticsEnvelope,
+  type AnalyticsSink,
+} from "./analytics";
+
+describe("analytics", () => {
+  let infoSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    __resetAnalyticsForTests();
+    infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    __resetAnalyticsForTests();
+    infoSpy.mockRestore();
+  });
+
+  it("logs one structured event in development", () => {
+    track("landing_cta_click", { placement: "hero" });
+    expect(infoSpy).toHaveBeenCalledTimes(1);
+    expect(infoSpy).toHaveBeenCalledWith(
+      "[orbis:analytics]",
+      expect.objectContaining({
+        event: "landing_cta_click",
+        properties: { placement: "hero" },
+      }),
+    );
+  });
+
+  it("includes an ISO-8601 occurredAt timestamp", () => {
+    track("onboarding_skip");
+    const envelope = infoSpy.mock.calls[0][1] as AnalyticsEnvelope;
+    expect(envelope.occurredAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    expect(Number.isNaN(Date.parse(envelope.occurredAt))).toBe(false);
+  });
+
+  it("preserves the event name", () => {
+    track("research_started", {
+      type: "generate",
+      mode: "regular",
+      credits_left: 2,
+    });
+    const envelope = infoSpy.mock.calls[0][1] as AnalyticsEnvelope;
+    expect(envelope.event).toBe("research_started");
+  });
+
+  it("preserves typed properties", () => {
+    track("quota_hit", { surface: "validate" });
+    const envelope = infoSpy.mock.calls[0][1] as AnalyticsEnvelope<"quota_hit">;
+    expect(envelope.properties).toEqual({ surface: "validate" });
+  });
+
+  it("produces empty properties for no-property events", () => {
+    track("post_quota_chat_click");
+    const envelope = infoSpy.mock.calls[0][1] as AnalyticsEnvelope;
+    expect(envelope.properties).toEqual({});
+  });
+
+  it("delivers events to a configured sink", () => {
+    const received: AnalyticsEnvelope[] = [];
+    setAnalyticsSink((envelope) => {
+      received.push(envelope);
+    });
+    track("idea_saved", { from: "generator_result" });
+    expect(received).toHaveLength(1);
+    expect(received[0].event).toBe("idea_saved");
+    expect(received[0].properties).toEqual({ from: "generator_result" });
+  });
+
+  it("replaces the sink", () => {
+    const first = vi.fn();
+    const second = vi.fn();
+    setAnalyticsSink(first);
+    track("onboarding_skip");
+    setAnalyticsSink(second);
+    track("report_opened_from_dashboard");
+    expect(first).toHaveBeenCalledTimes(1);
+    expect(second).toHaveBeenCalledTimes(1);
+    expect(second.mock.calls[0][0].event).toBe("report_opened_from_dashboard");
+  });
+
+  it("clears the sink", () => {
+    const sink = vi.fn();
+    setAnalyticsSink(sink);
+    setAnalyticsSink(null);
+    track("onboarding_skip");
+    expect(sink).not.toHaveBeenCalled();
+  });
+
+  it("does not throw when the sink throws synchronously", () => {
+    setAnalyticsSink(() => {
+      throw new Error("sink boom");
+    });
+    expect(() => track("onboarding_skip")).not.toThrow();
+  });
+
+  it("catches rejected sink promises", async () => {
+    const sink: AnalyticsSink = () => Promise.reject(new Error("async boom"));
+    setAnalyticsSink(sink);
+    expect(() => track("onboarding_skip")).not.toThrow();
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+
+  it("returns immediately without a blocking Promise", () => {
+    let resolveSink!: () => void;
+    setAnalyticsSink(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveSink = resolve;
+        }),
+    );
+    const result = track("onboarding_skip");
+    expect(result).toBeUndefined();
+    resolveSink();
+  });
+
+  it("normalizes duration_ms to a non-negative finite integer", () => {
+    expect(normalizeDurationMs(12.9)).toBe(12);
+    expect(normalizeDurationMs(-1)).toBe(0);
+    expect(normalizeDurationMs(Number.NaN)).toBe(0);
+    expect(normalizeDurationMs(Number.POSITIVE_INFINITY)).toBe(0);
+    expect(normalizeDurationMs("10")).toBe(0);
+
+    track("research_succeeded", {
+      type: "generate",
+      mode: "deep",
+      duration_ms: Number.NaN,
+    });
+    const envelope = infoSpy.mock.calls[0][1] as AnalyticsEnvelope<"research_succeeded">;
+    expect(envelope.properties.duration_ms).toBe(0);
+  });
+
+  it("normalizes credits_left to a non-negative integer or null", () => {
+    expect(normalizeCreditsLeft(2.8)).toBe(2);
+    expect(normalizeCreditsLeft(0)).toBe(0);
+    expect(normalizeCreditsLeft(null)).toBe(null);
+    expect(normalizeCreditsLeft(undefined)).toBe(null);
+    expect(normalizeCreditsLeft(-3)).toBe(null);
+    expect(normalizeCreditsLeft(Number.NaN)).toBe(null);
+    expect(normalizeCreditsLeft(Number.POSITIVE_INFINITY)).toBe(null);
+
+    track("research_started", {
+      type: "validate",
+      mode: "regular",
+      credits_left: Number.POSITIVE_INFINITY,
+    });
+    const envelope = infoSpy.mock.calls[0][1] as AnalyticsEnvelope<"research_started">;
+    expect(envelope.properties.credits_left).toBe(null);
+  });
+
+  it("does not add automatic user, session, or browser fields", () => {
+    track("auth_guest_start", { from: "try_route" });
+    const envelope = infoSpy.mock.calls[0][1] as AnalyticsEnvelope;
+    expect(Object.keys(envelope).sort()).toEqual(["event", "occurredAt", "properties"]);
+    expect(envelope).not.toHaveProperty("user");
+    expect(envelope).not.toHaveProperty("user_id");
+    expect(envelope).not.toHaveProperty("email");
+    expect(envelope).not.toHaveProperty("session");
+    expect(envelope).not.toHaveProperty("anonymousId");
+    expect(envelope).not.toHaveProperty("fingerprint");
+    expect(envelope).not.toHaveProperty("url");
+    expect(envelope.properties).toEqual({ from: "try_route" });
+  });
+
+  it("classifies research failures into coarse codes", () => {
+    expect(classifyResearchFailure(new Error("429 rate limit"))).toBe("rate_limited");
+    expect(classifyResearchFailure(new Error("402 usage limit"))).toBe("usage_limited");
+    expect(classifyResearchFailure(new Error("401 Unauthorized"))).toBe("authentication");
+    expect(classifyResearchFailure(new Error("Failed to fetch"))).toBe("network");
+    expect(classifyResearchFailure(new Error("500 Internal Server Error"))).toBe("server");
+    expect(classifyResearchFailure(new Error("malformed JSON"))).toBe("invalid_response");
+    expect(classifyResearchFailure(new Error("something odd"))).toBe("unknown");
+  });
+
+  it("exposes a monotonic clock helper", () => {
+    const a = monotonicNow();
+    const b = monotonicNow();
+    expect(typeof a).toBe("number");
+    expect(b).toBeGreaterThanOrEqual(a);
+  });
+});

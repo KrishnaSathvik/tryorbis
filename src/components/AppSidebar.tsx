@@ -7,6 +7,7 @@ import { ReportsRemainingMeter } from "@/components/ReportsRemainingMeter";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { useCredits } from "@/hooks/useCredits";
 import { isQuotaExhausted } from "@/lib/quotaExhausted";
+import { track } from "@/lib/analytics";
 import { useIsMobile } from "@/hooks/use-mobile";
 import orbisLogo from "@/assets/orbis-logo.png";
 import {
@@ -87,7 +88,12 @@ export function AppSidebar() {
           loading={loading}
           remaining={remaining}
           unavailable={unavailable}
-          onUpgradeClick={() => setUpgradeOpen(true)}
+          onUpgradeClick={() => {
+            if (isQuotaExhausted({ remaining, loading, unavailable })) {
+              track("quota_hit", { surface: "reports_meter" });
+            }
+            setUpgradeOpen(true);
+          }}
         />
         <ProfileSheet>
           <button className="flex items-center gap-3 px-3 py-2 w-full rounded-xl hover:bg-accent transition-all cursor-pointer text-left">

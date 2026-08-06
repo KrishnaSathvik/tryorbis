@@ -9,6 +9,7 @@ import {
   historyItemQuery,
 } from "@/lib/dashboardValidatePrefill";
 import { cn } from "@/lib/utils";
+import { track } from "@/lib/analytics";
 
 interface DashboardRecentActivityProps {
   items: DashboardActivityItem[];
@@ -56,7 +57,10 @@ export function DashboardRecentActivity({
             item.kind === "generator" ? Lightbulb : ClipboardCheck;
 
           let primaryLabel = "View research";
-          let primaryAction = () => onNavigate(historyPath);
+          let primaryAction = () => {
+            track("report_opened_from_dashboard");
+            onNavigate(historyPath);
+          };
           let primaryAria = `${primaryLabel}: ${item.title}`;
 
           if (isNewest && item.kind === "generator" && item.topIdea) {
@@ -76,11 +80,17 @@ export function DashboardRecentActivity({
           } else if (isNewest && item.kind === "validation") {
             primaryLabel = "Continue";
             primaryAria = `Continue reviewing: ${item.title}`;
-            primaryAction = () => onNavigate(historyPath);
+            primaryAction = () => {
+              track("report_opened_from_dashboard");
+              onNavigate(historyPath);
+            };
           } else if (item.kind === "validation") {
             primaryLabel = "View report";
             primaryAria = `View report: ${item.title}`;
-            primaryAction = () => onNavigate(historyPath);
+            primaryAction = () => {
+              track("report_opened_from_dashboard");
+              onNavigate(historyPath);
+            };
           }
 
           const showSecondaryHistory =
@@ -161,7 +171,10 @@ export function DashboardRecentActivity({
                           size="sm"
                           variant="ghost"
                           className="rounded-full min-h-9"
-                          onClick={() => onNavigate(historyPath)}
+                          onClick={() => {
+                            track("report_opened_from_dashboard");
+                            onNavigate(historyPath);
+                          }}
                           aria-label={`View research: ${item.title}`}
                         >
                           View research

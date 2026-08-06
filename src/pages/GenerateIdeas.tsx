@@ -15,6 +15,12 @@ import { useFocusComposerOnArrive } from "@/hooks/useFocusComposerOnArrive";
 import { StarterChips } from "@/components/StarterChips";
 import { GENERATE_STARTER_CHIPS } from "@/lib/starterChips";
 import { scheduleFocusComposerAtEnd } from "@/lib/focusComposer";
+import {
+  classifyResearchFailure,
+  monotonicNow,
+  normalizeDurationMs,
+  track,
+} from "@/lib/analytics";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, Bookmark, ClipboardCheck, Copy, Send, User, FolderOpen, Monitor, Globe, Rocket, Search, Loader2 } from "lucide-react";
 import { ResearchModeToggle } from "@/components/ResearchModeToggle";
@@ -64,7 +70,7 @@ export default function GenerateIdeas() {
       cancelPendingFocusRef.current = null;
     };
   }, []);
-  const { hasCredits, refreshCredits, loading: creditsLoading, unavailable: creditsUnavailable } = useCredits();
+  const { hasCredits, refreshCredits, loading: creditsLoading, unavailable: creditsUnavailable, remaining } = useCredits();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -162,13 +168,24 @@ export default function GenerateIdeas() {
 
   const triggerGenerate = useCallback(async (params: any) => {
     if (creditsLoading || creditsUnavailable) return;
-    if (!hasCredits) { setUpgradeOpen(true); return; }
+    if (!hasCredits) {
+      track("quota_hit", { surface: "generate" });
+      setUpgradeOpen(true);
+      return;
+    }
+    const startedAt = monotonicNow();
+    const mode = researchMode;
+    track("research_started", {
+      type: "generate",
+      mode,
+      credits_left: remaining,
+    });
     setPhase('researching'); setResearchStep(0); setDeepStage(null);
     try {
       const imageContext = await getImageContext(params);
       const baseBody = { persona: params.persona, category: params.category, region: params.region || undefined, platform: params.platform || undefined };
 
-      if (researchMode === 'deep') {
+      if (mode === 'deep') {
         // ── Multi-stage deep research (3 x sonar-pro, ~15s each) ──
         setDeepStage('problems');
 
@@ -214,13 +231,18 @@ export default function GenerateIdeas() {
           defensibility: s3.defensibility,
         };
         setResult(finalResult); setDeepStage(null);
+        track("research_succeeded", {
+          type: "generate",
+          mode,
+          duration_ms: normalizeDurationMs(monotonicNow() - startedAt),
+        });
         try { await saveGeneratorRunDb(finalResult); } catch (e) { console.error("Failed to save:", e); }
 
       } else {
         // ── Regular mode (single call) ──
         const stepInterval = setInterval(() => { setResearchStep(prev => { if (prev >= researchSteps.length - 1) { clearInterval(stepInterval); return prev; } return prev + 1; }); }, 3500);
         const { data, error } = await supabase.functions.invoke('perplexity-generate', {
-          body: { ...baseBody, context: (params.context || "") + (imageContext ? `\n\nVisual/file context:\n${imageContext}` : ""), mode: researchMode },
+          body: { ...baseBody, context: (params.context || "") + (imageContext ? `\n\nVisual/file context:\n${imageContext}` : ""), mode },
         });
         clearInterval(stepInterval); setResearchStep(researchSteps.length);
         if (error) throw error;
@@ -237,8 +259,17 @@ export default function GenerateIdeas() {
         };
         try { await saveGeneratorRunDb(run); } catch (e) { console.error("Failed to save:", e); }
         setResult(run); setPhase('results');
+        track("research_succeeded", {
+          type: "generate",
+          mode,
+          duration_ms: normalizeDurationMs(monotonicNow() - startedAt),
+        });
       }
     } catch (err: any) {
+      track("research_failed", {
+        type: "generate",
+        code: classifyResearchFailure(err),
+      });
       const msg = err.message || "Unknown error";
       if (msg.includes("unable_to_fulfill") || msg.includes("timed out") || msg.includes("deadline") || msg.includes("FUNCTION_INVOCATION_TIMEOUT")) {
         toast.error("Deep research timed out — this model needs more time than the server allows. Try Regular mode instead.", { duration: 6000 });
@@ -248,10 +279,16 @@ export default function GenerateIdeas() {
       setDeepStage(null);
       setPhase('chat');
     }
-  }, [hasCredits, creditsLoading, creditsUnavailable, refreshCredits, researchMode, getImageContext]);
+  }, [hasCredits, creditsLoading, creditsUnavailable, refreshCredits, researchMode, getImageContext, remaining]);
 
   const handleAddToBacklog = async (idea: any) => {
-    try { await addToBacklogDb({ ideaName: idea.name, source: 'Generated', demandScore: idea.demandScore, status: 'New', description: idea.description, mvpScope: idea.mvpScope, monetization: idea.monetization }); toast.success(`"${idea.name}" saved to My Ideas`); } catch { toast.error("Failed to save"); }
+    try {
+      await addToBacklogDb({ ideaName: idea.name, source: 'Generated', demandScore: idea.demandScore, status: 'New', description: idea.description, mvpScope: idea.mvpScope, monetization: idea.monetization });
+      track("idea_saved", { from: "generator_result" });
+      toast.success(`"${idea.name}" saved to My Ideas`);
+    } catch {
+      toast.error("Failed to save");
+    }
   };
 
   const handleValidate = (idea: any) => { navigate(`/validate?idea=${encodeURIComponent(idea.name + ': ' + idea.description)}`); };

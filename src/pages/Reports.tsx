@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { parseHistoryItemQuery } from "@/lib/dashboardValidatePrefill";
+import { track } from "@/lib/analytics";
 
 interface Conversation {
   id: string;
@@ -119,6 +120,9 @@ export default function Reports() {
   const handleSaveIdea = async (name: string, source: string, score?: number, overallScore?: number, extra?: { description?: string; mvpScope?: string; monetization?: string }) => {
     try {
       await addToBacklogDb({ ideaName: name, source, demandScore: score, overallScore, status: "New", description: extra?.description, mvpScope: extra?.mvpScope, monetization: extra?.monetization });
+      track("idea_saved", {
+        from: source === "Validated" ? "history_validation" : "history_generator",
+      });
       toast.success(`"${name}" saved to My Ideas`);
     } catch {
       toast.error("Failed to save");

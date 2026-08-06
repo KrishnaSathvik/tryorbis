@@ -433,6 +433,7 @@ Primary CTA visible without scrolling on desktop results; tracked via analytics.
 **Workstream:** WS14  
 **Estimated size:** S  
 **Dependencies:** None  
+**Status:** Implemented — see [`docs/implementation/orb-ux-008-analytics-event-plumbing.md`](implementation/orb-ux-008-analytics-event-plumbing.md)
 
 ### Problem
 No product analytics SDK — cannot measure funnel.
@@ -569,23 +570,25 @@ Shared primitives; migrate Analytics/Community/Dashboard.
 
 Do not assume PostHog/GA. Start with pluggable `track()`.
 
-| Event name | Trigger | Properties | Business question |
-| ---------- | ------- | ---------- | ----------------- |
-| `landing_cta_click` | Try Free click | `placement` | Which CTA converts? |
-| `landing_prompt_submit` | Hero prompt submit | `has_text` | Does prompt activation help? |
-| `auth_guest_start` | Guest session created | `from` | Guest funnel volume |
-| `onboarding_goal_select` | Goal chosen | `goal` | Which goals dominate? |
-| `onboarding_skip` | Skip tour | — | Tour friction |
-| `research_started` | Generate/Validate run | `type`, `mode`, `credits_left` | Activation |
-| `research_succeeded` | Report rendered | `type`, `mode`, `duration_ms` | Time-to-value |
-| `research_failed` | Error toast path | `type`, `code` | Reliability |
-| `quota_hit` | credits=0 gate | `surface` | Paywall pressure |
-| `waitlist_join` | Waitlist success | `source` | Conversion intent |
-| `post_quota_chat_click` | Continue with AI | — | Dead-end salvage |
-| `idea_saved` | Backlog save | `from` | Artifact retention |
-| `next_step_click` | NextStepCard | `action` | Guidance effectiveness |
-| `export_markdown` | Export | `type` | Sharing demand |
-| `report_opened_from_dashboard` | Resume click | — | Retention |
+| Event name | Trigger | Properties | Business question | Status |
+| ---------- | ------- | ---------- | ----------------- | ------ |
+| `landing_cta_click` | Try Free click | `placement` | Which CTA converts? | Implemented |
+| `landing_prompt_submit` | Hero prompt submit | `has_text` | Does prompt activation help? | Defined, awaiting feature |
+| `auth_guest_start` | Guest session created | `from` | Guest funnel volume | Implemented |
+| `onboarding_goal_select` | Goal chosen | `goal` | Which goals dominate? | Implemented |
+| `onboarding_skip` | Skip tour | — | Tour friction | Implemented |
+| `research_started` | Generate/Validate run | `type`, `mode`, `credits_left` | Activation | Implemented |
+| `research_succeeded` | Report rendered | `type`, `mode`, `duration_ms` | Time-to-value | Implemented |
+| `research_failed` | Error toast path | `type`, `code` | Reliability | Implemented |
+| `quota_hit` | credits=0 gate | `surface` | Paywall pressure | Implemented |
+| `waitlist_join` | Waitlist success | `source` | Conversion intent | Implemented |
+| `post_quota_chat_click` | Continue with AI | — | Dead-end salvage | Implemented |
+| `idea_saved` | Backlog save | `from` | Artifact retention | Implemented |
+| `next_step_click` | NextStepCard | `action` | Guidance effectiveness | Defined, awaiting feature |
+| `export_markdown` | Export | `type` | Sharing demand | Defined, awaiting feature |
+| `report_opened_from_dashboard` | Resume click | — | Retention | Implemented |
+
+Implementation note: [`docs/implementation/orb-ux-008-analytics-event-plumbing.md`](implementation/orb-ux-008-analytics-event-plumbing.md)
 
 **Success metrics for Phase A:**  
 ↑ `% guests who complete ≥1 research_succeeded` · ↓ `onboarding_skip` before first tool · ↓ bounce after `quota_hit` (via `post_quota_chat_click` or history).

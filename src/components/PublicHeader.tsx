@@ -2,11 +2,19 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { track } from "@/lib/analytics";
 import orbisLogo from "@/assets/orbis-logo.png";
 
 export function PublicHeader() {
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  const handlePrimaryCta = () => {
+    if (!user) {
+      track("landing_cta_click", { placement: "navigation" });
+    }
+    navigate(user ? "/dashboard" : "/try");
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border/50">
@@ -26,7 +34,7 @@ export function PublicHeader() {
             Examples
           </Button>
           <ThemeToggle />
-          <Button onClick={() => navigate(user ? "/dashboard" : "/try")} size="sm" className="rounded-full bg-foreground text-background hover:bg-foreground/90">
+          <Button onClick={handlePrimaryCta} size="sm" className="rounded-full bg-foreground text-background hover:bg-foreground/90">
             {user ? "Dashboard" : "Try Free"}
           </Button>
         </div>

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PublicHeader } from "@/components/PublicHeader";
 import { PublicFooter } from "@/components/PublicFooter";
+import { track, type AnalyticsEventProperties } from "@/lib/analytics";
 
 /* ─────────────────────────────────────────────
    WAITLIST FORM
@@ -32,6 +33,7 @@ function WaitlistForm() {
           throw error;
         }
       } else {
+        track("waitlist_join", { source: "other" });
         setStatus("success");
         setMsg("You're in! We'll email you when unlimited launches.");
         setEmail("");
@@ -139,7 +141,14 @@ export default function Landing() {
     }
   }, [user, loading, navigate]);
 
-  const handleCta = () => navigate(user ? "/dashboard" : "/try");
+  const handleCta = (
+    placement: AnalyticsEventProperties["landing_cta_click"]["placement"],
+  ) => {
+    if (!user) {
+      track("landing_cta_click", { placement });
+    }
+    navigate(user ? "/dashboard" : "/try");
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -162,7 +171,7 @@ export default function Landing() {
           <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
             <Button
               size="lg"
-              onClick={handleCta}
+              onClick={() => handleCta("hero")}
               className="rounded-full bg-foreground text-background hover:bg-foreground/90 gap-2 text-base px-8 hover:-translate-y-0.5 transition-all shadow-lg"
             >
               Try Free — 2 Reports <ArrowRight className="h-4 w-4" />
@@ -237,7 +246,7 @@ export default function Landing() {
           {/* Report CTA Bar */}
           <div className="px-6 py-4 bg-secondary/30 border-t border-border/40 flex items-center justify-between">
             <p className="text-xs text-muted-foreground">This is a real Orbis validation report. Get yours in 60 seconds.</p>
-            <Button onClick={handleCta} size="sm" className="rounded-full bg-foreground text-background hover:bg-foreground/90 gap-1.5 text-xs">
+            <Button onClick={() => handleCta("other")} size="sm" className="rounded-full bg-foreground text-background hover:bg-foreground/90 gap-1.5 text-xs">
               Try It Free <ArrowRight className="h-3 w-3" />
             </Button>
           </div>
@@ -349,7 +358,7 @@ export default function Landing() {
             </div>
             <Button
               size="lg"
-              onClick={handleCta}
+              onClick={() => handleCta("other")}
               className="w-full rounded-full bg-foreground text-background hover:bg-foreground/90 gap-2 text-base hover:-translate-y-0.5 transition-all shadow-lg"
             >
               Try It Free <ArrowRight className="h-4 w-4" />
@@ -374,7 +383,7 @@ export default function Landing() {
           <p className="text-muted-foreground">Validate your next idea in 60 seconds.</p>
           <Button
             size="lg"
-            onClick={handleCta}
+            onClick={() => handleCta("other")}
             className="rounded-full bg-foreground text-background hover:bg-foreground/90 gap-2 text-base px-8 shadow-lg hover:-translate-y-0.5 transition-all"
           >
             Try Orbis Free <ArrowRight className="h-4 w-4" />

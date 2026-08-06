@@ -20,6 +20,12 @@ import {
   isRouterStateRecord,
   parseDashboardValidatePrefill,
 } from "@/lib/dashboardValidatePrefill";
+import {
+  classifyResearchFailure,
+  monotonicNow,
+  normalizeDurationMs,
+  track,
+} from "@/lib/analytics";
 import { supabase } from "@/integrations/supabase/client";
 import { saveValidationReportDb, addToBacklogDb } from "@/lib/db";
 import { toast } from "sonner";
@@ -105,7 +111,7 @@ export default function ValidateIdea() {
       cancelPendingFocusRef.current = null;
     };
   }, []);
-  const { hasCredits, refreshCredits, loading: creditsLoading, unavailable: creditsUnavailable } = useCredits();
+  const { hasCredits, refreshCredits, loading: creditsLoading, unavailable: creditsUnavailable, remaining } = useCredits();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const prefilled = searchParams.get('idea') || "";
@@ -243,12 +249,23 @@ export default function ValidateIdea() {
 
   const triggerValidation = useCallback(async (ideaText: string) => {
     if (creditsLoading || creditsUnavailable) return;
-    if (!hasCredits) { setUpgradeOpen(true); return; }
+    if (!hasCredits) {
+      track("quota_hit", { surface: "validate" });
+      setUpgradeOpen(true);
+      return;
+    }
+    const startedAt = monotonicNow();
+    const mode = researchMode;
+    track("research_started", {
+      type: "validate",
+      mode,
+      credits_left: remaining,
+    });
     setPhase('researching'); setCurrentStep(0); setDeepStage(null);
     try {
       const imageContext = await getImageContext(ideaText);
 
-      if (researchMode === 'deep') {
+      if (mode === 'deep') {
         // ── Multi-stage deep validation (3 x sonar-pro, ~15s each) ──
         setDeepStage('core');
 
@@ -299,12 +316,17 @@ export default function ValidateIdea() {
           defensibility: s3.defensibility,
         };
         setReport(finalReport); setDeepStage(null);
+        track("research_succeeded", {
+          type: "validate",
+          mode,
+          duration_ms: normalizeDurationMs(monotonicNow() - startedAt),
+        });
         try { await saveValidationReportDb(finalReport); } catch (e) { console.error("Failed to save to DB:", e); }
 
       } else {
         // ── Regular mode (single call) ──
         const stepInterval = setInterval(() => { setCurrentStep(prev => { if (prev >= researchSteps.length - 1) { clearInterval(stepInterval); return prev; } return prev + 1; }); }, 3500);
-        const { data, error } = await supabase.functions.invoke('perplexity-validate', { body: { ideaText: ideaText + imageContext, mode: researchMode } });
+        const { data, error } = await supabase.functions.invoke('perplexity-validate', { body: { ideaText: ideaText + imageContext, mode } });
         clearInterval(stepInterval); setCurrentStep(researchSteps.length);
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
@@ -321,8 +343,17 @@ export default function ValidateIdea() {
         };
         try { await saveValidationReportDb(r); } catch (e) { console.error("Failed to save to DB:", e); }
         setReport(r); setPhase('results');
+        track("research_succeeded", {
+          type: "validate",
+          mode,
+          duration_ms: normalizeDurationMs(monotonicNow() - startedAt),
+        });
       }
     } catch (err: any) {
+      track("research_failed", {
+        type: "validate",
+        code: classifyResearchFailure(err),
+      });
       const msg = err.message || "Unknown error";
       if (msg.includes("unable_to_fulfill") || msg.includes("timed out") || msg.includes("deadline") || msg.includes("FUNCTION_INVOCATION_TIMEOUT")) {
         toast.error("Deep research timed out — this model needs more time than the server allows. Try Regular mode instead.", { duration: 6000 });
@@ -332,12 +363,13 @@ export default function ValidateIdea() {
       setDeepStage(null);
       setPhase('chat');
     }
-  }, [hasCredits, creditsLoading, creditsUnavailable, refreshCredits, researchMode, getImageContext]);
+  }, [hasCredits, creditsLoading, creditsUnavailable, refreshCredits, researchMode, getImageContext, remaining]);
 
   const handleAddToBacklog = async () => {
     if (!report) return;
     try {
       await addToBacklogDb({ ideaName: report.ideaText.slice(0, 80), source: 'Validated', overallScore: Math.round((report.scores.demand + report.scores.pain + report.scores.mvpFeasibility - report.scores.competition) / 3), status: report.verdict === 'Build' ? 'Validated' : 'Exploring' });
+      track("idea_saved", { from: "validation_result" });
       toast.success("Saved to My Ideas");
     } catch { toast.error("Failed to save"); }
   };

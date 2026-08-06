@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import orbisLogo from "@/assets/orbis-logo.png";
 import { Eye, EyeOff, Zap, Sparkles } from "lucide-react";
+import { track } from "@/lib/analytics";
 
 export default function Auth() {
   usePageTitle("Sign In");
@@ -67,6 +68,7 @@ export default function Auth() {
     setLoading(true);
     try {
       await signInAsGuest(guestName.trim());
+      track("auth_guest_start", { from: isGuestMode ? "try_route" : "auth" });
       navigate("/dashboard");
     } catch (err: any) {
       toast.error(err.message || "Something went wrong");
