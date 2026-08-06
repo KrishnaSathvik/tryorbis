@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { usePageTitle } from "@/hooks/usePageTitle";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,10 @@ import { useFocusComposerOnArrive } from "@/hooks/useFocusComposerOnArrive";
 import { StarterChips } from "@/components/StarterChips";
 import { VALIDATE_STARTER_CHIPS } from "@/lib/starterChips";
 import { scheduleFocusComposerAtEnd } from "@/lib/focusComposer";
+import {
+  isRouterStateRecord,
+  parseDashboardValidatePrefill,
+} from "@/lib/dashboardValidatePrefill";
 import { supabase } from "@/integrations/supabase/client";
 import { saveValidationReportDb, addToBacklogDb } from "@/lib/db";
 import { toast } from "sonner";
@@ -89,6 +93,7 @@ export default function ValidateIdea() {
   usePageTitle("Validate Idea");
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const cancelPendingFocusRef = useRef<(() => void) | null>(null);
@@ -116,6 +121,46 @@ export default function ValidateIdea() {
   const [validatingParams, setValidatingParams] = useState<{ ideaText: string } | null>(null);
   const [researchMode, setResearchMode] = useState<'regular' | 'deep'>('regular');
   const [deepStage, setDeepStage] = useState<'core' | 'competitors' | 'intelligence' | null>(null);
+
+  // One-time Dashboard → Validate prefill (route state only; never auto-submit)
+  useEffect(() => {
+    const rawState = location.state;
+    // Primitive / array / nullish state must be ignored without crashing.
+    if (!isRouterStateRecord(rawState)) return;
+    if (!Object.prototype.hasOwnProperty.call(rawState, "dashboardValidatePrefill")) {
+      return;
+    }
+
+    const prefill = parseDashboardValidatePrefill(rawState.dashboardValidatePrefill);
+    const { dashboardValidatePrefill: _consumed, ...remainingState } = rawState;
+    const nextState = Object.keys(remainingState).length > 0 ? remainingState : null;
+
+    const untouched =
+      phase === "chat" &&
+      !prefilled &&
+      !inputValue.trim() &&
+      attachments.length === 0 &&
+      !messages.some((m) => m.role === "user") &&
+      !isTyping &&
+      !validatingParams &&
+      !report;
+
+    if (prefill && untouched) {
+      setInputValue(prefill.text);
+      cancelPendingFocusRef.current?.();
+      cancelPendingFocusRef.current = scheduleFocusComposerAtEnd(
+        () => inputRef.current,
+        prefill.text,
+      );
+    }
+
+    navigate(`${location.pathname}${location.search}${location.hash}`, {
+      replace: true,
+      state: nextState,
+    });
+    // Intentionally consume once when state arrives; omit composer deps to avoid re-runs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-time route-state consumption
+  }, [location.state, location.pathname, location.search, location.hash, navigate]);
 
   const processDroppedFiles = async (files: File[]) => {
     const remaining = 10 - attachments.length;

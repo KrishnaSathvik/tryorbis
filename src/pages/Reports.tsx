@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePageTitle } from "@/hooks/usePageTitle";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { getMyGeneratorRuns, getMyValidationReports } from "@/lib/db";
@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { parseHistoryItemQuery } from "@/lib/dashboardValidatePrefill";
 
 interface Conversation {
   id: string;
@@ -22,13 +23,25 @@ interface Conversation {
   updated_at: string;
 }
 
+type HistoryResearchItem = {
+  type: "run" | "report";
+  id: string;
+  date: string;
+  data: Record<string, unknown> & { id: string };
+};
+
 export default function Reports() {
   usePageTitle("History");
   const navigate = useNavigate();
-  const [allItems, setAllItems] = useState<any[]>([]);
+  const [searchParams] = useSearchParams();
+  const [allItems, setAllItems] = useState<HistoryResearchItem[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"research" | "chats">("research");
+  const [openItemKeys, setOpenItemKeys] = useState<Set<string>>(() => new Set());
+  const [deepLinkMissing, setDeepLinkMissing] = useState(false);
+  const deepLinkHandledRef = useRef<string | null>(null);
+  const itemRefs = useRef<Record<string, HTMLElement | null>>({});
 
   useEffect(() => {
     Promise.all([
@@ -39,15 +52,69 @@ export default function Reports() {
         .select("id, title, updated_at")
         .order("updated_at", { ascending: false }),
     ]).then(([runs, reports, { data: convos }]) => {
-      const items = [
-        ...runs.map((r: any) => ({ type: "run", date: r.created_at, data: r })),
-        ...reports.map((r: any) => ({ type: "report", date: r.created_at, data: r })),
+      const items: HistoryResearchItem[] = [
+        ...runs.map((r) => ({
+          type: "run" as const,
+          id: r.id,
+          date: r.created_at,
+          data: r as HistoryResearchItem["data"],
+        })),
+        ...reports.map((r) => ({
+          type: "report" as const,
+          id: r.id,
+          date: r.created_at,
+          data: r as HistoryResearchItem["data"],
+        })),
       ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       setAllItems(items);
       setConversations((convos as Conversation[]) || []);
       setLoading(false);
     });
   }, []);
+
+  const itemQuery = searchParams.get("item");
+
+  useEffect(() => {
+    if (loading) return;
+    const target = parseHistoryItemQuery(itemQuery);
+    if (!target) {
+      setDeepLinkMissing(false);
+      return;
+    }
+
+    const expectedType = target.kind === "generator" ? "run" : "report";
+    const key = `${target.kind}:${target.id}`;
+    const match = allItems.find(
+      (item) => item.type === expectedType && item.id === target.id,
+    );
+
+    if (!match) {
+      setDeepLinkMissing(true);
+      return;
+    }
+
+    setDeepLinkMissing(false);
+    setActiveTab("research");
+    setOpenItemKeys((current) => {
+      if (current.has(key)) return current;
+      const next = new Set(current);
+      next.add(key);
+      return next;
+    });
+
+    if (deepLinkHandledRef.current === key) return;
+    deepLinkHandledRef.current = key;
+
+    requestAnimationFrame(() => {
+      const el = itemRefs.current[key];
+      if (!el) return;
+      if (typeof el.scrollIntoView === "function") {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      const focusTarget = el.querySelector<HTMLElement>("[data-history-focus-target]");
+      focusTarget?.focus({ preventScroll: true });
+    });
+  }, [loading, itemQuery, allItems]);
 
   const handleSaveIdea = async (name: string, source: string, score?: number, overallScore?: number, extra?: { description?: string; mvpScope?: string; monetization?: string }) => {
     try {
@@ -141,6 +208,11 @@ export default function Reports() {
       {/* Research tab */}
       {activeTab === "research" && (
         <>
+          {deepLinkMissing && (
+            <p className="text-sm text-muted-foreground" role="status">
+              That research item wasn&apos;t found. Showing your full history.
+            </p>
+          )}
           {allItems.length === 0 ? (
             <Card className="rounded-2xl border-0 bg-secondary">
               <CardContent className="p-12 text-center space-y-3">
@@ -152,47 +224,86 @@ export default function Reports() {
             </Card>
           ) : (
             <div className="space-y-3">
-              {allItems.map((item, idx) => (
-                <Collapsible key={idx}>
-                  <Card className="rounded-2xl border-border/50 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
-                    <CollapsibleTrigger className="w-full">
-                      <CardContent className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="h-9 w-9 rounded-xl bg-secondary flex items-center justify-center shrink-0 shadow-sm">
-                            {item.type === "run" ? <Lightbulb className="h-4 w-4 text-primary" /> : <ClipboardCheck className="h-4 w-4 text-primary" />}
+              {allItems.map((item) => {
+                const kind = item.type === "run" ? "generator" : "validation";
+                const key = `${kind}:${item.id}`;
+                const isOpen = openItemKeys.has(key);
+                const ideaText =
+                  typeof item.data.idea_text === "string" ? item.data.idea_text : "";
+                const persona =
+                  typeof item.data.persona === "string" ? item.data.persona : "";
+                const category =
+                  typeof item.data.category === "string" ? item.data.category : "";
+                const title =
+                  item.type === "run"
+                    ? `${persona} × ${category}`
+                    : ideaText.slice(0, 60) + (ideaText.length > 60 ? "..." : "");
+                const verdict = item.data.verdict;
+                const verdictSafe =
+                  verdict === "Build" || verdict === "Pivot" || verdict === "Skip"
+                    ? verdict
+                    : null;
+
+                return (
+                  <Collapsible
+                    key={key}
+                    open={isOpen}
+                    onOpenChange={(open) => {
+                      setOpenItemKeys((current) => {
+                        const next = new Set(current);
+                        if (open) next.add(key);
+                        else next.delete(key);
+                        return next;
+                      });
+                    }}
+                  >
+                    <Card
+                      ref={(el) => {
+                        itemRefs.current[key] = el;
+                      }}
+                      className="rounded-2xl border-border/50 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
+                    >
+                      <CollapsibleTrigger
+                        className="w-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-2xl"
+                        data-history-focus-target
+                        aria-label={`${item.type === "run" ? "Generator" : "Validation"}: ${title}`}
+                      >
+                        <CardContent className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="h-9 w-9 rounded-xl bg-secondary flex items-center justify-center shrink-0 shadow-sm" aria-hidden="true">
+                              {item.type === "run" ? <Lightbulb className="h-4 w-4 text-primary" /> : <ClipboardCheck className="h-4 w-4 text-primary" />}
+                            </div>
+                            <div className="text-left min-w-0">
+                              <p className="text-sm font-semibold truncate" title={item.type === "run" ? title : ideaText}>
+                                {title}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-0.5">{new Date(item.date).toLocaleDateString()}</p>
+                            </div>
                           </div>
-                          <div className="text-left min-w-0">
-                            <p className="text-sm font-semibold truncate">
-                              {item.type === "run"
-                                ? `${item.data.persona} × ${item.data.category}`
-                                : (item.data.idea_text || "").slice(0, 60) + ((item.data.idea_text || "").length > 60 ? "..." : "")}
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-0.5">{new Date(item.date).toLocaleDateString()}</p>
+                          <div className="flex items-center gap-2 shrink-0 ml-12 sm:ml-0">
+                            <Badge variant="secondary" className="text-[10px] uppercase tracking-wider rounded-full">
+                              {item.type === "run" ? "Generator" : "Validation"}
+                            </Badge>
+                            {item.type === "run" && (
+                              <span className="text-xs text-muted-foreground font-medium">
+                                {Array.isArray(item.data.idea_suggestions) ? (item.data.idea_suggestions as unknown[]).length : 0} ideas
+                              </span>
+                            )}
+                            {item.type === "report" && verdictSafe && <VerdictBadge verdict={verdictSafe} />}
+                            <ChevronDown className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                           </div>
+                        </CardContent>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <div className="px-5 pb-5 border-t border-border/50 pt-4 space-y-6">
+                          {item.type === "run" && <GeneratorRunDetails data={item.data} onSaveIdea={handleSaveIdea} navigate={navigate} />}
+                          {item.type === "report" && <ValidationReportDetails data={item.data} onSaveIdea={handleSaveIdea} />}
                         </div>
-                        <div className="flex items-center gap-2 shrink-0 ml-12 sm:ml-0">
-                          <Badge variant="secondary" className="text-[10px] uppercase tracking-wider rounded-full">
-                            {item.type === "run" ? "Generator" : "Validation"}
-                          </Badge>
-                          {item.type === "run" && (
-                            <span className="text-xs text-muted-foreground font-medium">
-                              {Array.isArray(item.data.idea_suggestions) ? (item.data.idea_suggestions as any[]).length : 0} ideas
-                            </span>
-                          )}
-                          {item.type === "report" && <VerdictBadge verdict={item.data.verdict} />}
-                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                        </div>
-                      </CardContent>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <div className="px-5 pb-5 border-t border-border/50 pt-4 space-y-6">
-                        {item.type === "run" && <GeneratorRunDetails data={item.data} onSaveIdea={handleSaveIdea} navigate={navigate} />}
-                        {item.type === "report" && <ValidationReportDetails data={item.data} onSaveIdea={handleSaveIdea} />}
-                      </div>
-                    </CollapsibleContent>
-                  </Card>
-                </Collapsible>
-              ))}
+                      </CollapsibleContent>
+                    </Card>
+                  </Collapsible>
+                );
+              })}
             </div>
           )}
         </>
