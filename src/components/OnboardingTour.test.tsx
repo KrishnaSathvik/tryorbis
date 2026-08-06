@@ -52,10 +52,27 @@ describe("onboarding storage helpers", () => {
     expect(localStorage.getItem(onboardingCompleteKey("user-a"))).toBe("true");
   });
 
-  it("treats legacy global key as completed without rewriting other users", () => {
+  it("migrates legacy global key once to the current user and removes it", () => {
     localStorage.setItem(ONBOARDING_LEGACY_KEY, "true");
     expect(readOnboardingComplete("user-a")).toBe(true);
-    expect(localStorage.getItem(onboardingCompleteKey("user-a"))).toBeNull();
+    expect(localStorage.getItem(onboardingCompleteKey("user-a"))).toBe("true");
+    expect(localStorage.getItem(ONBOARDING_LEGACY_KEY)).toBeNull();
+  });
+
+  it("does not treat user B as completed after user A received the legacy migration", () => {
+    localStorage.setItem(ONBOARDING_LEGACY_KEY, "true");
+    expect(readOnboardingComplete("user-a")).toBe(true);
+    expect(readOnboardingComplete("user-b")).toBe(false);
+    expect(localStorage.getItem(onboardingCompleteKey("user-b"))).toBeNull();
+  });
+
+  it("prefers an existing scoped key and clears leftover legacy to protect other users", () => {
+    writeOnboardingComplete("user-a");
+    localStorage.setItem(ONBOARDING_LEGACY_KEY, "true");
+    expect(readOnboardingComplete("user-a")).toBe(true);
+    expect(localStorage.getItem(onboardingCompleteKey("user-a"))).toBe("true");
+    expect(localStorage.getItem(ONBOARDING_LEGACY_KEY)).toBeNull();
+    expect(readOnboardingComplete("user-b")).toBe(false);
   });
 
   it("returns false and does not throw when storage fails", () => {
@@ -70,6 +87,13 @@ describe("onboarding storage helpers", () => {
     });
     expect(() => writeOnboardingComplete("user-a")).not.toThrow();
     setSpy.mockRestore();
+
+    localStorage.setItem(ONBOARDING_LEGACY_KEY, "true");
+    const removeSpy = vi.spyOn(Storage.prototype, "removeItem").mockImplementation(() => {
+      throw new Error("quota");
+    });
+    expect(() => readOnboardingComplete("user-a")).not.toThrow();
+    removeSpy.mockRestore();
   });
 });
 
@@ -164,6 +188,24 @@ describe("OnboardingTour goal routing", () => {
       expect(screen.getByTestId("pathname")).toHaveTextContent("/generate");
     });
     setSpy.mockRestore();
+  });
+
+  it("shows a Skip control and no Close button", async () => {
+    renderTour();
+    const dialog = await screen.findByRole("dialog", { name: /what do you want to do first/i });
+    expect(within(dialog).getByRole("button", { name: /^skip$/i })).toBeInTheDocument();
+    expect(within(dialog).queryByRole("button", { name: /^close$/i })).not.toBeInTheDocument();
+  });
+
+  it("persists completion on Escape and stays on the dashboard", async () => {
+    renderTour();
+    const dialog = await screen.findByRole("dialog", { name: /what do you want to do first/i });
+    fireEvent.keyDown(dialog, { key: "Escape", code: "Escape" });
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      expect(readOnboardingComplete("user-a")).toBe(true);
+    });
+    expect(screen.getByRole("heading", { name: /dashboard/i })).toBeInTheDocument();
   });
 
   it("shows onboarding for a different user after another user completed it", async () => {

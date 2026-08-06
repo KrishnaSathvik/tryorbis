@@ -94,6 +94,7 @@ export function OnboardingTour() {
       }}
     >
       <DialogContent
+        showCloseButton={false}
         className="max-h-[min(90vh,40rem)] w-[calc(100%-1.5rem)] max-w-lg overflow-y-auto rounded-[28px] border-0 p-6 sm:w-full"
         onCloseAutoFocus={(event) => {
           if (navigatingAwayRef.current) {
