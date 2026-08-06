@@ -206,10 +206,13 @@ describe("OrbisChat starter chips", () => {
     await waitFor(() => expect(toastError).toHaveBeenCalled());
     expect(global.fetch).not.toHaveBeenCalled();
 
-    await waitFor(() =>
-      expect(screen.getByRole("button", { name: /saas tool/i })).toBeEnabled(),
-    );
-    await user.click(screen.getByRole("button", { name: /saas tool/i }));
+    const input = screen.getByPlaceholderText(/ask orbis anything/i);
+    await waitFor(() => {
+      expect(input).toBeEnabled();
+      expect((input as HTMLTextAreaElement).value).toMatch(/saas tool/i);
+    });
+    await user.click(input);
+    await user.keyboard("{Enter}");
     await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1));
   });
 
@@ -219,12 +222,17 @@ describe("OrbisChat starter chips", () => {
 
     renderChat();
     await user.click(screen.getByRole("button", { name: /saas tool/i }));
-    await waitFor(() => expect(toastError).toHaveBeenCalled());
-    expect(global.fetch).not.toHaveBeenCalled();
-
     await waitFor(() =>
-      expect(screen.getByPlaceholderText(/ask orbis anything/i)).toBeEnabled(),
+      expect(toastError).toHaveBeenCalledWith("We couldn't send your message. Please try again."),
     );
+    expect(global.fetch).not.toHaveBeenCalled();
+    expect(toastError.mock.calls.flat().join(" ")).not.toMatch(/persist failed|internal/i);
+
+    await waitFor(() => {
+      const input = screen.getByPlaceholderText(/ask orbis anything/i) as HTMLTextAreaElement;
+      expect(input).toBeEnabled();
+      expect(input.value).toMatch(/saas tool/i);
+    });
   });
 
   it("retry after persistence failure sends successfully", async () => {
@@ -235,14 +243,129 @@ describe("OrbisChat starter chips", () => {
 
     renderChat();
     await user.click(screen.getByRole("button", { name: /saas tool/i }));
-    await waitFor(() => expect(toastError).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(toastError).toHaveBeenCalledWith("We couldn't send your message. Please try again."),
+    );
     expect(global.fetch).not.toHaveBeenCalled();
 
+    const input = screen.getByPlaceholderText(/ask orbis anything/i);
+    await waitFor(() => expect(input).toBeEnabled());
+    await user.click(input);
+    await user.keyboard("{Enter}");
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1));
+  });
+
+  it("user insert resolved error preserves draft, attachment, and skips fetch", async () => {
+    const user = userEvent.setup();
+    messageInsert.mockResolvedValueOnce({
+      data: null,
+      error: { message: "internal test error" },
+    });
+
+    renderChat();
+    const input = screen.getByPlaceholderText(/ask orbis anything/i);
+    await user.type(input, "keep this draft");
+    await user.click(screen.getByRole("button", { name: /add attachment/i }));
+    expect(screen.getByText(/attachment preview/i)).toBeInTheDocument();
+    await user.click(input);
+    await user.keyboard("{Enter}");
+
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: /saas tool/i })).toBeEnabled(),
+      expect(toastError).toHaveBeenCalledWith("We couldn't send your message. Please try again."),
     );
+    expect(global.fetch).not.toHaveBeenCalled();
+    expect(toastError.mock.calls.flat().join(" ")).not.toMatch(/internal test error/i);
+    // Draft stays in the composer only — no sent user bubble in the transcript.
+    expect(screen.queryByText((_, node) => {
+      if (!node || node.tagName === "TEXTAREA") return false;
+      return node.textContent === "keep this draft" && !node.children.length;
+    })).not.toBeInTheDocument();
+
+    expect(input).toBeEnabled();
+    expect((input as HTMLTextAreaElement).value).toBe("keep this draft");
+    expect(screen.getByText(/attachment preview/i)).toBeInTheDocument();
+  });
+
+  it("retry after resolved user persist error sends exactly once", async () => {
+    const user = userEvent.setup();
+    messageInsert
+      .mockResolvedValueOnce({ data: null, error: { message: "internal test error" } })
+      .mockResolvedValue({ error: null });
+
+    renderChat();
+    const input = screen.getByPlaceholderText(/ask orbis anything/i);
+    await user.type(input, "retry me");
+    await user.keyboard("{Enter}");
+    await waitFor(() =>
+      expect(toastError).toHaveBeenCalledWith("We couldn't send your message. Please try again."),
+    );
+    expect(global.fetch).not.toHaveBeenCalled();
+
+    await waitFor(() => expect(input).toBeEnabled());
+    await user.click(input);
+    await user.keyboard("{Enter}");
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1));
+  });
+
+  it("starter-chip resolved persist error restores prompt for retry", async () => {
+    const user = userEvent.setup();
+    messageInsert.mockResolvedValueOnce({
+      data: null,
+      error: { message: "internal test error" },
+    });
+
+    renderChat();
+    await user.click(screen.getByRole("button", { name: /saas tool/i }));
+    await waitFor(() =>
+      expect(toastError).toHaveBeenCalledWith("We couldn't send your message. Please try again."),
+    );
+    expect(global.fetch).not.toHaveBeenCalled();
+
+    const input = screen.getByPlaceholderText(/ask orbis anything/i) as HTMLTextAreaElement;
+    await waitFor(() => {
+      expect(input).toBeEnabled();
+      expect(input.value).toMatch(/saas tool/i);
+    });
+  });
+
+  it("assistant insert resolved error keeps streamed reply and shows save toast", async () => {
+    const user = userEvent.setup();
+    messageInsert
+      .mockResolvedValueOnce({ error: null }) // user
+      .mockResolvedValueOnce({ data: null, error: { message: "internal test error" } }); // assistant
+
+    renderChat();
     await user.click(screen.getByRole("button", { name: /saas tool/i }));
     await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.getByText("Hello")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(toastError).toHaveBeenCalledWith(
+        "The reply was shown, but it could not be saved to history.",
+      ),
+    );
+    expect(toastError.mock.calls.flat().join(" ")).not.toMatch(/internal test error/i);
+    expect(toastError).not.toHaveBeenCalledWith(expect.stringMatching(/failed to get response/i));
+    await waitFor(() =>
+      expect(screen.getByPlaceholderText(/ask orbis anything/i)).toBeEnabled(),
+    );
+  });
+
+  it("timestamp update resolved error is non-fatal", async () => {
+    const user = userEvent.setup();
+    conversationUpdateEq.mockResolvedValueOnce({
+      data: null,
+      error: { message: "internal test error" },
+    });
+
+    renderChat();
+    await user.click(screen.getByRole("button", { name: /saas tool/i }));
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.getByText("Hello")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByPlaceholderText(/ask orbis anything/i)).toBeEnabled(),
+    );
+    expect(toastError).not.toHaveBeenCalledWith(expect.stringMatching(/failed to get response/i));
+    expect(toastError.mock.calls.flat().join(" ")).not.toMatch(/internal test error/i);
   });
 
   it("remote fetch failure releases the lock", async () => {

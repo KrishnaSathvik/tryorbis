@@ -79,17 +79,26 @@ Browser-verified: selecting a chip then typing appends at the end (not the start
 `sendMessage` acquires `sendingRef` + `isStreaming` immediately after guards, then runs **one outer `try/finally`** covering:
 
 1. Conversation create/resolve  
-2. User-message persistence  
-3. Optimistic local message (only after successful user persist)  
-4. Remote stream fetch/consume  
-5. Assistant-message persistence (streamed reply stays visible if save fails; toast reports the limitation)  
-6. Conversation timestamp update  
+2. User-message persistence (`persistMessage` throws on resolved Supabase `{ error }` **and** rejected Promises)  
+3. Clear composer draft + attachments **only after** successful user persist  
+4. Optimistic local message (only after successful user persist)  
+5. Remote stream fetch/consume  
+6. Assistant-message persistence (streamed reply stays visible if save fails)  
+7. Conversation timestamp update (resolved `{ error }` is non-fatal)
 
 `finally` always sets `sendingRef.current = false` and `setIsStreaming(false)`.
 
 ### Persistence failure and retry
 
-If user-message `persistMessage` rejects, the outer `catch` toasts a safe error, the lock releases in `finally`, remote Chat is not called, and no optimistic user message remains—so starters return and retry works.
+If user-message persistence fails (resolved `{ error }` or rejected Promise):
+
+- Toast: `We couldn't send your message. Please try again.` (never raw backend text)
+- Remote Chat is not called; no optimistic user bubble
+- Input text and attachments are kept / restored
+- Starter-chip failure places the starter prompt back into the composer for retry
+- Lock releases in `finally`
+
+Assistant persist failure keeps the streamed reply and toasts: `The reply was shown, but it could not be saved to history.`
 
 ## Attachment safety
 
@@ -126,9 +135,9 @@ Visible heading `Try an example` remains on Generate/Validate as ordinary suppor
 ## Tests
 
 ```text
-npm test                         → 104 passed
+npm test                         → 109 passed
 npx tsc -p tsconfig.app.json --noEmit
-npx eslint <all PR #7 touched source/test files>
+npx eslint src/pages/OrbisChat.tsx src/pages/OrbisChat.starters.test.tsx
 npm run build
 ```
 
@@ -168,7 +177,7 @@ npm run build
 
 - Generate/Validate “reset restores chips” is covered via clear-input / remount paths in unit tests; New Search/New Validation restore via existing `resetChat` returning to the initial assistant-only state.
 - Chat streaming still depends on the remote `orbis-chat` function for live responses (tests mock fetch).
-- Persistence-failure retry is covered by integration tests with a rejected insert Promise (not a resolved `{ error }` object).
+- Persistence-failure retry is covered by integration tests for both rejected insert Promises and resolved `{ data: null, error }` Supabase shapes, including draft/attachment preservation.
 
 ## Deferred analytics events
 

@@ -123,8 +123,26 @@ export default function OrbisChat() {
     return data.id;
   };
 
-  const persistMessage = async (convoId: string, role: "user" | "assistant", content: string) => {
-    await supabase.from("chat_messages").insert({ conversation_id: convoId, role, content });
+  const persistMessage = async (
+    convoId: string,
+    role: "user" | "assistant",
+    content: string,
+  ) => {
+    const failCode =
+      role === "user"
+        ? "USER_MESSAGE_PERSIST_FAILED"
+        : "ASSISTANT_MESSAGE_PERSIST_FAILED";
+    try {
+      const { error } = await supabase.from("chat_messages").insert({
+        conversation_id: convoId,
+        role,
+        content,
+      });
+      if (error) throw new Error(failCode);
+    } catch (err: unknown) {
+      if (err instanceof Error && err.message === failCode) throw err;
+      throw new Error(failCode);
+    }
   };
 
   const sendMessage = async (overrideText?: string) => {
@@ -133,22 +151,25 @@ export default function OrbisChat() {
     // Guard immediately so rapid double-activation cannot duplicate sends
     sendingRef.current = true;
     setIsStreaming(true);
-    setInput("");
     const currentAttachments = [...attachments];
-    setAttachments([]);
 
     try {
       let convoId = activeConvoId;
       if (!convoId) {
         skipNextLoad.current = true;
         convoId = await createConversation(text);
-        if (!convoId) return;
+        if (!convoId) {
+          // Preserve draft for typed sends; place starter text when send used overrideText.
+          if (overrideText) setInput(text);
+          return;
+        }
       }
 
-      // Persist before optimistic UI so a rejected insert cannot leave a locked composer
-      // with a misleading unsent message.
+      // Persist before clearing draft / optimistic UI so a failed insert keeps composer content.
       await persistMessage(convoId, "user", text);
 
+      setInput("");
+      setAttachments([]);
       const userMsg: ChatMsg = { role: "user", content: text };
       const allMessages = [...messages, userMsg];
       setMessages(allMessages);
@@ -235,16 +256,34 @@ export default function OrbisChat() {
       if (assistantContent) {
         try {
           await persistMessage(convoId, "assistant", assistantContent);
-        } catch (persistErr: unknown) {
-          const message =
-            persistErr instanceof Error ? persistErr.message : "Failed to save assistant reply";
+        } catch {
+          toast.error("The reply was shown, but it could not be saved to history.");
+        }
+      }
+
+      const { error: timestampError } = await supabase
+        .from("conversations")
+        .update({ updated_at: new Date().toISOString() })
+        .eq("id", convoId);
+      if (timestampError) {
+        // Non-fatal: messages remain visible; do not surface as a response failure.
+      }
+    } catch (err: unknown) {
+      const code = err instanceof Error ? err.message : "";
+      if (code === "USER_MESSAGE_PERSIST_FAILED") {
+        toast.error("We couldn't send your message. Please try again.");
+        setInput(text);
+        setAttachments(currentAttachments);
+      } else {
+        const message =
+          err instanceof Error && err.message ? err.message : "Failed to get response";
+        if (
+          message !== "ASSISTANT_MESSAGE_PERSIST_FAILED" &&
+          message !== "USER_MESSAGE_PERSIST_FAILED"
+        ) {
           toast.error(message);
         }
       }
-      await supabase.from("conversations").update({ updated_at: new Date().toISOString() }).eq("id", convoId);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Failed to get response";
-      toast.error(message);
     } finally {
       sendingRef.current = false;
       setIsStreaming(false);
