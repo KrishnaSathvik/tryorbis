@@ -14,7 +14,7 @@ import { useCredits } from "@/hooks/useCredits";
 import { useFocusComposerOnArrive } from "@/hooks/useFocusComposerOnArrive";
 import { StarterChips } from "@/components/StarterChips";
 import { GENERATE_STARTER_CHIPS } from "@/lib/starterChips";
-import { focusComposerAndPlaceCaret } from "@/lib/focusComposer";
+import { scheduleFocusComposerAtEnd } from "@/lib/focusComposer";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, Bookmark, ClipboardCheck, Copy, Send, User, FolderOpen, Monitor, Globe, Rocket, Search, Loader2 } from "lucide-react";
 import { ResearchModeToggle } from "@/components/ResearchModeToggle";
@@ -55,7 +55,15 @@ export default function GenerateIdeas() {
   const navigate = useNavigate();
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const cancelPendingFocusRef = useRef<(() => void) | null>(null);
   useFocusComposerOnArrive(inputRef);
+
+  useEffect(() => {
+    return () => {
+      cancelPendingFocusRef.current?.();
+      cancelPendingFocusRef.current = null;
+    };
+  }, []);
   const { hasCredits, refreshCredits, loading: creditsLoading, unavailable: creditsUnavailable } = useCredits();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
@@ -265,7 +273,11 @@ export default function GenerateIdeas() {
   const handleStarterSelect = (item: (typeof GENERATE_STARTER_CHIPS)[number]) => {
     if (inputValue.trim() || attachments.length > 0 || isTyping || hasUserMessage) return;
     setInputValue(item.value);
-    focusComposerAndPlaceCaret(inputRef.current);
+    cancelPendingFocusRef.current?.();
+    cancelPendingFocusRef.current = scheduleFocusComposerAtEnd(
+      () => inputRef.current,
+      item.value,
+    );
   };
 
   if (phase === 'chat') {

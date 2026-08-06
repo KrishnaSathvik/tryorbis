@@ -111,7 +111,10 @@ describe("GenerateIdeas starter chips", () => {
 
   it("shows at least four starters in the untouched state", () => {
     renderGenerate();
-    expect(screen.getByRole("group", { name: /try an example/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("group", { name: /generate idea starters/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Try an example")).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /small business owners/i }),
     ).toBeInTheDocument();
@@ -120,15 +123,19 @@ describe("GenerateIdeas starter chips", () => {
     expect(screen.getByRole("button", { name: /independent creators/i })).toBeInTheDocument();
   });
 
-  it("fills and focuses the composer without calling AI, research, or credits", async () => {
+  it("fills and focuses the composer with caret at end without AI, research, or credits", async () => {
     const user = userEvent.setup();
     renderGenerate();
-    await user.click(
-      screen.getByRole("button", { name: /small business owners/i }),
-    );
+    const chip = screen.getByRole("button", { name: /small business owners/i });
+    const prompt = chip.textContent ?? "";
+    await user.click(chip);
     const input = screen.getByPlaceholderText(/sql prompt buddy/i) as HTMLInputElement;
-    expect(input.value).toMatch(/small business owners/i);
-    expect(input).toHaveFocus();
+    await waitFor(() => {
+      expect(input.value).toBe(prompt);
+      expect(input).toHaveFocus();
+      expect(input.selectionStart).toBe(prompt.length);
+      expect(input.selectionEnd).toBe(prompt.length);
+    });
     expect(invokeMock).not.toHaveBeenCalled();
     expect(refreshCreditsMock).not.toHaveBeenCalled();
   });
@@ -138,16 +145,22 @@ describe("GenerateIdeas starter chips", () => {
     renderGenerate();
     const input = screen.getByPlaceholderText(/sql prompt buddy/i);
     await user.type(input, "hello");
-    expect(screen.queryByRole("group", { name: /try an example/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("group", { name: /generate idea starters/i }),
+    ).not.toBeInTheDocument();
     await user.clear(input);
-    expect(screen.getByRole("group", { name: /try an example/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("group", { name: /generate idea starters/i }),
+    ).toBeInTheDocument();
   });
 
   it("hides chips after attachment selection without clearing the attachment", async () => {
     const user = userEvent.setup();
     renderGenerate();
     await user.click(screen.getByRole("button", { name: /add attachment/i }));
-    expect(screen.queryByRole("group", { name: /try an example/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("group", { name: /generate idea starters/i }),
+    ).not.toBeInTheDocument();
     expect(screen.getByText(/attachment preview/i)).toBeInTheDocument();
   });
 
@@ -157,6 +170,8 @@ describe("GenerateIdeas starter chips", () => {
     await user.type(screen.getByPlaceholderText(/sql prompt buddy/i), "my idea");
     await user.keyboard("{Enter}");
     await waitFor(() => expect(invokeMock).toHaveBeenCalled());
-    expect(screen.queryByRole("group", { name: /try an example/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("group", { name: /generate idea starters/i }),
+    ).not.toBeInTheDocument();
   });
 });

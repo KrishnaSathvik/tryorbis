@@ -137,35 +137,34 @@ export default function OrbisChat() {
     const currentAttachments = [...attachments];
     setAttachments([]);
 
-    let convoId = activeConvoId;
-    if (!convoId) {
-      skipNextLoad.current = true;
-      convoId = await createConversation(text);
-      if (!convoId) {
-        sendingRef.current = false;
-        setIsStreaming(false);
-        return;
-      }
-    }
-
-    const userMsg: ChatMsg = { role: "user", content: text };
-    const allMessages = [...messages, userMsg];
-    setMessages(allMessages);
-    await persistMessage(convoId, "user", text);
-
-    let assistantContent = "";
-    const upsertAssistant = (chunk: string) => {
-      assistantContent += chunk;
-      setMessages((prev) => {
-        const last = prev[prev.length - 1];
-        if (last?.role === "assistant") {
-          return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantContent } : m);
-        }
-        return [...prev, { role: "assistant", content: assistantContent }];
-      });
-    };
-
     try {
+      let convoId = activeConvoId;
+      if (!convoId) {
+        skipNextLoad.current = true;
+        convoId = await createConversation(text);
+        if (!convoId) return;
+      }
+
+      // Persist before optimistic UI so a rejected insert cannot leave a locked composer
+      // with a misleading unsent message.
+      await persistMessage(convoId, "user", text);
+
+      const userMsg: ChatMsg = { role: "user", content: text };
+      const allMessages = [...messages, userMsg];
+      setMessages(allMessages);
+
+      let assistantContent = "";
+      const upsertAssistant = (chunk: string) => {
+        assistantContent += chunk;
+        setMessages((prev) => {
+          const last = prev[prev.length - 1];
+          if (last?.role === "assistant") {
+            return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantContent } : m);
+          }
+          return [...prev, { role: "assistant", content: assistantContent }];
+        });
+      };
+
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       const resp = await fetch(CHAT_URL, {
@@ -229,14 +228,23 @@ export default function OrbisChat() {
             const parsed = JSON.parse(jsonStr);
             const content = parsed.choices?.[0]?.delta?.content;
             if (content) upsertAssistant(content);
-          } catch {}
+          } catch { /* ignore partial trailing frames */ }
         }
       }
 
-      if (assistantContent) await persistMessage(convoId, "assistant", assistantContent);
+      if (assistantContent) {
+        try {
+          await persistMessage(convoId, "assistant", assistantContent);
+        } catch (persistErr: unknown) {
+          const message =
+            persistErr instanceof Error ? persistErr.message : "Failed to save assistant reply";
+          toast.error(message);
+        }
+      }
       await supabase.from("conversations").update({ updated_at: new Date().toISOString() }).eq("id", convoId);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to get response");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to get response";
+      toast.error(message);
     } finally {
       sendingRef.current = false;
       setIsStreaming(false);

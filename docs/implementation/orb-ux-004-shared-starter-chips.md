@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-06  
 **Branch:** `cursor/orb-ux-004-shared-starter-chips`  
-**Status:** Implemented (draft PR)  
+**Status:** Implemented (draft PR #7 — merge-readiness corrections applied)  
 **Base:** `main` after ORB-UX-003 merge (`8d3201b` / PR #6)
 
 ## Previous empty-state behavior
@@ -25,14 +25,14 @@ interface StarterChipItem {
 interface StarterChipsProps {
   items: StarterChipItem[];
   onSelect: (item: StarterChipItem) => void;
-  ariaLabel: string;
+  ariaLabel: string; // always applied as the group accessible name
   disabled?: boolean;
   className?: string;
   heading?: string; // default "Try an example"; pass "" to hide
 }
 ```
 
-Prompt catalogs live in `src/lib/starterChips.ts`. Focus helper: `src/lib/focusComposer.ts`.
+Prompt catalogs live in `src/lib/starterChips.ts`. Focus helpers: `src/lib/focusComposer.ts` (`focusComposerAndPlaceCaret`, `scheduleFocusComposerAtEnd`).
 
 ## Prompt sets by tool
 
@@ -58,7 +58,7 @@ Prompt catalogs live in `src/lib/starterChips.ts`. Focus helper: `src/lib/focusC
 
 | Tool | Behavior |
 | ---- | -------- |
-| Generate | Fill composer + focus + caret at end. No AI, research, or credit calls. |
+| Generate | Fill composer + schedule focus/caret after the controlled value renders. No AI, research, or credit calls. |
 | Validate | Same fill/focus. No AI, validation, or credit calls. |
 | Chat | `sendMessage(item.value)` once; streaming guard + `sendingRef` prevent duplicates. |
 
@@ -68,9 +68,28 @@ Prompt catalogs live in `src/lib/starterChips.ts`. Focus helper: `src/lib/focusC
 
 **Chat:** show when no messages, not streaming, empty input, no attachments. Hide on type, attachment, send/stream. New Chat clears messages/input/attachments and restores chips.
 
-## Focus behavior
+## Focus and caret timing
 
-`focusComposerAndPlaceCaret` focuses the existing input/textarea with `preventScroll: true` and places the caret at the end. Does not touch router state or `useFocusComposerOnArrive`.
+Generate/Validate call `scheduleFocusComposerAtEnd(() => inputRef.current, item.value)` after `setInputValue`. The helper polls via `requestAnimationFrame` until the mounted control’s DOM value matches the expected prompt, then focuses with `preventScroll: true` and sets `selectionStart`/`selectionEnd` to the prompt length. Pending work is cancelled on unmount or superseded selection. Does not touch router state or `useFocusComposerOnArrive`.
+
+Browser-verified: selecting a chip then typing appends at the end (not the start).
+
+## Chat send lock lifecycle
+
+`sendMessage` acquires `sendingRef` + `isStreaming` immediately after guards, then runs **one outer `try/finally`** covering:
+
+1. Conversation create/resolve  
+2. User-message persistence  
+3. Optimistic local message (only after successful user persist)  
+4. Remote stream fetch/consume  
+5. Assistant-message persistence (streamed reply stays visible if save fails; toast reports the limitation)  
+6. Conversation timestamp update  
+
+`finally` always sets `sendingRef.current = false` and `setIsStreaming(false)`.
+
+### Persistence failure and retry
+
+If user-message `persistMessage` rejects, the outer `catch` toasts a safe error, the lock releases in `finally`, remote Chat is not called, and no optimistic user message remains—so starters return and retry works.
 
 ## Attachment safety
 
@@ -78,58 +97,78 @@ Chips hide when attachments exist; selection never clears attachments. Chat no l
 
 ## Accessibility
 
-Real `type="button"` chips, group labeling via heading / `aria-label`, decorative icons `aria-hidden`, visible focus rings, Enter/Space via native buttons, `min-h-11` touch targets, disabled state.
+Real `type="button"` chips; group `aria-label` always uses the parent contextual label:
+
+| Tool | Group name |
+| ---- | ---------- |
+| Generate | Generate idea starters |
+| Validate | Validate idea starters |
+| Chat | Orbis AI starters |
+
+Visible heading `Try an example` remains on Generate/Validate as ordinary supporting text (not the group name). Chat passes `heading=""`. Decorative icons `aria-hidden`, visible focus rings, Enter/Space via native buttons, `min-h-11` touch targets, disabled state.
 
 ## Files changed
 
 | File | Change |
 | ---- | ------ |
-| `src/components/StarterChips.tsx` | Shared component |
-| `src/components/StarterChips.test.tsx` | Component tests |
+| `src/components/StarterChips.tsx` | Shared component; contextual `aria-label` |
+| `src/components/StarterChips.test.tsx` | Component + a11y tests |
 | `src/lib/starterChips.ts` | Prompt catalogs |
-| `src/lib/focusComposer.ts` | Focus helper |
-| `src/pages/GenerateIdeas.tsx` | Fill/focus starters |
-| `src/pages/ValidateIdea.tsx` | Fill/focus starters |
-| `src/pages/OrbisChat.tsx` | Shared chips + send-once guards + New Chat clears input/attachments |
-| `src/pages/*.starters.test.tsx` | Integration tests |
+| `src/lib/focusComposer.ts` | Sync + scheduled caret helpers |
+| `src/lib/focusComposer.test.ts` | Helper timing/cancel tests |
+| `src/pages/GenerateIdeas.tsx` | Fill + scheduled caret |
+| `src/pages/ValidateIdea.tsx` | Fill + scheduled caret |
+| `src/pages/OrbisChat.tsx` | Shared chips + exception-safe send lock |
+| `src/pages/*.starters.test.tsx` | Integration tests (lock, caret, labels) |
 | `package.json` / lock | `@testing-library/user-event` |
 | Docs + screenshots | Implementation note + evidence |
 
 ## Tests
 
 ```text
-npm test                         → 95 passed
+npm test                         → 104 passed
 npx tsc -p tsconfig.app.json --noEmit
-npx eslint <new source/test files>
+npx eslint <all PR #7 touched source/test files>
 npm run build
 ```
 
+### ESLint (touched files)
+
+- New/starter-only files (`StarterChips*`, `starterChips.ts`, `focusComposer*`, `*.starters.test.tsx`): **clean**
+- Established pre-existing failures in untouched lines of `GenerateIdeas.tsx`, `ValidateIdea.tsx`, `OrbisChat.tsx` (mostly `@typescript-eslint/no-explicit-any`, plus existing hooks deps / one `no-empty`). No new violations introduced by this correction pass. Local `catch (err: unknown)` cleanup applied in Chat send path.
+
 ## Browser verification
 
-- Generate: four chips → select → INPUT focused with prompt text; no AI request  
-- Validate: same fill/focus  
-- Chat: select → one user message; New Chat restores chips  
-- Desktop, mobile 390, dark mode screenshots  
+- Generate: four chips → select → INPUT focused; `selectionStart`/`selectionEnd` at prompt length; typing appends at end; no AI request  
+- Validate: same fill/focus/caret  
+- Chat: select → one remote request; New Chat restores chips  
+- Desktop, mobile 390, dark mode  
 
-### Screenshot paths
+### Screenshot / evidence paths
 
 `docs/uiux-audit-assets/implementation/orb-ux-004/`
 
 - `generate-starter-chips-desktop.png`
 - `generate-starter-selected-focused.png`
+- `generate-starter-caret-at-end.png`
 - `validate-starter-chips-desktop.png`
 - `validate-starter-selected-focused.png`
+- `validate-starter-caret-at-end.png`
 - `chat-shared-starter-chips.png`
 - `chat-starter-message-sent.png`
 - `mobile-generate-starter-chips.png`
 - `mobile-validate-starter-chips.png`
+- `mobile-generate-starter-caret.png`
 - `dark-mode-starter-chips.png`
+- `dark-mode-starter-caret.png`
 - `starter-chip-focus-state.png`
+- `contextual-starter-group-label.md`
 
 ## Limitations
 
 - Generate/Validate “reset restores chips” is covered via clear-input / remount paths in unit tests; New Search/New Validation restore via existing `resetChat` returning to the initial assistant-only state.
 - Chat streaming still depends on the remote `orbis-chat` function for live responses (tests mock fetch).
+- Persistence-failure retry is covered by integration tests with a rejected insert Promise (not a resolved `{ error }` object).
 
 ## Deferred analytics events
 

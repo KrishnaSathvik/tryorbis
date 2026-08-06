@@ -15,7 +15,7 @@ import { useCredits } from "@/hooks/useCredits";
 import { useFocusComposerOnArrive } from "@/hooks/useFocusComposerOnArrive";
 import { StarterChips } from "@/components/StarterChips";
 import { VALIDATE_STARTER_CHIPS } from "@/lib/starterChips";
-import { focusComposerAndPlaceCaret } from "@/lib/focusComposer";
+import { scheduleFocusComposerAtEnd } from "@/lib/focusComposer";
 import { supabase } from "@/integrations/supabase/client";
 import { saveValidationReportDb, addToBacklogDb } from "@/lib/db";
 import { toast } from "sonner";
@@ -91,7 +91,15 @@ export default function ValidateIdea() {
   const navigate = useNavigate();
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const cancelPendingFocusRef = useRef<(() => void) | null>(null);
   useFocusComposerOnArrive(inputRef);
+
+  useEffect(() => {
+    return () => {
+      cancelPendingFocusRef.current?.();
+      cancelPendingFocusRef.current = null;
+    };
+  }, []);
   const { hasCredits, refreshCredits, loading: creditsLoading, unavailable: creditsUnavailable } = useCredits();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
@@ -306,7 +314,11 @@ export default function ValidateIdea() {
   const handleStarterSelect = (item: (typeof VALIDATE_STARTER_CHIPS)[number]) => {
     if (inputValue.trim() || attachments.length > 0 || isTyping || hasUserMessage) return;
     setInputValue(item.value);
-    focusComposerAndPlaceCaret(inputRef.current);
+    cancelPendingFocusRef.current?.();
+    cancelPendingFocusRef.current = scheduleFocusComposerAtEnd(
+      () => inputRef.current,
+      item.value,
+    );
   };
 
   if (phase === 'chat') {

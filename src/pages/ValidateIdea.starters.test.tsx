@@ -113,20 +113,29 @@ describe("ValidateIdea starter chips", () => {
 
   it("shows at least four starters in the untouched state", () => {
     renderValidate();
-    expect(screen.getByRole("group", { name: /try an example/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("group", { name: /validate idea starters/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Try an example")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /national parks/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /grocery-list/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /customer-support tickets/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /solo founders/i })).toBeInTheDocument();
   });
 
-  it("fills and focuses without AI, validation, or credit mutation", async () => {
+  it("fills and focuses with caret at end without AI, validation, or credit mutation", async () => {
     const user = userEvent.setup();
     renderValidate();
-    await user.click(screen.getByRole("button", { name: /national parks/i }));
+    const chip = screen.getByRole("button", { name: /national parks/i });
+    const prompt = chip.textContent ?? "";
+    await user.click(chip);
     const input = screen.getByPlaceholderText(/tracks subscriptions/i) as HTMLInputElement;
-    expect(input.value).toMatch(/national parks/i);
-    expect(input).toHaveFocus();
+    await waitFor(() => {
+      expect(input.value).toBe(prompt);
+      expect(input).toHaveFocus();
+      expect(input.selectionStart).toBe(prompt.length);
+      expect(input.selectionEnd).toBe(prompt.length);
+    });
     expect(invokeMock).not.toHaveBeenCalled();
     expect(refreshCreditsMock).not.toHaveBeenCalled();
   });
@@ -136,16 +145,22 @@ describe("ValidateIdea starter chips", () => {
     renderValidate();
     const input = screen.getByPlaceholderText(/tracks subscriptions/i);
     await user.type(input, "hello");
-    expect(screen.queryByRole("group", { name: /try an example/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("group", { name: /validate idea starters/i }),
+    ).not.toBeInTheDocument();
     await user.clear(input);
-    expect(screen.getByRole("group", { name: /try an example/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("group", { name: /validate idea starters/i }),
+    ).toBeInTheDocument();
   });
 
   it("hides after attachment selection", async () => {
     const user = userEvent.setup();
     renderValidate();
     await user.click(screen.getByRole("button", { name: /add attachment/i }));
-    expect(screen.queryByRole("group", { name: /try an example/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("group", { name: /validate idea starters/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("hides after a user message", async () => {
@@ -154,6 +169,8 @@ describe("ValidateIdea starter chips", () => {
     await user.type(screen.getByPlaceholderText(/tracks subscriptions/i), "my idea");
     await user.keyboard("{Enter}");
     await waitFor(() => expect(invokeMock).toHaveBeenCalled());
-    expect(screen.queryByRole("group", { name: /try an example/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("group", { name: /validate idea starters/i }),
+    ).not.toBeInTheDocument();
   });
 });

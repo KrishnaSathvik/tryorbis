@@ -1,4 +1,3 @@
-import { useId } from "react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -29,20 +28,18 @@ export function StarterChips({
   className,
   heading = "Try an example",
 }: StarterChipsProps) {
-  const headingId = useId();
   if (items.length === 0) return null;
 
   return (
     <div className={cn("w-full space-y-2.5", className)}>
       {heading ? (
-        <p id={headingId} className="text-xs font-medium text-muted-foreground">
+        <p className="text-xs font-medium text-muted-foreground">
           {heading}
         </p>
       ) : null}
       <div
         role="group"
-        aria-label={heading ? undefined : ariaLabel}
-        aria-labelledby={heading ? headingId : undefined}
+        aria-label={ariaLabel}
         className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full"
       >
         {items.map((item) => {

@@ -14,6 +14,10 @@ Element.prototype.scrollIntoView = vi.fn();
 const fromMock = vi.fn();
 const authGetSession = vi.fn();
 const useAuthMock = vi.fn();
+const toastError = vi.fn();
+const conversationInsertSingle = vi.fn();
+const messageInsert = vi.fn();
+const conversationUpdateEq = vi.fn();
 
 vi.mock("@/hooks/usePageTitle", () => ({ usePageTitle: () => {} }));
 vi.mock("@/hooks/useFocusComposerOnArrive", () => ({
@@ -39,7 +43,9 @@ vi.mock("@/integrations/supabase/client", () => ({
     auth: { getSession: (...args: unknown[]) => authGetSession(...args) },
   },
 }));
-vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+vi.mock("sonner", () => ({
+  toast: { success: vi.fn(), error: (...args: unknown[]) => toastError(...args) },
+}));
 vi.mock("@/components/FileUpload", () => ({
   FileUpload: ({
     onAttachmentsChange,
@@ -77,6 +83,26 @@ vi.mock("react-markdown", () => ({
 
 import OrbisChat from "@/pages/OrbisChat";
 
+function okStreamBody(content = "Hello") {
+  return {
+    getReader: () => {
+      let done = false;
+      return {
+        read: async () => {
+          if (done) return { done: true, value: undefined };
+          done = true;
+          return {
+            done: false,
+            value: new TextEncoder().encode(
+              `data: {"choices":[{"delta":{"content":"${content}"}}]}\n\ndata: [DONE]\n\n`,
+            ),
+          };
+        },
+      };
+    },
+  };
+}
+
 function renderChat() {
   return render(
     <MemoryRouter>
@@ -93,27 +119,30 @@ describe("OrbisChat starter chips", () => {
       data: { session: { access_token: "tok" } },
     });
 
-    const insertMock = vi.fn().mockResolvedValue({ data: { id: "c1" }, error: null });
-    const updateMock = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) });
-    const selectEqEq = vi.fn().mockResolvedValue({ data: [], error: null });
-    const selectEq = vi.fn().mockReturnValue({
-      eq: selectEqEq,
-      order: vi.fn().mockResolvedValue({ data: [], error: null }),
-      single: vi.fn(),
-    });
+    conversationInsertSingle.mockResolvedValue({ data: { id: "c1" }, error: null });
+    messageInsert.mockResolvedValue({ error: null });
+    conversationUpdateEq.mockResolvedValue({ error: null });
 
     fromMock.mockImplementation((table: string) => {
       if (table === "conversations") {
         return {
-          insert: () => ({ select: () => ({ single: insertMock }) }),
-          update: updateMock,
-          select: () => ({ eq: selectEq }),
+          insert: () => ({
+            select: () => ({ single: (...args: unknown[]) => conversationInsertSingle(...args) }),
+          }),
+          update: () => ({ eq: (...args: unknown[]) => conversationUpdateEq(...args) }),
+          select: () => ({
+            eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
         };
       }
       if (table === "chat_messages") {
         return {
-          insert: vi.fn().mockResolvedValue({ error: null }),
-          select: () => ({ eq: () => ({ order: vi.fn().mockResolvedValue({ data: [], error: null }) }) }),
+          insert: (...args: unknown[]) => messageInsert(...args),
+          select: () => ({
+            eq: () => ({
+              order: vi.fn().mockResolvedValue({ data: [], error: null }),
+            }),
+          }),
         };
       }
       return {};
@@ -121,29 +150,14 @@ describe("OrbisChat starter chips", () => {
 
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
-      body: {
-        getReader: () => {
-          let done = false;
-          return {
-            read: async () => {
-              if (done) return { done: true, value: undefined };
-              done = true;
-              return {
-                done: false,
-                value: new TextEncoder().encode(
-                  'data: {"choices":[{"delta":{"content":"Hello"}}]}\n\ndata: [DONE]\n\n',
-                ),
-              };
-            },
-          };
-        },
-      },
+      body: okStreamBody(),
       json: async () => ({}),
     }) as unknown as typeof fetch;
   });
 
-  it("shows the four existing suggestions on empty chat", () => {
+  it("shows the four existing suggestions on empty chat with contextual group label", () => {
     renderChat();
+    expect(screen.getByRole("group", { name: /orbis ai starters/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /saas tool/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /unmet needs/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /first 100 users/i })).toBeInTheDocument();
@@ -155,6 +169,8 @@ describe("OrbisChat starter chips", () => {
     renderChat();
     await user.click(screen.getByRole("button", { name: /saas tool/i }));
     await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1));
+    expect(conversationInsertSingle).toHaveBeenCalledTimes(1);
+    expect(messageInsert).toHaveBeenCalled();
     expect(screen.queryByRole("button", { name: /saas tool/i })).not.toBeInTheDocument();
   });
 
@@ -165,6 +181,80 @@ describe("OrbisChat starter chips", () => {
     await user.dblClick(chip);
     await waitFor(() => expect(global.fetch).toHaveBeenCalled());
     expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(conversationInsertSingle).toHaveBeenCalledTimes(1);
+  });
+
+  it("ordinary typed message sending still works", async () => {
+    const user = userEvent.setup();
+    renderChat();
+    await user.type(
+      screen.getByPlaceholderText(/ask orbis anything/i),
+      "typed hello{Enter}",
+    );
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1));
+    expect(messageInsert).toHaveBeenCalled();
+  });
+
+  it("conversation creation failure releases the lock so retry works", async () => {
+    const user = userEvent.setup();
+    conversationInsertSingle
+      .mockResolvedValueOnce({ data: null, error: { message: "fail" } })
+      .mockResolvedValueOnce({ data: { id: "c2" }, error: null });
+
+    renderChat();
+    await user.click(screen.getByRole("button", { name: /saas tool/i }));
+    await waitFor(() => expect(toastError).toHaveBeenCalled());
+    expect(global.fetch).not.toHaveBeenCalled();
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /saas tool/i })).toBeEnabled(),
+    );
+    await user.click(screen.getByRole("button", { name: /saas tool/i }));
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1));
+  });
+
+  it("user-message persistence rejection releases the lock and skips remote chat", async () => {
+    const user = userEvent.setup();
+    messageInsert.mockRejectedValueOnce(new Error("persist failed"));
+
+    renderChat();
+    await user.click(screen.getByRole("button", { name: /saas tool/i }));
+    await waitFor(() => expect(toastError).toHaveBeenCalled());
+    expect(global.fetch).not.toHaveBeenCalled();
+
+    await waitFor(() =>
+      expect(screen.getByPlaceholderText(/ask orbis anything/i)).toBeEnabled(),
+    );
+  });
+
+  it("retry after persistence failure sends successfully", async () => {
+    const user = userEvent.setup();
+    messageInsert
+      .mockRejectedValueOnce(new Error("persist failed"))
+      .mockResolvedValue({ error: null });
+
+    renderChat();
+    await user.click(screen.getByRole("button", { name: /saas tool/i }));
+    await waitFor(() => expect(toastError).toHaveBeenCalled());
+    expect(global.fetch).not.toHaveBeenCalled();
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /saas tool/i })).toBeEnabled(),
+    );
+    await user.click(screen.getByRole("button", { name: /saas tool/i }));
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1));
+  });
+
+  it("remote fetch failure releases the lock", async () => {
+    const user = userEvent.setup();
+    global.fetch = vi.fn().mockRejectedValue(new Error("network down")) as unknown as typeof fetch;
+
+    renderChat();
+    await user.click(screen.getByRole("button", { name: /saas tool/i }));
+    await waitFor(() => expect(toastError).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(screen.getByPlaceholderText(/ask orbis anything/i)).toBeEnabled(),
+    );
   });
 
   it("hides suggestions after typing", async () => {

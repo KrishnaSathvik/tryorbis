@@ -14,13 +14,41 @@ describe("StarterChips", () => {
     render(
       <StarterChips items={items} onSelect={vi.fn()} ariaLabel="Example starters" />,
     );
-    expect(screen.getByRole("group", { name: /try an example/i })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: /example starters/i })).toBeInTheDocument();
+    expect(screen.getByText("Try an example")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /short prompt a/i })).toBeInTheDocument();
     expect(
       screen.getByRole("button", {
         name: /a longer starter prompt that should wrap without clipping in the layout/i,
       }),
     ).toBeInTheDocument();
+  });
+
+  it("honors contextual ariaLabel while keeping the visible heading", () => {
+    render(
+      <StarterChips
+        items={items}
+        onSelect={vi.fn()}
+        ariaLabel="Generate idea starters"
+      />,
+    );
+    expect(
+      screen.getByRole("group", { name: /generate idea starters/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Try an example")).toBeInTheDocument();
+  });
+
+  it("uses ariaLabel when heading is empty without creating an empty label", () => {
+    render(
+      <StarterChips
+        items={items}
+        onSelect={vi.fn()}
+        ariaLabel="Orbis AI starters"
+        heading=""
+      />,
+    );
+    expect(screen.getByRole("group", { name: /orbis ai starters/i })).toBeInTheDocument();
+    expect(screen.queryByText("Try an example")).not.toBeInTheDocument();
   });
 
   it("calls onSelect with the correct item", async () => {
