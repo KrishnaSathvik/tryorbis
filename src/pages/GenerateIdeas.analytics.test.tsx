@@ -192,6 +192,180 @@ describe("GenerateIdeas analytics", () => {
     expect(trackMock).toHaveBeenCalledWith("quota_hit", { surface: "generate" });
   });
 
+  it("does not emit quota_hit when remaining is null", async () => {
+    useCreditsMock.mockReturnValue({
+      hasCredits: false,
+      remaining: null,
+      refreshCredits: refreshCreditsMock,
+      loading: false,
+      unavailable: false,
+    });
+    const user = await readyForResearch();
+    trackMock.mockClear();
+    await user.click(screen.getByRole("button", { name: /start research/i }));
+    expect(trackMock).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("does not emit quota_hit when remaining is non-zero even if hasCredits is false", async () => {
+    useCreditsMock.mockReturnValue({
+      hasCredits: false,
+      remaining: 1,
+      refreshCredits: refreshCreditsMock,
+      loading: false,
+      unavailable: false,
+    });
+    const user = await readyForResearch();
+    trackMock.mockClear();
+    await user.click(screen.getByRole("button", { name: /start research/i }));
+    expect(trackMock).not.toHaveBeenCalled();
+  });
+
+  it("does not emit when credits are unavailable", async () => {
+    useCreditsMock.mockReturnValue({
+      hasCredits: false,
+      remaining: null,
+      refreshCredits: refreshCreditsMock,
+      loading: false,
+      unavailable: true,
+    });
+    const user = await readyForResearch();
+    trackMock.mockClear();
+    await user.click(screen.getByRole("button", { name: /start research/i }));
+    expect(trackMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects malformed {} responses with invalid_response and no save", async () => {
+    const user = await readyForResearch();
+    trackMock.mockClear();
+    invokeMock.mockResolvedValueOnce({ data: {}, error: null });
+    await user.click(screen.getByRole("button", { name: /start research/i }));
+    await waitFor(() => {
+      expect(trackMock).toHaveBeenCalledWith("research_failed", {
+        type: "generate",
+        code: "invalid_response",
+      });
+    });
+    expect(
+      trackMock.mock.calls.filter((c) => c[0] === "research_started"),
+    ).toHaveLength(1);
+    expect(
+      trackMock.mock.calls.filter((c) => c[0] === "research_succeeded"),
+    ).toHaveLength(0);
+    expect(saveGeneratorRunDbMock).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole("button", { name: /start research/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("rejects non-array generate fields as invalid_response", async () => {
+    const user = await readyForResearch();
+    trackMock.mockClear();
+    invokeMock.mockResolvedValueOnce({
+      data: { problemClusters: {}, ideaSuggestions: "bad" },
+      error: null,
+    });
+    await user.click(screen.getByRole("button", { name: /start research/i }));
+    await waitFor(() => {
+      expect(trackMock).toHaveBeenCalledWith("research_failed", {
+        type: "generate",
+        code: "invalid_response",
+      });
+    });
+    expect(saveGeneratorRunDbMock).not.toHaveBeenCalled();
+  });
+
+  it("treats empty arrays as a successful structurally valid generate response", async () => {
+    const user = await readyForResearch();
+    trackMock.mockClear();
+    invokeMock.mockResolvedValueOnce({
+      data: { problemClusters: [], ideaSuggestions: [] },
+      error: null,
+    });
+    await user.click(screen.getByRole("button", { name: /start research/i }));
+    await waitFor(() => {
+      expect(trackMock).toHaveBeenCalledWith(
+        "research_succeeded",
+        expect.objectContaining({ type: "generate", mode: "regular" }),
+      );
+    });
+    expect(
+      trackMock.mock.calls.filter((c) => c[0] === "research_failed"),
+    ).toHaveLength(0);
+  });
+
+  it("rejects malformed deep stage-1 without partial UI or success", async () => {
+    const user = await readyForResearch();
+    await user.click(screen.getByRole("button", { name: /toggle mode/i }));
+    trackMock.mockClear();
+    invokeMock.mockResolvedValueOnce({ data: {}, error: null });
+    await user.click(screen.getByRole("button", { name: /start research/i }));
+    await waitFor(() => {
+      expect(trackMock).toHaveBeenCalledWith("research_failed", {
+        type: "generate",
+        code: "invalid_response",
+      });
+    });
+    expect(
+      trackMock.mock.calls.filter((c) => c[0] === "research_succeeded"),
+    ).toHaveLength(0);
+    expect(saveGeneratorRunDbMock).not.toHaveBeenCalled();
+    expect(screen.queryByText("Research Results")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /start research/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("rejects malformed deep stage-2 after valid stage-1", async () => {
+    const user = await readyForResearch();
+    await user.click(screen.getByRole("button", { name: /toggle mode/i }));
+    trackMock.mockClear();
+    invokeMock
+      .mockResolvedValueOnce({
+        data: { problemClusters: [{ theme: "t", painSummary: "p", complaintCount: 1 }] },
+        error: null,
+      })
+      .mockResolvedValueOnce({ data: {}, error: null });
+    await user.click(screen.getByRole("button", { name: /start research/i }));
+    await waitFor(() => {
+      expect(trackMock).toHaveBeenCalledWith("research_failed", {
+        type: "generate",
+        code: "invalid_response",
+      });
+    });
+    expect(
+      trackMock.mock.calls.filter((c) => c[0] === "research_succeeded"),
+    ).toHaveLength(0);
+    expect(saveGeneratorRunDbMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects empty deep stage-3 intelligence as invalid_response", async () => {
+    const user = await readyForResearch();
+    await user.click(screen.getByRole("button", { name: /toggle mode/i }));
+    trackMock.mockClear();
+    invokeMock
+      .mockResolvedValueOnce({
+        data: { problemClusters: [{ theme: "t", painSummary: "p", complaintCount: 1 }] },
+        error: null,
+      })
+      .mockResolvedValueOnce({
+        data: { ideaSuggestions: regularResult.ideaSuggestions },
+        error: null,
+      })
+      .mockResolvedValueOnce({ data: {}, error: null });
+    await user.click(screen.getByRole("button", { name: /start research/i }));
+    await waitFor(() => {
+      expect(trackMock).toHaveBeenCalledWith("research_failed", {
+        type: "generate",
+        code: "invalid_response",
+      });
+    });
+    expect(
+      trackMock.mock.calls.filter((c) => c[0] === "research_succeeded"),
+    ).toHaveLength(0);
+    expect(saveGeneratorRunDbMock).not.toHaveBeenCalled();
+  });
+
   it("emits research_started then research_succeeded for regular success", async () => {
     const user = await readyForResearch();
     trackMock.mockClear();

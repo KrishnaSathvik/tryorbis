@@ -444,6 +444,13 @@ Add `src/lib/analytics.ts` with `track(event, props)` no-op/pluggable; instrumen
 ### Acceptance criteria
 Events fire in dev console; documented table in this file; no PII beyond coarse booleans.
 
+**Merge-readiness corrections (post-review):**
+
+- Research success requires structural response validation (`researchResponseValidation.ts`); malformed payloads emit `invalid_response`, never inflated `research_succeeded`.
+- `AnalyticsEnvelope` is a mapped discriminated union for sink narrowing.
+- `quota_hit` uses `isQuotaExhausted()` (confirmed zero only).
+- Landing waitlist covered by direct unit tests (new insert / duplicate / failure).
+
 ---
 
 ## Ticket `ORB-UX-009`: Accessibility pass (tour, icon buttons, focus)

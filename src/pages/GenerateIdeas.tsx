@@ -21,6 +21,15 @@ import {
   normalizeDurationMs,
   track,
 } from "@/lib/analytics";
+import { isQuotaExhausted } from "@/lib/quotaExhausted";
+import {
+  INCOMPLETE_RESEARCH_TOAST,
+  InvalidResearchResponseError,
+  assertGenerateIdeasStage,
+  assertGenerateIntelligenceStage,
+  assertGenerateProblemsStage,
+  assertGenerateRegularResponse,
+} from "@/lib/researchResponseValidation";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, Bookmark, ClipboardCheck, Copy, Send, User, FolderOpen, Monitor, Globe, Rocket, Search, Loader2 } from "lucide-react";
 import { ResearchModeToggle } from "@/components/ResearchModeToggle";
@@ -169,7 +178,15 @@ export default function GenerateIdeas() {
   const triggerGenerate = useCallback(async (params: any) => {
     if (creditsLoading || creditsUnavailable) return;
     if (!hasCredits) {
-      track("quota_hit", { surface: "generate" });
+      if (
+        isQuotaExhausted({
+          remaining,
+          loading: creditsLoading,
+          unavailable: creditsUnavailable,
+        })
+      ) {
+        track("quota_hit", { surface: "generate" });
+      }
       setUpgradeOpen(true);
       return;
     }
@@ -195,13 +212,14 @@ export default function GenerateIdeas() {
         });
         if (e1) throw e1;
         if (s1?.error) throw new Error(s1.error);
+        const problems = assertGenerateProblemsStage(s1);
 
         // Show problems immediately → switch to results
-        const partialResult: GeneratorResult = { ...baseBody, problemClusters: s1.problemClusters || [], ideaSuggestions: [] };
+        const partialResult: GeneratorResult = { ...baseBody, problemClusters: problems.problemClusters, ideaSuggestions: [] };
         setResult(partialResult); setPhase('results'); setDeepStage('ideas');
         refreshCredits();
 
-        const problemsSummary = (s1.problemClusters || []).map((c: any) => `- ${c.theme}: ${c.painSummary} (${c.complaintCount} complaints)`).join('\n');
+        const problemsSummary = problems.problemClusters.map((c: any) => `- ${c.theme}: ${c.painSummary} (${c.complaintCount} complaints)`).join('\n');
 
         // Stage 2: Generate ideas
         const { data: s2, error: e2 } = await supabase.functions.invoke('perplexity-generate', {
@@ -209,11 +227,12 @@ export default function GenerateIdeas() {
         });
         if (e2) throw e2;
         if (s2?.error) throw new Error(s2.error);
+        const ideas = assertGenerateIdeasStage(s2);
 
-        setResult(prev => prev ? { ...prev, ideaSuggestions: s2.ideaSuggestions || [] } : prev);
+        setResult(prev => prev ? { ...prev, ideaSuggestions: ideas.ideaSuggestions } : prev);
         setDeepStage('intelligence');
 
-        const ideasSummary = (s2.ideaSuggestions || []).map((i: any) => `- ${i.name}: ${i.description} (Score: ${i.demandScore})`).join('\n');
+        const ideasSummary = ideas.ideaSuggestions.map((i: any) => `- ${i.name}: ${i.description} (Score: ${i.demandScore})`).join('\n');
 
         // Stage 3: Market intelligence
         const { data: s3, error: e3 } = await supabase.functions.invoke('perplexity-generate', {
@@ -221,14 +240,21 @@ export default function GenerateIdeas() {
         });
         if (e3) throw e3;
         if (s3?.error) throw new Error(s3.error);
+        const intelligence = assertGenerateIntelligenceStage(s3);
 
         const finalResult: GeneratorResult = {
           ...baseBody,
-          problemClusters: s1.problemClusters || [], ideaSuggestions: s2.ideaSuggestions || [],
-          wtpSignals: s3.wtpSignals, competitionDensity: s3.competitionDensity, marketTiming: s3.marketTiming,
-          icp: s3.icp, workaroundDetection: s3.workaroundDetection, featureGapMap: s3.featureGapMap,
-          platformRisk: s3.platformRisk, gtmStrategy: s3.gtmStrategy, pricingBenchmarks: s3.pricingBenchmarks,
-          defensibility: s3.defensibility,
+          problemClusters: problems.problemClusters, ideaSuggestions: ideas.ideaSuggestions,
+          wtpSignals: intelligence.wtpSignals as GeneratorResult["wtpSignals"],
+          competitionDensity: intelligence.competitionDensity as GeneratorResult["competitionDensity"],
+          marketTiming: intelligence.marketTiming as GeneratorResult["marketTiming"],
+          icp: intelligence.icp as GeneratorResult["icp"],
+          workaroundDetection: intelligence.workaroundDetection as GeneratorResult["workaroundDetection"],
+          featureGapMap: intelligence.featureGapMap as GeneratorResult["featureGapMap"],
+          platformRisk: intelligence.platformRisk as GeneratorResult["platformRisk"],
+          gtmStrategy: intelligence.gtmStrategy as GeneratorResult["gtmStrategy"],
+          pricingBenchmarks: intelligence.pricingBenchmarks as GeneratorResult["pricingBenchmarks"],
+          defensibility: intelligence.defensibility as GeneratorResult["defensibility"],
         };
         setResult(finalResult); setDeepStage(null);
         track("research_succeeded", {
@@ -247,10 +273,11 @@ export default function GenerateIdeas() {
         clearInterval(stepInterval); setResearchStep(researchSteps.length);
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
+        const validated = assertGenerateRegularResponse(data);
         refreshCredits();
         const run: GeneratorResult = {
           ...baseBody,
-          problemClusters: data.problemClusters || [], ideaSuggestions: data.ideaSuggestions || [],
+          problemClusters: validated.problemClusters, ideaSuggestions: validated.ideaSuggestions,
           wtpSignals: data.wtpSignals || undefined, competitionDensity: data.competitionDensity || undefined,
           marketTiming: data.marketTiming || undefined, icp: data.icp || undefined,
           workaroundDetection: data.workaroundDetection || undefined, featureGapMap: data.featureGapMap || undefined,
@@ -265,18 +292,23 @@ export default function GenerateIdeas() {
           duration_ms: normalizeDurationMs(monotonicNow() - startedAt),
         });
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       track("research_failed", {
         type: "generate",
         code: classifyResearchFailure(err),
       });
-      const msg = err.message || "Unknown error";
-      if (msg.includes("unable_to_fulfill") || msg.includes("timed out") || msg.includes("deadline") || msg.includes("FUNCTION_INVOCATION_TIMEOUT")) {
-        toast.error("Deep research timed out — this model needs more time than the server allows. Try Regular mode instead.", { duration: 6000 });
+      if (err instanceof InvalidResearchResponseError) {
+        toast.error(INCOMPLETE_RESEARCH_TOAST);
       } else {
-        toast.error("Generation failed: " + msg);
+        const msg = err instanceof Error ? err.message : "Unknown error";
+        if (msg.includes("unable_to_fulfill") || msg.includes("timed out") || msg.includes("deadline") || msg.includes("FUNCTION_INVOCATION_TIMEOUT")) {
+          toast.error("Deep research timed out — this model needs more time than the server allows. Try Regular mode instead.", { duration: 6000 });
+        } else {
+          toast.error("Generation failed: " + msg);
+        }
       }
       setDeepStage(null);
+      setResult(null);
       setPhase('chat');
     }
   }, [hasCredits, creditsLoading, creditsUnavailable, refreshCredits, researchMode, getImageContext, remaining]);

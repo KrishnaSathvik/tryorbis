@@ -52,7 +52,17 @@ vi.mock("@/components/AttachmentPreview", () => ({
   AttachmentPreview: () => null,
 }));
 vi.mock("@/components/ResearchModeToggle", () => ({
-  ResearchModeToggle: () => null,
+  ResearchModeToggle: ({
+    mode,
+    onChange,
+  }: {
+    mode: string;
+    onChange: (m: "regular" | "deep") => void;
+  }) => (
+    <button type="button" onClick={() => onChange(mode === "regular" ? "deep" : "regular")}>
+      Toggle mode ({mode})
+    </button>
+  ),
 }));
 vi.mock("@/components/UpgradeModal", () => ({
   UpgradeModal: ({ open }: { open: boolean }) =>
@@ -179,6 +189,151 @@ describe("ValidateIdea analytics", () => {
     trackMock.mockClear();
     await user.click(screen.getByRole("button", { name: /start validation/i }));
     expect(trackMock).toHaveBeenCalledWith("quota_hit", { surface: "validate" });
+    expect(
+      trackMock.mock.calls.filter((c) => c[0] === "research_started"),
+    ).toHaveLength(0);
+  });
+
+  it("does not emit quota_hit when remaining is null", async () => {
+    useCreditsMock.mockReturnValue({
+      hasCredits: false,
+      remaining: null,
+      refreshCredits: refreshCreditsMock,
+      loading: false,
+      unavailable: false,
+    });
+    const user = await readyForValidation();
+    trackMock.mockClear();
+    await user.click(screen.getByRole("button", { name: /start validation/i }));
+    expect(trackMock).not.toHaveBeenCalled();
+  });
+
+  it("does not emit quota_hit when remaining is non-zero even if hasCredits is false", async () => {
+    useCreditsMock.mockReturnValue({
+      hasCredits: false,
+      remaining: 1,
+      refreshCredits: refreshCreditsMock,
+      loading: false,
+      unavailable: false,
+    });
+    const user = await readyForValidation();
+    trackMock.mockClear();
+    await user.click(screen.getByRole("button", { name: /start validation/i }));
+    expect(trackMock).not.toHaveBeenCalled();
+  });
+
+  it("does not emit when credits are loading", async () => {
+    useCreditsMock.mockReturnValue({
+      hasCredits: false,
+      remaining: null,
+      refreshCredits: refreshCreditsMock,
+      loading: true,
+      unavailable: false,
+    });
+    const user = await readyForValidation();
+    trackMock.mockClear();
+    await user.click(screen.getByRole("button", { name: /start validation/i }));
+    expect(trackMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects malformed {} validation with invalid_response and no fake report", async () => {
+    const user = await readyForValidation();
+    trackMock.mockClear();
+    invokeMock.mockResolvedValueOnce({ data: {}, error: null });
+    await user.click(screen.getByRole("button", { name: /start validation/i }));
+    await waitFor(() => {
+      expect(trackMock).toHaveBeenCalledWith("research_failed", {
+        type: "validate",
+        code: "invalid_response",
+      });
+    });
+    expect(
+      trackMock.mock.calls.filter((c) => c[0] === "research_succeeded"),
+    ).toHaveLength(0);
+    expect(saveValidationReportDbMock).not.toHaveBeenCalled();
+    expect(screen.queryByText("Validation Report")).not.toBeInTheDocument();
+    expect(screen.queryByText("Skip")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /start validation/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("rejects missing verdict without defaulting to Skip", async () => {
+    const user = await readyForValidation();
+    trackMock.mockClear();
+    invokeMock.mockResolvedValueOnce({
+      data: {
+        scores: { demand: 0, pain: 0, competition: 0, mvpFeasibility: 0 },
+      },
+      error: null,
+    });
+    await user.click(screen.getByRole("button", { name: /start validation/i }));
+    await waitFor(() => {
+      expect(trackMock).toHaveBeenCalledWith("research_failed", {
+        type: "validate",
+        code: "invalid_response",
+      });
+    });
+    expect(saveValidationReportDbMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects malformed deep core without partial zero-score report", async () => {
+    const user = await readyForValidation();
+    await user.click(screen.getByRole("button", { name: /toggle mode/i }));
+    trackMock.mockClear();
+    invokeMock.mockResolvedValueOnce({ data: {}, error: null });
+    await user.click(screen.getByRole("button", { name: /start validation/i }));
+    await waitFor(() => {
+      expect(trackMock).toHaveBeenCalledWith("research_failed", {
+        type: "validate",
+        code: "invalid_response",
+      });
+    });
+    expect(
+      trackMock.mock.calls.filter((c) => c[0] === "research_succeeded"),
+    ).toHaveLength(0);
+    expect(saveValidationReportDbMock).not.toHaveBeenCalled();
+    expect(screen.queryByText("Validation Report")).not.toBeInTheDocument();
+  });
+
+  it("rejects malformed deep competitors stage", async () => {
+    const user = await readyForValidation();
+    await user.click(screen.getByRole("button", { name: /toggle mode/i }));
+    trackMock.mockClear();
+    invokeMock
+      .mockResolvedValueOnce({ data: regularReport, error: null })
+      .mockResolvedValueOnce({ data: {}, error: null });
+    await user.click(screen.getByRole("button", { name: /start validation/i }));
+    await waitFor(() => {
+      expect(trackMock).toHaveBeenCalledWith("research_failed", {
+        type: "validate",
+        code: "invalid_response",
+      });
+    });
+    expect(
+      trackMock.mock.calls.filter((c) => c[0] === "research_succeeded"),
+    ).toHaveLength(0);
+    expect(saveValidationReportDbMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects empty deep intelligence stage", async () => {
+    const user = await readyForValidation();
+    await user.click(screen.getByRole("button", { name: /toggle mode/i }));
+    trackMock.mockClear();
+    invokeMock
+      .mockResolvedValueOnce({ data: regularReport, error: null })
+      .mockResolvedValueOnce({ data: { competitors: [] }, error: null })
+      .mockResolvedValueOnce({ data: {}, error: null });
+    await user.click(screen.getByRole("button", { name: /start validation/i }));
+    await waitFor(() => {
+      expect(trackMock).toHaveBeenCalledWith("research_failed", {
+        type: "validate",
+        code: "invalid_response",
+      });
+    });
+    expect(
+      trackMock.mock.calls.filter((c) => c[0] === "research_succeeded"),
+    ).toHaveLength(0);
   });
 
   it("emits started and succeeded for regular validation", async () => {

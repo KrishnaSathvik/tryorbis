@@ -8,8 +8,11 @@ import {
   setAnalyticsSink,
   track,
   type AnalyticsEnvelope,
+  type AnalyticsEnvelopeFor,
+  type AnalyticsEventProperties,
   type AnalyticsSink,
 } from "./analytics";
+import { InvalidResearchResponseError } from "./researchResponseValidation";
 
 describe("analytics", () => {
   let infoSpy: ReturnType<typeof vi.spyOn>;
@@ -55,7 +58,7 @@ describe("analytics", () => {
 
   it("preserves typed properties", () => {
     track("quota_hit", { surface: "validate" });
-    const envelope = infoSpy.mock.calls[0][1] as AnalyticsEnvelope<"quota_hit">;
+    const envelope = infoSpy.mock.calls[0][1] as AnalyticsEnvelopeFor<"quota_hit">;
     expect(envelope.properties).toEqual({ surface: "validate" });
   });
 
@@ -136,7 +139,7 @@ describe("analytics", () => {
       mode: "deep",
       duration_ms: Number.NaN,
     });
-    const envelope = infoSpy.mock.calls[0][1] as AnalyticsEnvelope<"research_succeeded">;
+    const envelope = infoSpy.mock.calls[0][1] as AnalyticsEnvelopeFor<"research_succeeded">;
     expect(envelope.properties.duration_ms).toBe(0);
   });
 
@@ -154,7 +157,7 @@ describe("analytics", () => {
       mode: "regular",
       credits_left: Number.POSITIVE_INFINITY,
     });
-    const envelope = infoSpy.mock.calls[0][1] as AnalyticsEnvelope<"research_started">;
+    const envelope = infoSpy.mock.calls[0][1] as AnalyticsEnvelopeFor<"research_started">;
     expect(envelope.properties.credits_left).toBe(null);
   });
 
@@ -180,6 +183,30 @@ describe("analytics", () => {
     expect(classifyResearchFailure(new Error("500 Internal Server Error"))).toBe("server");
     expect(classifyResearchFailure(new Error("malformed JSON"))).toBe("invalid_response");
     expect(classifyResearchFailure(new Error("something odd"))).toBe("unknown");
+    expect(
+      classifyResearchFailure(new InvalidResearchResponseError("generate.regular")),
+    ).toBe("invalid_response");
+  });
+
+  it("narrows sink envelope properties by event discriminant", () => {
+    const sink: AnalyticsSink = (envelope) => {
+      if (envelope.event === "quota_hit") {
+        const surface: AnalyticsEventProperties["quota_hit"]["surface"] =
+          envelope.properties.surface;
+        expect(surface).toBe("validate");
+      }
+      if (envelope.event === "research_succeeded") {
+        const duration: number = envelope.properties.duration_ms;
+        expect(duration).toBeGreaterThanOrEqual(0);
+      }
+    };
+    setAnalyticsSink(sink);
+    track("quota_hit", { surface: "validate" });
+    track("research_succeeded", {
+      type: "generate",
+      mode: "regular",
+      duration_ms: 12,
+    });
   });
 
   it("exposes a monotonic clock helper", () => {

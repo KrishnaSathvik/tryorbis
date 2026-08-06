@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 
 const navigateMock = vi.fn();
 const useAuthMock = vi.fn();
 const trackMock = vi.fn();
+const insertMock = vi.fn();
 
 vi.mock("@/hooks/usePageTitle", () => ({ usePageTitle: () => {} }));
 vi.mock("@/contexts/AuthContext", () => ({
@@ -32,7 +33,7 @@ vi.mock("react-router-dom", async () => {
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     from: () => ({
-      insert: vi.fn().mockResolvedValue({ error: null }),
+      insert: (...args: unknown[]) => insertMock(...args),
     }),
   },
 }));
@@ -51,6 +52,7 @@ describe("Landing analytics", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     useAuthMock.mockReturnValue({ user: null, loading: false });
+    insertMock.mockResolvedValue({ error: null });
   });
 
   afterEach(() => {
@@ -92,5 +94,55 @@ describe("Landing analytics", () => {
   it("does not emit on render alone", () => {
     renderLanding();
     expect(trackMock).not.toHaveBeenCalled();
+  });
+
+  it("emits waitlist_join without email on successful new insert", async () => {
+    const user = userEvent.setup();
+    renderLanding();
+    trackMock.mockClear();
+    await user.type(screen.getByPlaceholderText(/you@email\.com/i), "founder@example.com");
+    await user.click(screen.getByRole("button", { name: /join waitlist/i }));
+    await waitFor(() => {
+      expect(trackMock).toHaveBeenCalledWith("waitlist_join", {
+        source: "other",
+      });
+    });
+    expect(trackMock).toHaveBeenCalledTimes(1);
+    const props = trackMock.mock.calls[0][1] as Record<string, unknown>;
+    expect(Object.keys(props)).toEqual(["source"]);
+    expect(JSON.stringify(trackMock.mock.calls)).not.toMatch(/founder@example\.com/i);
+    expect(screen.getByText(/you're in/i)).toBeInTheDocument();
+  });
+
+  it("does not emit waitlist_join on duplicate 23505", async () => {
+    insertMock.mockResolvedValue({
+      error: { code: "23505", message: "duplicate key value" },
+    });
+    const user = userEvent.setup();
+    renderLanding();
+    trackMock.mockClear();
+    await user.type(screen.getByPlaceholderText(/you@email\.com/i), "dup@example.com");
+    await user.click(screen.getByRole("button", { name: /join waitlist/i }));
+    await waitFor(() => {
+      expect(screen.getByText(/already on the list/i)).toBeInTheDocument();
+    });
+    expect(trackMock).not.toHaveBeenCalled();
+  });
+
+  it("does not emit waitlist_join on non-duplicate failure and shows safe copy", async () => {
+    insertMock.mockResolvedValue({
+      error: { code: "57014", message: "statement timeout secret-detail" },
+    });
+    const user = userEvent.setup();
+    renderLanding();
+    trackMock.mockClear();
+    await user.type(screen.getByPlaceholderText(/you@email\.com/i), "fail@example.com");
+    await user.click(screen.getByRole("button", { name: /join waitlist/i }));
+    await waitFor(() => {
+      expect(screen.getByText(/something went wrong/i)).toBeInTheDocument();
+    });
+    expect(trackMock).not.toHaveBeenCalled();
+    expect(screen.queryByText(/statement timeout/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/secret-detail/i)).not.toBeInTheDocument();
   });
 });

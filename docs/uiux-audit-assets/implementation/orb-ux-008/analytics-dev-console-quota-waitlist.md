@@ -2,6 +2,8 @@
 
 Emails and IDs are not present in event properties (email used only for form submission).
 
+`quota_hit` is emitted only when `isQuotaExhausted()` is true (`remaining === 0 && !loading && !unavailable`). Opening the upgrade modal on `!hasCredits` does not imply an analytics event when remaining is null/loading/unavailable.
+
 ```json
 [
   {
@@ -23,3 +25,5 @@ Emails and IDs are not present in event properties (email used only for form sub
   }
 ]
 ```
+
+Landing waitlist `waitlist_join` evidence: see `analytics-dev-console-landing.md` (unit-tested; live remote inserts not required for merge readiness).

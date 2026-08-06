@@ -31,3 +31,7 @@ Generate regular success (mocked edge responses). Validate lifecycle covered by 
   }
 ]
 ```
+
+## Structural integrity
+
+`research_succeeded` requires a structurally usable report (`src/lib/researchResponseValidation.ts`). A bare HTTP `{}` (or missing scores/verdict / missing stage arrays) emits `research_failed` with `invalid_response`, does not save, and does not render a fake zero-score / Skip report. Empty Generate arrays (`problemClusters: []`, `ideaSuggestions: []`) remain a valid success (“no opportunities found”).

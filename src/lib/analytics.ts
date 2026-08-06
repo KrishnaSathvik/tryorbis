@@ -4,6 +4,8 @@
  * Never throws from track(); never includes PII or user-generated content.
  */
 
+import { InvalidResearchResponseError } from "@/lib/researchResponseValidation";
+
 export interface AnalyticsEventProperties {
   landing_cta_click: {
     placement: "hero" | "navigation" | "footer" | "other";
@@ -99,13 +101,16 @@ export type AnalyticsTrackArgs<K extends AnalyticsEventName> =
     ? []
     : [properties: AnalyticsEventProperties[K]];
 
-export interface AnalyticsEnvelope<
-  K extends AnalyticsEventName = AnalyticsEventName,
-> {
+export type AnalyticsEnvelopeFor<K extends AnalyticsEventName> = {
   event: K;
   properties: AnalyticsEventProperties[K];
   occurredAt: string;
-}
+};
+
+/** Discriminated union: narrowing `envelope.event` narrows `envelope.properties`. */
+export type AnalyticsEnvelope = {
+  [K in AnalyticsEventName]: AnalyticsEnvelopeFor<K>;
+}[AnalyticsEventName];
 
 export type AnalyticsSink = (
   envelope: AnalyticsEnvelope,
@@ -155,6 +160,10 @@ export function monotonicNow(): number {
 }
 
 export function classifyResearchFailure(err: unknown): ResearchFailureCode {
+  if (err instanceof InvalidResearchResponseError) {
+    return "invalid_response";
+  }
+
   const text = extractErrorText(err).toLowerCase();
 
   if (
@@ -293,15 +302,16 @@ export function track<K extends AnalyticsEventName>(
 ): void {
   const rawProperties = (args[0] ?? {}) as AnalyticsEventProperties[K];
   const properties = normalizeProperties(event, rawProperties);
-  const envelope: AnalyticsEnvelope<K> = {
+  // Localized cast: TS cannot prove the mapped event→properties pairing at this boundary.
+  const envelope = {
     event,
     properties,
     occurredAt: new Date().toISOString(),
-  };
+  } as AnalyticsEnvelope;
 
   if (isDev()) {
     console.info("[orbis:analytics]", envelope);
   }
 
-  dispatchSink(envelope as AnalyticsEnvelope);
+  dispatchSink(envelope);
 }
