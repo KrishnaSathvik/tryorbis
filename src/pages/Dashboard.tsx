@@ -30,7 +30,11 @@ export default function Dashboard() {
   return (
     <div className="max-w-5xl mx-auto space-y-10 animate-fade-in">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight font-nunito flex items-center gap-2">
+        <h1
+          id="dashboard-welcome"
+          tabIndex={-1}
+          className="text-3xl font-bold tracking-tight font-nunito flex items-center gap-2 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
+        >
           Welcome{profile?.display_name ? `, ${profile.display_name}` : ""}
           <Hand className="h-7 w-7 text-primary" />
         </h1>

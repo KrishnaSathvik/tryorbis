@@ -1,118 +1,156 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Lightbulb, ClipboardCheck, Bookmark, X, ArrowRight, Sparkles } from "lucide-react";
+import { Lightbulb, ClipboardCheck, Sparkles } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { readOnboardingComplete, writeOnboardingComplete } from "@/lib/onboardingStorage";
+import type { FocusComposerState } from "@/hooks/useFocusComposerOnArrive";
+import { cn } from "@/lib/utils";
 
-const TOUR_KEY = "orbis_onboarding_complete";
-
-const steps = [
+const goals = [
   {
-    title: "Welcome to Orbis! 🚀",
-    description: "Let me show you around. Orbis helps you discover, validate, and track startup ideas — all backed by real market research.",
-    icon: Sparkles,
-    route: "/dashboard",
-  },
-  {
-    title: "Chat with Orbis AI",
-    description: "Meet your AI startup advisor. Brainstorm ideas, discuss strategy, get go-to-market advice, or just think out loud — Orbis AI is always here to help.",
-    icon: Sparkles,
-    route: "/chat",
-  },
-  {
-    title: "Generate Ideas",
-    description: "Describe a problem space and Orbis will mine real complaints from Reddit, forums, and reviews to surface product opportunities with demand scores.",
+    id: "generate",
+    title: "Find product ideas",
+    description: "Research real complaints and opportunities, then surface product ideas worth building.",
     icon: Lightbulb,
-    route: "/generate",
+    path: "/generate",
   },
   {
-    title: "Validate Ideas",
-    description: "Test any idea against real market data. Get demand, pain, competition, and feasibility scores plus a clear Build / Pivot / Skip verdict.",
+    id: "validate",
+    title: "Validate an idea",
+    description: "Check demand, competition, and evidence — then get a Build, Pivot, or Skip verdict.",
     icon: ClipboardCheck,
-    route: "/validate",
+    path: "/validate",
   },
   {
-    title: "Save & Track",
-    description: "Save promising ideas to your pipeline. Add notes, change status, and track your journey from discovery to product.",
-    icon: Bookmark,
-    route: "/ideas",
+    id: "chat",
+    title: "Talk to Orbis AI",
+    description: "Think through an idea, problem, or next step in a focused conversation.",
+    icon: Sparkles,
+    path: "/chat",
   },
-];
+] as const;
 
 export function OnboardingTour() {
-  const [currentStep, setCurrentStep] = useState(0);
   const [visible, setVisible] = useState(false);
-  const shownRef = useRef(false);
+  const navigatingAwayRef = useRef(false);
+  const lockingRef = useRef(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { user, loading } = useAuth();
+  const userId = user?.id;
 
   useEffect(() => {
-    // Don't show while auth is loading, or if already shown this session, or if no user
-    if (loading || shownRef.current || !user) return;
-    const done = localStorage.getItem(TOUR_KEY);
-    if (!done && location.pathname === "/dashboard") {
-      shownRef.current = true;
-      setVisible(true);
-    }
-  }, [location.pathname, loading, user]);
+    lockingRef.current = false;
+    navigatingAwayRef.current = false;
 
-  const handleNext = () => {
-    if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1);
-    } else {
-      handleDismiss();
+    if (loading || !userId) {
+      setVisible(false);
+      return;
     }
+
+    if (location.pathname !== "/dashboard") {
+      setVisible(false);
+      return;
+    }
+
+    setVisible(!readOnboardingComplete(userId));
+  }, [location.pathname, loading, userId]);
+
+  const persistComplete = () => {
+    writeOnboardingComplete(userId);
   };
 
-  const handleDismiss = () => {
-    localStorage.setItem(TOUR_KEY, "true");
+  const handleSkip = () => {
+    if (lockingRef.current) return;
+    lockingRef.current = true;
+    navigatingAwayRef.current = false;
+    persistComplete();
     setVisible(false);
-    navigate("/dashboard");
   };
 
-  if (!visible) return null;
-
-  const step = steps[currentStep];
-  const Icon = step.icon;
-  const isLast = currentStep === steps.length - 1;
+  const handleGoal = (path: string) => {
+    if (lockingRef.current) return;
+    lockingRef.current = true;
+    navigatingAwayRef.current = true;
+    persistComplete();
+    setVisible(false);
+    const state: FocusComposerState = { focusComposer: true };
+    navigate(path, { state });
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/30 backdrop-blur-sm animate-fade-in">
-      <Card className="w-full max-w-md rounded-[28px] shadow-2xl border-0 bg-card">
-        <CardContent className="p-6 space-y-4">
-          <div className="flex items-start justify-between">
-            <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-              <Icon className="h-6 w-6 text-primary" />
-            </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8 -mt-1 -mr-1" onClick={handleDismiss}>
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
+    <Dialog
+      open={visible}
+      onOpenChange={(open) => {
+        if (!open) handleSkip();
+      }}
+    >
+      <DialogContent
+        className="max-h-[min(90vh,40rem)] w-[calc(100%-1.5rem)] max-w-lg overflow-y-auto rounded-[28px] border-0 p-6 sm:w-full"
+        onCloseAutoFocus={(event) => {
+          if (navigatingAwayRef.current) {
+            event.preventDefault();
+            return;
+          }
+          event.preventDefault();
+          const restore = document.getElementById("dashboard-welcome");
+          restore?.focus();
+        }}
+        onEscapeKeyDown={() => {
+          navigatingAwayRef.current = false;
+        }}
+      >
+        <DialogHeader className="space-y-2 text-left">
+          <DialogTitle className="font-nunito text-xl">What do you want to do first?</DialogTitle>
+          <DialogDescription>
+            Choose a starting point. You can use every tool later.
+          </DialogDescription>
+        </DialogHeader>
 
-          <div>
-            <h2 className="text-lg font-bold font-nunito">{step.title}</h2>
-            <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{step.description}</p>
-          </div>
+        <div className="mt-2 flex flex-col gap-3" role="group" aria-label="Starting goals">
+          {goals.map((goal) => {
+            const Icon = goal.icon;
+            const descriptionId = `onboarding-goal-${goal.id}-desc`;
+            return (
+              <button
+                key={goal.id}
+                type="button"
+                aria-describedby={descriptionId}
+                onClick={() => handleGoal(goal.path)}
+                className={cn(
+                  "flex w-full items-start gap-3 rounded-2xl border border-border/60 bg-secondary/40 p-4 text-left transition-all",
+                  "hover:border-primary/30 hover:bg-secondary",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                )}
+              >
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10">
+                  <Icon className="h-5 w-5 text-primary" aria-hidden />
+                </span>
+                <span className="min-w-0 space-y-1">
+                  <span className="block text-sm font-semibold font-nunito text-foreground">{goal.title}</span>
+                  <span id={descriptionId} className="block text-sm leading-relaxed text-muted-foreground">
+                    {goal.description}
+                  </span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
 
-          {/* Progress dots */}
-          <div className="flex items-center gap-1.5 pt-1">
-            {steps.map((_, i) => (
-              <div key={i} className={`h-1.5 rounded-full transition-all ${i === currentStep ? 'w-6 bg-primary' : i < currentStep ? 'w-1.5 bg-primary/40' : 'w-1.5 bg-accent'}`} />
-            ))}
-          </div>
-
-          <div className="flex items-center justify-between pt-1">
-            <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={handleDismiss}>
-              Skip tour
-            </Button>
-            <Button size="sm" className="rounded-full px-5" onClick={handleNext}>
-              {isLast ? "Get Started" : "Next"} <ArrowRight className="h-3.5 w-3.5 ml-1" />
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+        <div className="flex justify-end pt-1">
+          <Button type="button" variant="ghost" size="sm" className="text-muted-foreground" onClick={handleSkip}>
+            Skip
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

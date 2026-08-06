@@ -283,7 +283,8 @@ Copy for waitlist vs unlimited must stay honest.
 **Priority:** P0  
 **Workstream:** WS3  
 **Estimated size:** M  
-**Dependencies:** None (pairs with 001)
+**Dependencies:** None (pairs with 001)  
+**Status:** Implemented — see `docs/implementation/orb-ux-002-goal-onboarding.md`
 
 ### Problem
 `OnboardingTour` steps include `route` but never navigate — informational only.
@@ -299,7 +300,7 @@ Buildpad calibrates with multiple-choice goals before work — Orbis should ask 
 
 ### Acceptance criteria
 - Choosing “Validate” lands on `/validate` with focus in composer.  
-- Skip still sets `orbis_onboarding_complete`.  
+- Skip still sets onboarding complete (now user-scoped `orbis_onboarding_complete:<user-id>`, with legacy global key compatibility).  
 - Does not block keyboard users.  
 
 ### Required states

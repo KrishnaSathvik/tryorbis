@@ -24,6 +24,7 @@ import { Attachment, buildMultimodalContent, validateFile, getAttachmentType, im
 import { useDropZone } from "@/hooks/useDropZone";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
 import { VoiceButton } from "@/components/VoiceButton";
+import { useFocusComposerOnArrive } from "@/hooks/useFocusComposerOnArrive";
 
 interface ChatMsg {
   role: "user" | "assistant";
@@ -51,6 +52,7 @@ export default function OrbisChat() {
   const [isStreaming, setIsStreaming] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  useFocusComposerOnArrive(inputRef);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const processDroppedFiles = async (files: File[]) => {
