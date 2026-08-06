@@ -1,7 +1,11 @@
+import { useState } from "react";
 import { LayoutDashboard, Lightbulb, ClipboardCheck, Archive, FileText, BarChart3, Sparkles } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProfileSheet } from "@/components/ProfileSheet";
+import { ReportsRemainingMeter } from "@/components/ReportsRemainingMeter";
+import { UpgradeModal } from "@/components/UpgradeModal";
+import { useCredits } from "@/hooks/useCredits";
 import { useIsMobile } from "@/hooks/use-mobile";
 import orbisLogo from "@/assets/orbis-logo.png";
 import {
@@ -28,8 +32,10 @@ const navItems = [
 
 export function AppSidebar() {
   const { profile } = useAuth();
+  const { remaining, loading, unavailable } = useCredits();
   const isMobile = useIsMobile();
   const { setOpenMobile } = useSidebar();
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const handleNavClick = () => {
     if (isMobile) {
@@ -75,7 +81,13 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <div className="mt-auto border-t border-sidebar-border p-3 space-y-2">
+      <div className="mt-auto border-t border-sidebar-border p-3 space-y-1">
+        <ReportsRemainingMeter
+          loading={loading}
+          remaining={remaining}
+          unavailable={unavailable}
+          onUpgradeClick={() => setUpgradeOpen(true)}
+        />
         <ProfileSheet>
           <button className="flex items-center gap-3 px-3 py-2 w-full rounded-xl hover:bg-accent transition-all cursor-pointer text-left">
             <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -89,6 +101,7 @@ export function AppSidebar() {
           </button>
         </ProfileSheet>
       </div>
+      <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} />
     </Sidebar>
   );
 }
