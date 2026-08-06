@@ -22,8 +22,18 @@ vi.mock("@/components/ProfileSheet", () => ({
 }));
 
 vi.mock("@/components/UpgradeModal", () => ({
-  UpgradeModal: ({ open }: { open: boolean }) =>
-    open ? <div role="dialog" aria-label="Upgrade modal">Upgrade modal</div> : null,
+  UpgradeModal: ({
+    open,
+    mode,
+  }: {
+    open: boolean;
+    mode?: string;
+  }) =>
+    open ? (
+      <div role="dialog" aria-label={mode === "quota_exhausted" ? "Quota exhausted" : "Upgrade modal"} data-mode={mode ?? "general"}>
+        {mode === "quota_exhausted" ? "Exhausted mode" : "General mode"}
+      </div>
+    ) : null,
 }));
 
 vi.mock("@/assets/orbis-logo.png", () => ({
@@ -75,7 +85,22 @@ describe("AppSidebar reports meter", () => {
     renderSidebar();
 
     fireEvent.click(screen.getByRole("button", { name: /0 free reports left/i }));
+    expect(screen.getByRole("dialog", { name: /quota exhausted/i })).toBeInTheDocument();
+    expect(screen.getByText("Exhausted mode")).toBeInTheDocument();
+  });
+
+  it("opens general mode from the meter when reports remain", () => {
+    useCreditsMock.mockReturnValue({
+      remaining: 2,
+      loading: false,
+      unavailable: false,
+    });
+
+    renderSidebar();
+
+    fireEvent.click(screen.getByRole("button", { name: /2 free reports left/i }));
     expect(screen.getByRole("dialog", { name: /upgrade modal/i })).toBeInTheDocument();
+    expect(screen.getByText("General mode")).toBeInTheDocument();
   });
 
   it("keeps the loading meter free of a fabricated zero count", () => {

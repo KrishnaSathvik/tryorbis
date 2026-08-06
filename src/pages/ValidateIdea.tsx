@@ -346,6 +346,12 @@ export default function ValidateIdea() {
             <Button size="icon" className="rounded-xl" onClick={() => handleUserInput()} disabled={!inputValue.trim() || isTyping}><Send className="h-4 w-4" /></Button>
           </div>
         </div>
+        <UpgradeModal
+          open={upgradeOpen}
+          onOpenChange={setUpgradeOpen}
+          mode="quota_exhausted"
+          source="validate"
+        />
       </div>
     );
   }
@@ -605,7 +611,12 @@ export default function ValidateIdea() {
         <AIHandoff context={`Validation Report for: "${report.ideaText}"\n\nVerdict: ${report.verdict}\nDemand: ${report.scores.demand}/100, Pain: ${report.scores.pain}/100, Competition: ${report.scores.competition}/100, Feasibility: ${report.scores.mvpFeasibility}/100\n\nPros: ${report.pros.join(', ')}\nCons: ${report.cons.join(', ')}\nMVP Wedge: ${report.mvpWedge}\n\nHelp me build this product.`} />
       )}
 
-      <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} />
+      <UpgradeModal
+        open={upgradeOpen}
+        onOpenChange={setUpgradeOpen}
+        mode="quota_exhausted"
+        source="validate"
+      />
     </div>
   );
 }

@@ -316,19 +316,20 @@ Component tests for navigation; e2e guest onboarding path.
 **Priority:** P0  
 **Workstream:** WS1/WS4  
 **Estimated size:** S  
-**Dependencies:** 001  
+**Dependencies:** 001 / 001A  
+**Status:** Implemented — see [`docs/implementation/orb-ux-003-post-quota-continuation.md`](./implementation/orb-ux-003-post-quota-continuation.md)
 
 ### Problem
 Quota exhaustion opens waitlist modal with no guided free continuation.
 
 ### Proposed change
-When credits = 0, modal offers: (1) Join waitlist, (2) Continue with Orbis AI (free), (3) Review saved ideas/history. Wire `GuestUpgradeBanner` on dashboard for guests.
+When credits = 0, modal offers: (1) Join waitlist, (2) Continue with Orbis AI (free), (3) Review saved ideas/history. Dashboard shows a compact continuation panel (not `GuestUpgradeBanner`, which is guest→account conversion).
 
 ### Reference insight
 Avoid dead ends; keep user in product momentum even when paid research is gated.
 
 ### Repository areas
-`UpgradeModal.tsx`, `GuestUpgradeBanner.tsx`, `Dashboard.tsx`, Generate/Validate pages
+`UpgradeModal.tsx`, `PostQuotaContinuationPanel.tsx`, `Dashboard.tsx`, Generate/Validate pages, AppSidebar meter
 
 ### Acceptance criteria
 - Exhausted user can reach `/chat` in one click from paywall.  

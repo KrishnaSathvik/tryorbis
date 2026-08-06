@@ -6,6 +6,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { toast } from "sonner";
 import { Shield, Eye, EyeOff } from "lucide-react";
 
+/**
+ * Guest → registered account conversion (email/password).
+ * Not wired into the app shell today; post-quota continuation uses
+ * `PostQuotaContinuationPanel` + `UpgradeModal` instead. Kept for a future
+ * account-upgrade entry point — do not reuse for Pro waitlist / quota UX.
+ */
 export function GuestUpgradeBanner() {
   const { isGuest, upgradeGuest } = useAuth();
   const [open, setOpen] = useState(false);
@@ -25,8 +31,9 @@ export function GuestUpgradeBanner() {
       await upgradeGuest(email.trim(), password);
       toast.success("Account upgraded! Your data is preserved.");
       setOpen(false);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to upgrade");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err ?? "");
+      toast.error(message || "Failed to upgrade");
     } finally { setLoading(false); }
   };
 

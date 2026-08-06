@@ -3,6 +3,7 @@ import { Lightbulb, ClipboardCheck, TrendingUp, CheckCircle, Archive, Hand } fro
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
+import { PostQuotaContinuationPanel } from "@/components/PostQuotaContinuationPanel";
 import { getMyGeneratorRuns, getMyValidationReports, getMyBacklog } from "@/lib/db";
 import { useEffect, useState } from "react";
 import { usePageTitle } from "@/hooks/usePageTitle";
@@ -18,7 +19,7 @@ export default function Dashboard() {
     Promise.all([getMyGeneratorRuns(), getMyValidationReports(), getMyBacklog()]).then(
       ([runs, reports, backlog]) => {
         setStats({
-          ideasGenerated: runs.reduce((s, r) => s + (Array.isArray(r.idea_suggestions) ? (r.idea_suggestions as any[]).length : 0), 0),
+          ideasGenerated: runs.reduce((s, r) => s + (Array.isArray(r.idea_suggestions) ? (r.idea_suggestions as unknown[]).length : 0), 0),
           ideasValidated: reports.length,
           ideasInBacklog: backlog.length,
         });
@@ -40,6 +41,8 @@ export default function Dashboard() {
         </h1>
         <p className="text-muted-foreground mt-1">From problem discovery to product validation.</p>
       </div>
+
+      <PostQuotaContinuationPanel />
 
       {/* CTA Cards */}
       <div className="grid md:grid-cols-2 gap-6">

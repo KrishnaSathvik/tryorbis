@@ -308,6 +308,12 @@ export default function GenerateIdeas() {
             <Button size="icon" className="rounded-xl" onClick={handleUserInput} disabled={!inputValue.trim() || isTyping}><Send className="h-4 w-4" /></Button>
           </div>
         </div>
+        <UpgradeModal
+          open={upgradeOpen}
+          onOpenChange={setUpgradeOpen}
+          mode="quota_exhausted"
+          source="generate"
+        />
       </div>
     );
   }
@@ -554,7 +560,12 @@ export default function GenerateIdeas() {
         <AIHandoff context={`I discovered these product opportunities for ${result.persona} in ${result.category}:\n\n${result.ideaSuggestions.map((i: any) => `- ${i.name}: ${i.description} (Score: ${i.demandScore}/100)`).join('\n')}\n\nHelp me build an MVP for the top opportunity.`} />
       )}
 
-      <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} />
+      <UpgradeModal
+        open={upgradeOpen}
+        onOpenChange={setUpgradeOpen}
+        mode="quota_exhausted"
+        source="generate"
+      />
     </div>
   );
 }
