@@ -146,7 +146,8 @@ describe("Dashboard resume", () => {
     await user.click(screen.getByRole("button", { name: /validate this idea: sql prompt buddy/i }));
     expect(navigateMock).toHaveBeenCalledWith("/validate", {
       state: {
-        dashboardValidatePrefill: {
+        validatePrefill: {
+          source: "dashboard",
           text: "SQL Prompt Buddy: Helps write SQL",
           sourceRunId: "g-new",
           sourceIdeaName: "SQL Prompt Buddy",

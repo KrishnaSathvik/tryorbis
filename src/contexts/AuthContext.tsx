@@ -9,7 +9,7 @@ interface AuthContextType {
   isGuest: boolean;
   signUp: (email: string, password: string, displayName: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
-  signInAsGuest: (displayName: string) => Promise<void>;
+  signInAsGuest: (displayName: string) => Promise<string>;
   upgradeGuest: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -147,7 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   };
 
-  const signInAsGuest = async (displayName: string) => {
+  const signInAsGuest = async (displayName: string): Promise<string> => {
     if (getSignupCount() >= MAX_SIGNUPS_PER_DEVICE) {
       throw new Error("Too many accounts created from this device. Please contact support.");
     }
@@ -156,13 +156,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       options: { data: { display_name: displayName || "Guest" } },
     });
     if (error) throw error;
-    if (data.user) {
-      incrementSignupCount();
-      // Wait for the handle_new_user trigger to create the profile
-      await new Promise(r => setTimeout(r, 500));
-      await saveFingerprint(data.user.id);
-      await fetchProfile(data.user.id);
+    if (!data.user) {
+      throw new Error("Guest sign-in failed");
     }
+    incrementSignupCount();
+    // Wait for the handle_new_user trigger to create the profile
+    await new Promise(r => setTimeout(r, 500));
+    await saveFingerprint(data.user.id);
+    await fetchProfile(data.user.id);
+    return data.user.id;
   };
 
   const upgradeGuest = async (email: string, password: string) => {

@@ -15,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { parseHistoryItemQuery } from "@/lib/dashboardValidatePrefill";
+import { parseHistoryItemQuery } from "@/lib/validatePrefill";
 import { track } from "@/lib/analytics";
 
 interface Conversation {

@@ -8,6 +8,7 @@ const signInAsGuestMock = vi.fn();
 const signInMock = vi.fn();
 const signUpMock = vi.fn();
 const trackMock = vi.fn();
+const writeOnboardingCompleteMock = vi.fn();
 
 vi.mock("@/hooks/usePageTitle", () => ({ usePageTitle: () => {} }));
 vi.mock("@/contexts/AuthContext", () => ({
@@ -17,6 +18,11 @@ vi.mock("@/contexts/AuthContext", () => ({
     signIn: signInMock,
     signUp: signUpMock,
   }),
+}));
+vi.mock("@/lib/onboardingStorage", () => ({
+  writeOnboardingComplete: (...args: unknown[]) =>
+    writeOnboardingCompleteMock(...args),
+  readOnboardingComplete: vi.fn(),
 }));
 vi.mock("@/lib/analytics", async () => {
   const actual = await vi.importActual<typeof import("@/lib/analytics")>(
@@ -41,17 +47,23 @@ vi.mock("sonner", () => ({
 }));
 
 import Auth from "./Auth";
+import {
+  LANDING_VALIDATE_PREFILL_KEY,
+  writeLandingValidatePrefill,
+} from "@/lib/landingValidatePrefill";
 
 describe("Auth guest analytics", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    signInAsGuestMock.mockResolvedValue(undefined);
+    sessionStorage.clear();
+    signInAsGuestMock.mockResolvedValue("guest-user-1");
     signInMock.mockResolvedValue(undefined);
     signUpMock.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
     vi.clearAllMocks();
+    sessionStorage.clear();
   });
 
   it("emits auth_guest_start once after successful guest session from try route", async () => {
@@ -73,6 +85,61 @@ describe("Auth guest analytics", () => {
     });
     const props = trackMock.mock.calls[0][1] as Record<string, unknown>;
     expect(JSON.stringify(props)).not.toMatch(/auth\?|mode=|\/try|query/i);
+    expect(navigateMock).toHaveBeenCalledWith("/dashboard");
+  });
+
+  it("transfers Landing prefill to Validate and marks onboarding complete", async () => {
+    writeLandingValidatePrefill("Landing idea text");
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter initialEntries={["/auth?mode=guest"]}>
+        <Auth />
+      </MemoryRouter>,
+    );
+    await user.click(
+      screen.getByRole("button", { name: /start instantly/i }),
+    );
+    await waitFor(() => {
+      expect(navigateMock).toHaveBeenCalledWith("/validate", {
+        state: {
+          validatePrefill: {
+            source: "landing",
+            text: "Landing idea text",
+          },
+        },
+      });
+    });
+    expect(writeOnboardingCompleteMock).toHaveBeenCalledWith("guest-user-1");
+    expect(sessionStorage.getItem(LANDING_VALIDATE_PREFILL_KEY)).toBeNull();
+    expect(trackMock).toHaveBeenCalledWith("auth_guest_start", {
+      from: "try_route",
+    });
+    expect(trackMock).not.toHaveBeenCalledWith(
+      "onboarding_goal_select",
+      expect.anything(),
+    );
+  });
+
+  it("keeps Landing prefill when guest session fails", async () => {
+    writeLandingValidatePrefill("keep me");
+    signInAsGuestMock.mockRejectedValue(new Error("device cap"));
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter initialEntries={["/auth?mode=guest"]}>
+        <Auth />
+      </MemoryRouter>,
+    );
+    await user.click(
+      screen.getByRole("button", { name: /start instantly/i }),
+    );
+    await waitFor(() => {
+      expect(signInAsGuestMock).toHaveBeenCalled();
+    });
+    expect(trackMock).not.toHaveBeenCalled();
+    expect(writeOnboardingCompleteMock).not.toHaveBeenCalled();
+    expect(JSON.parse(sessionStorage.getItem(LANDING_VALIDATE_PREFILL_KEY)!).text).toBe(
+      "keep me",
+    );
   });
 
   it("emits nothing when guest session fails", async () => {
