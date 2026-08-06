@@ -51,7 +51,7 @@ export default function GenerateIdeas() {
   const navigate = useNavigate();
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const { hasCredits, refreshCredits } = useCredits();
+  const { hasCredits, refreshCredits, loading: creditsLoading, unavailable: creditsUnavailable } = useCredits();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -148,6 +148,7 @@ export default function GenerateIdeas() {
   }, [attachments]);
 
   const triggerGenerate = useCallback(async (params: any) => {
+    if (creditsLoading || creditsUnavailable) return;
     if (!hasCredits) { setUpgradeOpen(true); return; }
     setPhase('researching'); setResearchStep(0); setDeepStage(null);
     try {
@@ -234,7 +235,7 @@ export default function GenerateIdeas() {
       setDeepStage(null);
       setPhase('chat');
     }
-  }, [hasCredits, refreshCredits, researchMode, getImageContext]);
+  }, [hasCredits, creditsLoading, creditsUnavailable, refreshCredits, researchMode, getImageContext]);
 
   const handleAddToBacklog = async (idea: any) => {
     try { await addToBacklogDb({ ideaName: idea.name, source: 'Generated', demandScore: idea.demandScore, status: 'New', description: idea.description, mvpScope: idea.mvpScope, monetization: idea.monetization }); toast.success(`"${idea.name}" saved to My Ideas`); } catch { toast.error("Failed to save"); }
