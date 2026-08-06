@@ -366,6 +366,7 @@ Each tool shows ≥3 starters on empty state; keyboard activatable.
 **Workstream:** WS4  
 **Estimated size:** M  
 **Dependencies:** 001  
+**Status:** Implemented — see [`docs/implementation/orb-ux-005-dashboard-resume.md`](implementation/orb-ux-005-dashboard-resume.md)
 
 ### Problem
 Dashboard shows zeros without resume.
@@ -373,8 +374,11 @@ Dashboard shows zeros without resume.
 ### Proposed change
 Fetch last 3 generator runs + validation reports; show cards; if empty, emphasize onboarding CTA; if reports exist, “Continue” / “Validate this idea”.
 
+### Delivered behavior
+Returning users see up to three newest research artifacts with a deterministic **Recommended next** action (Validate prefill or History deep link). First-run users see **Start your first research** without an empty recent list. Quick stats and post-quota continuation remain intact.
+
 ### Repository areas
-`Dashboard.tsx`, `lib/db.ts`
+`Dashboard.tsx`, `DashboardRecentActivity.tsx`, `lib/dashboardOverview.ts`, `ValidateIdea.tsx`, `Reports.tsx`
 
 ### Acceptance criteria
 Returning user sees last report title + timestamp within 1 click of open.
