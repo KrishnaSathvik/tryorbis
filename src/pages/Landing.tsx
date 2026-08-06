@@ -5,9 +5,16 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { PublicHeader } from "@/components/PublicHeader";
 import { PublicFooter } from "@/components/PublicFooter";
 import { track, type AnalyticsEventProperties } from "@/lib/analytics";
+import {
+  LandingPrefillWriteError,
+  clearLandingValidatePrefill,
+  writeLandingValidatePrefill,
+} from "@/lib/landingValidatePrefill";
+import { toast } from "sonner";
 
 /* ─────────────────────────────────────────────
    WAITLIST FORM
@@ -145,9 +152,34 @@ export default function Landing() {
     placement: AnalyticsEventProperties["landing_cta_click"]["placement"],
   ) => {
     if (!user) {
+      clearLandingValidatePrefill();
       track("landing_cta_click", { placement });
     }
     navigate(user ? "/dashboard" : "/try");
+  };
+
+  const [ideaPrompt, setIdeaPrompt] = useState("");
+  const ideaValid = ideaPrompt.trim().length > 0;
+
+  const handlePromptSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (user) {
+      navigate("/dashboard");
+      return;
+    }
+    const trimmed = ideaPrompt.trim();
+    if (!trimmed) return;
+    try {
+      writeLandingValidatePrefill(trimmed);
+    } catch (err) {
+      if (err instanceof LandingPrefillWriteError) {
+        toast.error("Couldn't save your idea. Try Orbis free instead.");
+        return;
+      }
+      throw err;
+    }
+    track("landing_prompt_submit", { has_text: true });
+    navigate("/try");
   };
 
   return (
@@ -168,16 +200,63 @@ export default function Landing() {
             <span className="font-semibold text-foreground"> Build / Pivot / Skip </span>
             verdict — in 60 seconds.
           </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+
+          <form
+            aria-label="Validate your idea"
+            onSubmit={handlePromptSubmit}
+            className="max-w-xl mx-auto space-y-4 pt-2 text-left"
+          >
+            <div className="space-y-2">
+              <label htmlFor="landing-idea-prompt" className="text-sm font-medium">
+                Describe your idea (optional)
+              </label>
+              <Textarea
+                id="landing-idea-prompt"
+                value={ideaPrompt}
+                onChange={(e) => setIdeaPrompt(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                    e.preventDefault();
+                    if (ideaValid) {
+                      e.currentTarget.form?.requestSubmit();
+                    }
+                  }
+                }}
+                placeholder="e.g. An AI meal planner for busy parents who have little time to cook"
+                rows={3}
+                className="rounded-xl resize-y min-h-[5.5rem] bg-secondary/40 border-border/50"
+              />
+              <p className="text-xs text-muted-foreground">Press ⌘ Enter to submit</p>
+            </div>
             <Button
+              type="submit"
               size="lg"
-              onClick={() => handleCta("hero")}
-              className="rounded-full bg-foreground text-background hover:bg-foreground/90 gap-2 text-base px-8 hover:-translate-y-0.5 transition-all shadow-lg"
+              disabled={!ideaValid}
+              className="w-full rounded-full bg-foreground text-background hover:bg-foreground/90 gap-2 text-base px-8 hover:-translate-y-0.5 transition-all shadow-lg disabled:opacity-50 disabled:hover:translate-y-0"
             >
-              Try Free — 2 Reports <ArrowRight className="h-4 w-4" />
+              Validate my idea <ArrowRight className="h-4 w-4" />
             </Button>
-          </div>
-          <p className="text-xs text-muted-foreground">No credit card. 2 free validation reports to start.</p>
+            <div className="flex items-center gap-3 py-1">
+              <div className="h-px flex-1 bg-border/60" />
+              <span className="text-xs text-muted-foreground uppercase tracking-wider">or</span>
+              <div className="h-px flex-1 bg-border/60" />
+            </div>
+            <div className="text-center">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => handleCta("hero")}
+                className="rounded-full text-muted-foreground hover:text-foreground"
+              >
+                Try Orbis free
+              </Button>
+            </div>
+          </form>
+
+          <p className="text-xs text-muted-foreground text-center">
+            No credit card. 2 free research reports to start.
+          </p>
         </div>
       </section>
 

@@ -255,7 +255,41 @@ describe("ValidateIdea dashboard prefill", () => {
     expect(screen.getByTestId("state").textContent).toBe(JSON.stringify(state));
   });
 
-  it("ignores object state without dashboardValidatePrefill", async () => {
+  it("fills composer from canonical landing validatePrefill", async () => {
+    render(
+      <MemoryRouter
+        initialEntries={[
+          {
+            pathname: "/validate",
+            state: {
+              validatePrefill: {
+                source: "landing",
+                text: "From landing prompt",
+              },
+              keepMe: true,
+            },
+          },
+        ]}
+      >
+        <Routes>
+          <Route path="/validate" element={<ValidateIdea />} />
+        </Routes>
+        <LocationProbe />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("textbox")).toHaveValue("From landing prompt");
+    });
+    expect(scheduleFocusMock).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(screen.getByTestId("state").textContent).toBe(
+        JSON.stringify({ keepMe: true }),
+      );
+    });
+  });
+
+  it("ignores object state without validatePrefill keys", async () => {
     render(
       <MemoryRouter
         initialEntries={[

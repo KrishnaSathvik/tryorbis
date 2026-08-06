@@ -7,7 +7,7 @@ import type { DashboardActivityItem } from "@/lib/dashboardOverview";
 import {
   buildValidatePrefillText,
   historyItemQuery,
-} from "@/lib/dashboardValidatePrefill";
+} from "@/lib/validatePrefill";
 import { cn } from "@/lib/utils";
 import { track } from "@/lib/analytics";
 
@@ -70,7 +70,8 @@ export function DashboardRecentActivity({
             primaryAction = () =>
               onNavigate("/validate", {
                 state: {
-                  dashboardValidatePrefill: {
+                  validatePrefill: {
+                    source: "dashboard" as const,
                     text,
                     sourceRunId: item.id,
                     sourceIdeaName: item.topIdea!.name,

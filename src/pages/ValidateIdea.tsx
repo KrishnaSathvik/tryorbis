@@ -18,8 +18,9 @@ import { VALIDATE_STARTER_CHIPS } from "@/lib/starterChips";
 import { scheduleFocusComposerAtEnd } from "@/lib/focusComposer";
 import {
   isRouterStateRecord,
-  parseDashboardValidatePrefill,
-} from "@/lib/dashboardValidatePrefill";
+  consumeValidatePrefillState,
+  hasValidatePrefillKey,
+} from "@/lib/validatePrefill";
 import {
   classifyResearchFailure,
   monotonicNow,
@@ -137,18 +138,16 @@ export default function ValidateIdea() {
   const [researchMode, setResearchMode] = useState<'regular' | 'deep'>('regular');
   const [deepStage, setDeepStage] = useState<'core' | 'competitors' | 'intelligence' | null>(null);
 
-  // One-time Dashboard → Validate prefill (route state only; never auto-submit)
+  // One-time Validate prefill (route state only; never auto-submit)
   useEffect(() => {
     const rawState = location.state;
     // Primitive / array / nullish state must be ignored without crashing.
     if (!isRouterStateRecord(rawState)) return;
-    if (!Object.prototype.hasOwnProperty.call(rawState, "dashboardValidatePrefill")) {
+    if (!hasValidatePrefillKey(rawState)) {
       return;
     }
 
-    const prefill = parseDashboardValidatePrefill(rawState.dashboardValidatePrefill);
-    const { dashboardValidatePrefill: _consumed, ...remainingState } = rawState;
-    const nextState = Object.keys(remainingState).length > 0 ? remainingState : null;
+    const { prefill, nextState } = consumeValidatePrefillState(rawState);
 
     const untouched =
       phase === "chat" &&

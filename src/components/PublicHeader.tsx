@@ -3,6 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { track } from "@/lib/analytics";
+import { clearLandingValidatePrefill } from "@/lib/landingValidatePrefill";
 import orbisLogo from "@/assets/orbis-logo.png";
 
 export function PublicHeader() {
@@ -11,6 +12,7 @@ export function PublicHeader() {
 
   const handlePrimaryCta = () => {
     if (!user) {
+      clearLandingValidatePrefill();
       track("landing_cta_click", { placement: "navigation" });
     }
     navigate(user ? "/dashboard" : "/try");

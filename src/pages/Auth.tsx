@@ -10,6 +10,12 @@ import { toast } from "sonner";
 import orbisLogo from "@/assets/orbis-logo.png";
 import { Eye, EyeOff, Zap, Sparkles } from "lucide-react";
 import { track } from "@/lib/analytics";
+import {
+  clearLandingValidatePrefill,
+  readLandingValidatePrefill,
+} from "@/lib/landingValidatePrefill";
+import { writeOnboardingComplete } from "@/lib/onboardingStorage";
+import type { ValidatePrefill } from "@/lib/validatePrefill";
 
 export default function Auth() {
   usePageTitle("Sign In");
@@ -67,9 +73,21 @@ export default function Auth() {
     e.preventDefault();
     setLoading(true);
     try {
-      await signInAsGuest(guestName.trim());
+      const userId = await signInAsGuest(guestName.trim());
       track("auth_guest_start", { from: isGuestMode ? "try_route" : "auth" });
-      navigate("/dashboard");
+
+      const landingPrefill = readLandingValidatePrefill();
+      if (landingPrefill) {
+        writeOnboardingComplete(userId);
+        const validatePrefill: ValidatePrefill = {
+          source: "landing",
+          text: landingPrefill.text,
+        };
+        navigate("/validate", { state: { validatePrefill } });
+        clearLandingValidatePrefill();
+      } else {
+        navigate("/dashboard");
+      }
     } catch (err: any) {
       toast.error(err.message || "Something went wrong");
     } finally { setLoading(false); }
