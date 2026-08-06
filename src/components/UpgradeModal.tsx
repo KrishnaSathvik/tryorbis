@@ -15,6 +15,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { readWaitlistJoined, writeWaitlistJoined } from "@/lib/waitlistStorage";
 import { toast } from "sonner";
 import { Sparkles, ArrowRight, MessageSquare, Archive, FileText } from "lucide-react";
+import {
+  resolveWaitlistJoinSource,
+  track,
+} from "@/lib/analytics";
 
 export type UpgradeModalMode = "general" | "quota_exhausted";
 export type UpgradeModalSource =
@@ -88,6 +92,9 @@ export function UpgradeModal({
         user_id: user?.id ?? null,
       });
       if (error) throw error;
+      track("waitlist_join", {
+        source: resolveWaitlistJoinSource(mode, source),
+      });
       setJoined(true);
       writeWaitlistJoined(waitlistIdentity(user?.id, waitlistEmail));
       const msg = "You're on the list! We'll notify you when Pro launches. Your report count is unchanged.";
@@ -167,12 +174,13 @@ export function UpgradeModal({
                 type="button"
                 variant="secondary"
                 className="w-full rounded-full h-11 gap-2 text-base"
-                onClick={() =>
+                onClick={() => {
+                  track("post_quota_chat_click");
                   closeAndNavigate("/chat", {
                     focusComposer: true,
                     source: "quota_exhausted",
-                  })
-                }
+                  });
+                }}
               >
                 <MessageSquare className="h-4 w-4" aria-hidden="true" />
                 Continue with Orbis AI

@@ -13,24 +13,25 @@ import { Button } from "@/components/ui/button";
 import { readOnboardingComplete, writeOnboardingComplete } from "@/lib/onboardingStorage";
 import type { FocusComposerState } from "@/hooks/useFocusComposerOnArrive";
 import { cn } from "@/lib/utils";
+import { track } from "@/lib/analytics";
 
 const goals = [
   {
-    id: "generate",
+    id: "generate" as const,
     title: "Find product ideas",
     description: "Research real complaints and opportunities, then surface product ideas worth building.",
     icon: Lightbulb,
     path: "/generate",
   },
   {
-    id: "validate",
+    id: "validate" as const,
     title: "Validate an idea",
     description: "Check demand, competition, and evidence — then get a Build, Pivot, or Skip verdict.",
     icon: ClipboardCheck,
     path: "/validate",
   },
   {
-    id: "chat",
+    id: "chat" as const,
     title: "Talk to Orbis AI",
     description: "Think through an idea, problem, or next step in a focused conversation.",
     icon: Sparkles,
@@ -73,17 +74,19 @@ export function OnboardingTour() {
     lockingRef.current = true;
     navigatingAwayRef.current = false;
     persistComplete();
+    track("onboarding_skip");
     setVisible(false);
   };
 
-  const handleGoal = (path: string) => {
+  const handleGoal = (goal: (typeof goals)[number]) => {
     if (lockingRef.current) return;
     lockingRef.current = true;
     navigatingAwayRef.current = true;
     persistComplete();
+    track("onboarding_goal_select", { goal: goal.id });
     setVisible(false);
     const state: FocusComposerState = { focusComposer: true };
-    navigate(path, { state });
+    navigate(goal.path, { state });
   };
 
   return (
@@ -125,7 +128,7 @@ export function OnboardingTour() {
                 key={goal.id}
                 type="button"
                 aria-describedby={descriptionId}
-                onClick={() => handleGoal(goal.path)}
+                onClick={() => handleGoal(goal)}
                 className={cn(
                   "flex w-full items-start gap-3 rounded-2xl border border-border/60 bg-secondary/40 p-4 text-left transition-all",
                   "hover:border-primary/30 hover:bg-secondary",

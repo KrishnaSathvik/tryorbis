@@ -10,6 +10,8 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { UpgradeModal } from "@/components/UpgradeModal";
+import { isQuotaExhausted } from "@/lib/quotaExhausted";
+import { track } from "@/lib/analytics";
 import {
   Mail,
   FileText,
@@ -39,7 +41,7 @@ interface ProfileSheetProps {
 
 export function ProfileSheet({ children }: ProfileSheetProps) {
   const { user, profile, signOut, isGuest } = useAuth();
-  const { reportsUsed, maxReports, credits } = useCredits();
+  const { reportsUsed, maxReports, credits, remaining, loading: creditsLoading, unavailable } = useCredits();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -175,7 +177,12 @@ export function ProfileSheet({ children }: ProfileSheetProps) {
 
             <Button
               className="w-full rounded-xl gap-2 mt-2 bg-foreground text-background hover:bg-foreground/90"
-              onClick={() => setUpgradeOpen(true)}
+              onClick={() => {
+                if (isQuotaExhausted({ remaining, loading: creditsLoading, unavailable })) {
+                  track("quota_hit", { surface: "profile" });
+                }
+                setUpgradeOpen(true);
+              }}
             >
               <Sparkles className="h-4 w-4" />
               Go Pro — Unlimited Reports

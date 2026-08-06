@@ -20,6 +20,21 @@ import {
   isRouterStateRecord,
   parseDashboardValidatePrefill,
 } from "@/lib/dashboardValidatePrefill";
+import {
+  classifyResearchFailure,
+  monotonicNow,
+  normalizeDurationMs,
+  track,
+} from "@/lib/analytics";
+import { isQuotaExhausted } from "@/lib/quotaExhausted";
+import {
+  INCOMPLETE_RESEARCH_TOAST,
+  InvalidResearchResponseError,
+  assertValidateCompetitorsStage,
+  assertValidateCoreResponse,
+  assertValidateIntelligenceStage,
+  assertValidateRegularResponse,
+} from "@/lib/researchResponseValidation";
 import { supabase } from "@/integrations/supabase/client";
 import { saveValidationReportDb, addToBacklogDb } from "@/lib/db";
 import { toast } from "sonner";
@@ -105,7 +120,7 @@ export default function ValidateIdea() {
       cancelPendingFocusRef.current = null;
     };
   }, []);
-  const { hasCredits, refreshCredits, loading: creditsLoading, unavailable: creditsUnavailable } = useCredits();
+  const { hasCredits, refreshCredits, loading: creditsLoading, unavailable: creditsUnavailable, remaining } = useCredits();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const prefilled = searchParams.get('idea') || "";
@@ -243,12 +258,31 @@ export default function ValidateIdea() {
 
   const triggerValidation = useCallback(async (ideaText: string) => {
     if (creditsLoading || creditsUnavailable) return;
-    if (!hasCredits) { setUpgradeOpen(true); return; }
+    if (!hasCredits) {
+      if (
+        isQuotaExhausted({
+          remaining,
+          loading: creditsLoading,
+          unavailable: creditsUnavailable,
+        })
+      ) {
+        track("quota_hit", { surface: "validate" });
+      }
+      setUpgradeOpen(true);
+      return;
+    }
+    const startedAt = monotonicNow();
+    const mode = researchMode;
+    track("research_started", {
+      type: "validate",
+      mode,
+      credits_left: remaining,
+    });
     setPhase('researching'); setCurrentStep(0); setDeepStage(null);
     try {
       const imageContext = await getImageContext(ideaText);
 
-      if (researchMode === 'deep') {
+      if (mode === 'deep') {
         // ── Multi-stage deep validation (3 x sonar-pro, ~15s each) ──
         setDeepStage('core');
 
@@ -258,19 +292,20 @@ export default function ValidateIdea() {
         });
         if (e1) throw e1;
         if (s1?.error) throw new Error(s1.error);
+        const core = assertValidateCoreResponse(s1);
 
         // Show core results immediately
         const partialReport: Report = {
           ideaText,
-          scores: s1.scores || { demand: 0, pain: 0, competition: 0, mvpFeasibility: 0 },
-          verdict: s1.verdict || 'Skip', pros: s1.pros || [], cons: s1.cons || [],
-          gapOpportunities: s1.gapOpportunities || [], mvpWedge: s1.mvpWedge || '', killTest: s1.killTest || '',
-          competitors: [], evidenceLinks: s1.evidenceLinks || [],
+          scores: core.scores,
+          verdict: core.verdict, pros: core.pros, cons: core.cons,
+          gapOpportunities: core.gapOpportunities, mvpWedge: core.mvpWedge, killTest: core.killTest,
+          competitors: [], evidenceLinks: core.evidenceLinks,
         };
         setReport(partialReport); setPhase('results'); setDeepStage('competitors');
         refreshCredits();
 
-        const coreSummary = `Verdict: ${s1.verdict}, Demand: ${s1.scores?.demand}, Pain: ${s1.scores?.pain}, Competition: ${s1.scores?.competition}, Feasibility: ${s1.scores?.mvpFeasibility}. Pros: ${(s1.pros || []).join('; ')}. Cons: ${(s1.cons || []).join('; ')}.`;
+        const coreSummary = `Verdict: ${core.verdict}, Demand: ${core.scores.demand}, Pain: ${core.scores.pain}, Competition: ${core.scores.competition}, Feasibility: ${core.scores.mvpFeasibility}. Pros: ${core.pros.join('; ')}. Cons: ${core.cons.join('; ')}.`;
 
         // Stage 2: Competitors & market sizing
         const { data: s2, error: e2 } = await supabase.functions.invoke('perplexity-validate', {
@@ -278,66 +313,113 @@ export default function ValidateIdea() {
         });
         if (e2) throw e2;
         if (s2?.error) throw new Error(s2.error);
+        const competitorsStage = assertValidateCompetitorsStage(s2);
 
-        setReport(prev => prev ? { ...prev, competitors: s2.competitors || [], marketSizing: s2.marketSizing } : prev);
+        setReport(prev => prev ? {
+          ...prev,
+          competitors: competitorsStage.competitors as Report["competitors"],
+          marketSizing: competitorsStage.marketSizing as Report["marketSizing"],
+        } : prev);
         setDeepStage('intelligence');
 
         // Stage 3: Market intelligence
-        const competitorNames = (s2.competitors || []).map((c: any) => c.name).join(', ');
+        const competitorNames = competitorsStage.competitors.map((c: any) => c.name).join(', ');
         const { data: s3, error: e3 } = await supabase.functions.invoke('perplexity-validate', {
           body: { ideaText, mode: 'deep', stage: 'intelligence', previousContext: `${coreSummary}\nCompetitors: ${competitorNames}` },
         });
         if (e3) throw e3;
         if (s3?.error) throw new Error(s3.error);
+        const intelligence = assertValidateIntelligenceStage(s3);
 
         const finalReport: Report = {
           ...partialReport,
-          competitors: s2.competitors || [], marketSizing: s2.marketSizing,
-          wtpSignals: s3.wtpSignals, competitionDensity: s3.competitionDensity, marketTiming: s3.marketTiming,
-          icp: s3.icp, workaroundDetection: s3.workaroundDetection, featureGapMap: s3.featureGapMap,
-          platformRisk: s3.platformRisk, gtmStrategy: s3.gtmStrategy, pricingBenchmarks: s3.pricingBenchmarks,
-          defensibility: s3.defensibility,
+          competitors: competitorsStage.competitors as Report["competitors"],
+          marketSizing: competitorsStage.marketSizing as Report["marketSizing"],
+          wtpSignals: intelligence.wtpSignals as Report["wtpSignals"],
+          competitionDensity: intelligence.competitionDensity as Report["competitionDensity"],
+          marketTiming: intelligence.marketTiming as Report["marketTiming"],
+          icp: intelligence.icp as Report["icp"],
+          workaroundDetection: intelligence.workaroundDetection as Report["workaroundDetection"],
+          featureGapMap: intelligence.featureGapMap as Report["featureGapMap"],
+          platformRisk: intelligence.platformRisk as Report["platformRisk"],
+          gtmStrategy: intelligence.gtmStrategy as Report["gtmStrategy"],
+          pricingBenchmarks: intelligence.pricingBenchmarks as Report["pricingBenchmarks"],
+          defensibility: intelligence.defensibility as Report["defensibility"],
         };
         setReport(finalReport); setDeepStage(null);
+        track("research_succeeded", {
+          type: "validate",
+          mode,
+          duration_ms: normalizeDurationMs(monotonicNow() - startedAt),
+        });
         try { await saveValidationReportDb(finalReport); } catch (e) { console.error("Failed to save to DB:", e); }
 
       } else {
         // ── Regular mode (single call) ──
         const stepInterval = setInterval(() => { setCurrentStep(prev => { if (prev >= researchSteps.length - 1) { clearInterval(stepInterval); return prev; } return prev + 1; }); }, 3500);
-        const { data, error } = await supabase.functions.invoke('perplexity-validate', { body: { ideaText: ideaText + imageContext, mode: researchMode } });
+        const { data, error } = await supabase.functions.invoke('perplexity-validate', { body: { ideaText: ideaText + imageContext, mode } });
         clearInterval(stepInterval); setCurrentStep(researchSteps.length);
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
+        const validated = assertValidateRegularResponse(data);
         refreshCredits();
         const r: Report = {
-          ideaText, scores: data.scores || { demand: 0, pain: 0, competition: 0, mvpFeasibility: 0 },
-          verdict: data.verdict || 'Skip', pros: data.pros || [], cons: data.cons || [],
-          gapOpportunities: data.gapOpportunities || [], mvpWedge: data.mvpWedge || '', killTest: data.killTest || '',
-          competitors: data.competitors || [], evidenceLinks: data.evidenceLinks || [],
-          marketSizing: data.marketSizing, wtpSignals: data.wtpSignals, competitionDensity: data.competitionDensity,
-          marketTiming: data.marketTiming, icp: data.icp, workaroundDetection: data.workaroundDetection,
-          featureGapMap: data.featureGapMap, platformRisk: data.platformRisk, gtmStrategy: data.gtmStrategy,
-          pricingBenchmarks: data.pricingBenchmarks, defensibility: data.defensibility,
+          ideaText,
+          scores: validated.scores,
+          verdict: validated.verdict,
+          pros: validated.pros,
+          cons: validated.cons,
+          gapOpportunities: validated.gapOpportunities,
+          mvpWedge: validated.mvpWedge,
+          killTest: validated.killTest,
+          competitors: validated.competitors as Report["competitors"],
+          evidenceLinks: validated.evidenceLinks,
+          marketSizing: validated.marketSizing as Report["marketSizing"],
+          wtpSignals: data.wtpSignals,
+          competitionDensity: data.competitionDensity,
+          marketTiming: data.marketTiming,
+          icp: data.icp,
+          workaroundDetection: data.workaroundDetection,
+          featureGapMap: data.featureGapMap,
+          platformRisk: data.platformRisk,
+          gtmStrategy: data.gtmStrategy,
+          pricingBenchmarks: data.pricingBenchmarks,
+          defensibility: data.defensibility,
         };
         try { await saveValidationReportDb(r); } catch (e) { console.error("Failed to save to DB:", e); }
         setReport(r); setPhase('results');
+        track("research_succeeded", {
+          type: "validate",
+          mode,
+          duration_ms: normalizeDurationMs(monotonicNow() - startedAt),
+        });
       }
-    } catch (err: any) {
-      const msg = err.message || "Unknown error";
-      if (msg.includes("unable_to_fulfill") || msg.includes("timed out") || msg.includes("deadline") || msg.includes("FUNCTION_INVOCATION_TIMEOUT")) {
-        toast.error("Deep research timed out — this model needs more time than the server allows. Try Regular mode instead.", { duration: 6000 });
+    } catch (err: unknown) {
+      track("research_failed", {
+        type: "validate",
+        code: classifyResearchFailure(err),
+      });
+      if (err instanceof InvalidResearchResponseError) {
+        toast.error(INCOMPLETE_RESEARCH_TOAST);
       } else {
-        toast.error("Validation failed: " + msg);
+        const msg = err instanceof Error ? err.message : "Unknown error";
+        if (msg.includes("unable_to_fulfill") || msg.includes("timed out") || msg.includes("deadline") || msg.includes("FUNCTION_INVOCATION_TIMEOUT")) {
+          toast.error("Deep research timed out — this model needs more time than the server allows. Try Regular mode instead.", { duration: 6000 });
+        } else {
+          toast.error("Validation failed: " + msg);
+        }
       }
       setDeepStage(null);
+      setReport(null);
       setPhase('chat');
     }
-  }, [hasCredits, creditsLoading, creditsUnavailable, refreshCredits, researchMode, getImageContext]);
+  }, [hasCredits, creditsLoading, creditsUnavailable, refreshCredits, researchMode, getImageContext, remaining]);
 
   const handleAddToBacklog = async () => {
     if (!report) return;
     try {
       await addToBacklogDb({ ideaName: report.ideaText.slice(0, 80), source: 'Validated', overallScore: Math.round((report.scores.demand + report.scores.pain + report.scores.mvpFeasibility - report.scores.competition) / 3), status: report.verdict === 'Build' ? 'Validated' : 'Exploring' });
+      track("idea_saved", { from: "validation_result" });
       toast.success("Saved to My Ideas");
     } catch { toast.error("Failed to save"); }
   };

@@ -8,6 +8,7 @@ const navigateMock = vi.fn();
 const getDashboardOverviewMock = vi.fn();
 const useAuthMock = vi.fn();
 const useCreditsMock = vi.fn();
+const trackMock = vi.fn();
 
 vi.mock("@/hooks/usePageTitle", () => ({ usePageTitle: () => {} }));
 vi.mock("@/contexts/AuthContext", () => ({
@@ -19,6 +20,15 @@ vi.mock("@/hooks/useCredits", () => ({
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: { from: () => ({ insert: vi.fn() }) },
 }));
+vi.mock("@/lib/analytics", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/analytics")>(
+    "@/lib/analytics",
+  );
+  return {
+    ...actual,
+    track: (...args: unknown[]) => trackMock(...args),
+  };
+});
 vi.mock("@/lib/dashboardOverview", async () => {
   const actual = await vi.importActual<typeof import("@/lib/dashboardOverview")>(
     "@/lib/dashboardOverview",
@@ -248,5 +258,26 @@ describe("Dashboard resume", () => {
     renderDashboard();
     expect(await screen.findByTestId("post-quota-continuation-panel")).toBeInTheDocument();
     expect(screen.getByText(/pick up where you left off/i)).toBeInTheDocument();
+  });
+
+  it("emits report_opened_from_dashboard for History-opening actions", async () => {
+    const user = userEvent.setup();
+    getDashboardOverviewMock.mockResolvedValue(mixedOverview);
+    renderDashboard();
+    await screen.findByText(/pick up where you left off/i);
+    trackMock.mockClear();
+    await user.click(screen.getByRole("button", { name: /view research: founders × saas/i }));
+    expect(trackMock).toHaveBeenCalledWith("report_opened_from_dashboard");
+    expect(trackMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not emit report_opened_from_dashboard for Validate this idea", async () => {
+    const user = userEvent.setup();
+    getDashboardOverviewMock.mockResolvedValue(mixedOverview);
+    renderDashboard();
+    await screen.findByText(/pick up where you left off/i);
+    trackMock.mockClear();
+    await user.click(screen.getByRole("button", { name: /validate this idea: sql prompt buddy/i }));
+    expect(trackMock).not.toHaveBeenCalled();
   });
 });

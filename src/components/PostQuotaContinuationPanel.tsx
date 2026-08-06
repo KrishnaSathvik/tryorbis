@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { useCredits } from "@/hooks/useCredits";
 import { isQuotaExhausted } from "@/lib/quotaExhausted";
+import { track } from "@/lib/analytics";
 import { MessageSquare, Archive, FileText, Sparkles } from "lucide-react";
 
 /**
@@ -40,11 +41,12 @@ export function PostQuotaContinuationPanel() {
           type="button"
           variant="secondary"
           className="rounded-full h-10 gap-2"
-          onClick={() =>
+          onClick={() => {
+            track("post_quota_chat_click");
             navigate("/chat", {
               state: { focusComposer: true, source: "quota_exhausted" },
-            })
-          }
+            });
+          }}
         >
           <MessageSquare className="h-4 w-4" aria-hidden="true" />
           Continue with Orbis AI
@@ -71,7 +73,10 @@ export function PostQuotaContinuationPanel() {
           type="button"
           variant="outline"
           className="rounded-full h-10 gap-2 sm:ml-auto"
-          onClick={() => setWaitlistOpen(true)}
+          onClick={() => {
+            track("quota_hit", { surface: "dashboard" });
+            setWaitlistOpen(true);
+          }}
         >
           <Sparkles className="h-4 w-4" aria-hidden="true" />
           Join waitlist
