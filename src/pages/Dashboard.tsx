@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Lightbulb, ClipboardCheck, TrendingUp, CheckCircle, Archive, Hand } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,50 +13,52 @@ import {
   type DashboardOverview,
 } from "@/lib/dashboardOverview";
 import { usePageTitle } from "@/hooks/usePageTitle";
+import { cn } from "@/lib/utils";
 
 type LoadState =
   | { status: "loading" }
   | { status: "ready"; overview: DashboardOverview }
   | { status: "error" };
 
+const entryLinkClassName = cn(
+  "block h-full rounded-2xl outline-none",
+  "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+);
+
 function EntryCards() {
-  const navigate = useNavigate();
   return (
     <div className="grid md:grid-cols-2 gap-6">
-      <Card
-        className="cursor-pointer group card-warm hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
-        onClick={() => navigate("/generate")}
-      >
-        <CardContent className="p-8">
-          <div className="h-14 w-14 rounded-2xl bg-secondary flex items-center justify-center mb-5 shadow-sm">
-            <Lightbulb className="h-6 w-6 text-primary" aria-hidden="true" />
-          </div>
-          <h2 className="text-xl font-semibold font-nunito mb-2">Find Ideas to Build</h2>
-          <p className="text-muted-foreground text-sm leading-relaxed">
-            Discover real problems people are facing. Mine complaints, cluster pain points, and generate product ideas backed by evidence.
-          </p>
-        </CardContent>
-      </Card>
-      <Card
-        className="cursor-pointer group card-warm hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
-        onClick={() => navigate("/validate")}
-      >
-        <CardContent className="p-8">
-          <div className="h-14 w-14 rounded-2xl bg-secondary flex items-center justify-center mb-5 shadow-sm">
-            <ClipboardCheck className="h-6 w-6 text-primary" aria-hidden="true" />
-          </div>
-          <h2 className="text-xl font-semibold font-nunito mb-2">Validate My Idea</h2>
-          <p className="text-muted-foreground text-sm leading-relaxed">
-            Test if your idea is worth building. Get demand scores, competitor analysis, and a clear Build / Pivot / Skip verdict.
-          </p>
-        </CardContent>
-      </Card>
+      <Link to="/generate" className={entryLinkClassName} aria-label="Find Ideas to Build">
+        <Card className="h-full group card-warm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+          <CardContent className="p-8">
+            <div className="h-14 w-14 rounded-2xl bg-secondary flex items-center justify-center mb-5 shadow-sm">
+              <Lightbulb className="h-6 w-6 text-primary" aria-hidden="true" />
+            </div>
+            <h3 className="text-xl font-semibold font-nunito mb-2">Find Ideas to Build</h3>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              Discover real problems people are facing. Mine complaints, cluster pain points, and generate product ideas backed by evidence.
+            </p>
+          </CardContent>
+        </Card>
+      </Link>
+      <Link to="/validate" className={entryLinkClassName} aria-label="Validate My Idea">
+        <Card className="h-full group card-warm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+          <CardContent className="p-8">
+            <div className="h-14 w-14 rounded-2xl bg-secondary flex items-center justify-center mb-5 shadow-sm">
+              <ClipboardCheck className="h-6 w-6 text-primary" aria-hidden="true" />
+            </div>
+            <h3 className="text-xl font-semibold font-nunito mb-2">Validate My Idea</h3>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              Test if your idea is worth building. Get demand scores, competitor analysis, and a clear Build / Pivot / Skip verdict.
+            </p>
+          </CardContent>
+        </Card>
+      </Link>
     </div>
   );
 }
 
 function FirstRunSection() {
-  const navigate = useNavigate();
   return (
     <section aria-labelledby="dashboard-first-run-heading" className="space-y-4">
       <div>
@@ -71,34 +73,32 @@ function FirstRunSection() {
         </p>
       </div>
       <div className="grid md:grid-cols-2 gap-6">
-        <Card
-          className="cursor-pointer group card-warm hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
-          onClick={() => navigate("/generate")}
-        >
-          <CardContent className="p-8">
-            <div className="h-14 w-14 rounded-2xl bg-secondary flex items-center justify-center mb-5 shadow-sm">
-              <Lightbulb className="h-6 w-6 text-primary" aria-hidden="true" />
-            </div>
-            <h2 className="text-xl font-semibold font-nunito mb-2">Find product ideas</h2>
-            <p className="text-muted-foreground text-sm leading-relaxed">
-              Discover real problems people are facing. Mine complaints, cluster pain points, and generate product ideas backed by evidence.
-            </p>
-          </CardContent>
-        </Card>
-        <Card
-          className="cursor-pointer group card-warm hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
-          onClick={() => navigate("/validate")}
-        >
-          <CardContent className="p-8">
-            <div className="h-14 w-14 rounded-2xl bg-secondary flex items-center justify-center mb-5 shadow-sm">
-              <ClipboardCheck className="h-6 w-6 text-primary" aria-hidden="true" />
-            </div>
-            <h2 className="text-xl font-semibold font-nunito mb-2">Validate an idea</h2>
-            <p className="text-muted-foreground text-sm leading-relaxed">
-              Test if your idea is worth building. Get demand scores, competitor analysis, and a clear Build / Pivot / Skip verdict.
-            </p>
-          </CardContent>
-        </Card>
+        <Link to="/generate" className={entryLinkClassName} aria-label="Find product ideas">
+          <Card className="h-full group card-warm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+            <CardContent className="p-8">
+              <div className="h-14 w-14 rounded-2xl bg-secondary flex items-center justify-center mb-5 shadow-sm">
+                <Lightbulb className="h-6 w-6 text-primary" aria-hidden="true" />
+              </div>
+              <h3 className="text-xl font-semibold font-nunito mb-2">Find product ideas</h3>
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                Discover real problems people are facing. Mine complaints, cluster pain points, and generate product ideas backed by evidence.
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link to="/validate" className={entryLinkClassName} aria-label="Validate an idea">
+          <Card className="h-full group card-warm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+            <CardContent className="p-8">
+              <div className="h-14 w-14 rounded-2xl bg-secondary flex items-center justify-center mb-5 shadow-sm">
+                <ClipboardCheck className="h-6 w-6 text-primary" aria-hidden="true" />
+              </div>
+              <h3 className="text-xl font-semibold font-nunito mb-2">Validate an idea</h3>
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                Test if your idea is worth building. Get demand scores, competitor analysis, and a clear Build / Pivot / Skip verdict.
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
     </section>
   );

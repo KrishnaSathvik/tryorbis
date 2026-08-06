@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   buildValidatePrefillText,
   historyItemQuery,
+  isRouterStateRecord,
   parseDashboardValidatePrefill,
   parseHistoryItemQuery,
 } from "./dashboardValidatePrefill";
@@ -41,5 +42,16 @@ describe("dashboardValidatePrefill helpers", () => {
     });
     expect(parseHistoryItemQuery("nope")).toBeNull();
     expect(parseHistoryItemQuery("generator:")).toBeNull();
+  });
+
+  it("guards router state records", () => {
+    expect(isRouterStateRecord({ keep: true })).toBe(true);
+    expect(isRouterStateRecord(null)).toBe(false);
+    expect(isRouterStateRecord(undefined)).toBe(false);
+    expect(isRouterStateRecord("unexpected")).toBe(false);
+    expect(isRouterStateRecord(42)).toBe(false);
+    expect(isRouterStateRecord(true)).toBe(false);
+    expect(isRouterStateRecord([])).toBe(false);
+    expect(isRouterStateRecord(new Date("2026-08-06"))).toBe(true);
   });
 });

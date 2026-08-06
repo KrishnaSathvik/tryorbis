@@ -38,7 +38,7 @@ export default function Reports() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"research" | "chats">("research");
-  const [openItemKey, setOpenItemKey] = useState<string | null>(null);
+  const [openItemKeys, setOpenItemKeys] = useState<Set<string>>(() => new Set());
   const [deepLinkMissing, setDeepLinkMissing] = useState(false);
   const deepLinkHandledRef = useRef<string | null>(null);
   const itemRefs = useRef<Record<string, HTMLElement | null>>({});
@@ -95,7 +95,12 @@ export default function Reports() {
 
     setDeepLinkMissing(false);
     setActiveTab("research");
-    setOpenItemKey(key);
+    setOpenItemKeys((current) => {
+      if (current.has(key)) return current;
+      const next = new Set(current);
+      next.add(key);
+      return next;
+    });
 
     if (deepLinkHandledRef.current === key) return;
     deepLinkHandledRef.current = key;
@@ -222,7 +227,7 @@ export default function Reports() {
               {allItems.map((item) => {
                 const kind = item.type === "run" ? "generator" : "validation";
                 const key = `${kind}:${item.id}`;
-                const isOpen = openItemKey === key;
+                const isOpen = openItemKeys.has(key);
                 const ideaText =
                   typeof item.data.idea_text === "string" ? item.data.idea_text : "";
                 const persona =
@@ -243,7 +248,14 @@ export default function Reports() {
                   <Collapsible
                     key={key}
                     open={isOpen}
-                    onOpenChange={(next) => setOpenItemKey(next ? key : null)}
+                    onOpenChange={(open) => {
+                      setOpenItemKeys((current) => {
+                        const next = new Set(current);
+                        if (open) next.add(key);
+                        else next.delete(key);
+                        return next;
+                      });
+                    }}
                   >
                     <Card
                       ref={(el) => {

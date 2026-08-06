@@ -215,4 +215,74 @@ describe("ValidateIdea dashboard prefill", () => {
     expect(invokeMock).not.toHaveBeenCalled();
     expect(refreshCreditsMock).not.toHaveBeenCalled();
   });
+
+  it.each([
+    ["string", "unexpected"],
+    ["number", 42],
+    ["boolean", true],
+    ["array", [] as unknown[]],
+    ["date", new Date("2026-08-06T12:00:00.000Z")],
+  ])("ignores primitive/array router state (%s) without crashing", async (_label, state) => {
+    render(
+      <MemoryRouter
+        initialEntries={[
+          {
+            pathname: "/validate",
+            state,
+          },
+        ]}
+      >
+        <Routes>
+          <Route
+            path="/validate"
+            element={
+              <>
+                <ValidateIdea />
+                <LocationProbe />
+              </>
+            }
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByPlaceholderText(/e\.g\. AI tool that tracks subscriptions/i),
+    ).toBeInTheDocument();
+    expect(invokeMock).not.toHaveBeenCalled();
+    expect(refreshCreditsMock).not.toHaveBeenCalled();
+    // Primitive/array state is left untouched (no replace consume)
+    expect(screen.getByTestId("state").textContent).toBe(JSON.stringify(state));
+  });
+
+  it("ignores object state without dashboardValidatePrefill", async () => {
+    render(
+      <MemoryRouter
+        initialEntries={[
+          {
+            pathname: "/validate",
+            state: { keepMe: true, focusComposer: false },
+          },
+        ]}
+      >
+        <Routes>
+          <Route
+            path="/validate"
+            element={
+              <>
+                <ValidateIdea />
+                <LocationProbe />
+              </>
+            }
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await screen.findByPlaceholderText(/e\.g\. AI tool that tracks subscriptions/i);
+    expect(screen.getByTestId("state").textContent).toBe(
+      JSON.stringify({ keepMe: true, focusComposer: false }),
+    );
+    expect(invokeMock).not.toHaveBeenCalled();
+  });
 });

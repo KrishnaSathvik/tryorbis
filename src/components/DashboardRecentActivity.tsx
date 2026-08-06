@@ -37,7 +37,7 @@ export function DashboardRecentActivity({
           Pick up where you left off
         </h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Continue your latest research or move the strongest idea forward.
+          Continue your latest research or move an idea forward.
         </p>
       </div>
 

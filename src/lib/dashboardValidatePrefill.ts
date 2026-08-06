@@ -9,6 +9,13 @@ export type DashboardValidatePrefillState = {
   [key: string]: unknown;
 };
 
+/** True when router state is a plain object safe for `in` / spread. */
+export function isRouterStateRecord(
+  value: unknown,
+): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
 export function parseDashboardValidatePrefill(
   value: unknown,
 ): DashboardValidatePrefill | null {

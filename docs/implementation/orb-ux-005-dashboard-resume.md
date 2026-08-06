@@ -129,6 +129,26 @@ Expands matching item, scrolls into view, focuses trigger. Invalid targets keep 
 
 Section headings, semantic list/articles, real buttons with descriptive `aria-label`s including titles, `<time dateTime>`, decorative icons `aria-hidden`, `role="alert"` on error, History focus target, Validate composer focus after prefill.
 
+### Dashboard entry cards (merge-readiness correction)
+
+First-run and returning-user entry cards are React Router `<Link>` elements wrapping non-interactive `Card` content:
+
+- Real link semantics, Tab focus, Enter activation, visible focus ring
+- Card titles use `<h3>` under section `<h2>`
+- Full-card hit target; no nested interactive controls; browser Back / open-in-new-tab work as normal links
+
+### Validate router-state safety
+
+`isRouterStateRecord` guards before `in` / destructure / spread. Primitive, array, nullish, and Date values are ignored without crashing. Only object state with `dashboardValidatePrefill` is consumed.
+
+### History independent expansion
+
+Open state is a `Set<string>` of stable `generator:<id>` / `validation:<id>` keys. Manual open/close adds/removes one key. Deep links **add** the target without closing others. Focus tests assert `toHaveFocus()` after deep link without manually calling `focus()`.
+
+### Copy accuracy
+
+Supporting copy is: “Continue your latest research or move an idea forward.” (no unsupported “strongest idea” claim).
+
 ## Responsive behavior
 
 Cards stack; titles clamp; actions wrap; touch-friendly buttons; works with PostQuotaContinuationPanel; light/dark readable.
@@ -158,7 +178,7 @@ See screenshot paths under `docs/uiux-audit-assets/implementation/orb-ux-005/`.
 
 - History still loads full lists via existing helpers (not overview-limited)
 - Overall score uses the established backlog formula; not a separate stored field
-- Only one History item open at a time when using controlled deep-link state
+- Deep-link focus/scroll runs once per target key via `deepLinkHandledRef`
 
 ## Deferred analytics
 

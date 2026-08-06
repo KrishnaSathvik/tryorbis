@@ -17,8 +17,8 @@ import { StarterChips } from "@/components/StarterChips";
 import { VALIDATE_STARTER_CHIPS } from "@/lib/starterChips";
 import { scheduleFocusComposerAtEnd } from "@/lib/focusComposer";
 import {
+  isRouterStateRecord,
   parseDashboardValidatePrefill,
-  type DashboardValidatePrefillState,
 } from "@/lib/dashboardValidatePrefill";
 import { supabase } from "@/integrations/supabase/client";
 import { saveValidationReportDb, addToBacklogDb } from "@/lib/db";
@@ -124,11 +124,15 @@ export default function ValidateIdea() {
 
   // One-time Dashboard → Validate prefill (route state only; never auto-submit)
   useEffect(() => {
-    const state = (location.state as DashboardValidatePrefillState | null) ?? null;
-    if (!state || !("dashboardValidatePrefill" in state)) return;
+    const rawState = location.state;
+    // Primitive / array / nullish state must be ignored without crashing.
+    if (!isRouterStateRecord(rawState)) return;
+    if (!Object.prototype.hasOwnProperty.call(rawState, "dashboardValidatePrefill")) {
+      return;
+    }
 
-    const prefill = parseDashboardValidatePrefill(state.dashboardValidatePrefill);
-    const { dashboardValidatePrefill: _consumed, ...remainingState } = state;
+    const prefill = parseDashboardValidatePrefill(rawState.dashboardValidatePrefill);
+    const { dashboardValidatePrefill: _consumed, ...remainingState } = rawState;
     const nextState = Object.keys(remainingState).length > 0 ? remainingState : null;
 
     const untouched =
