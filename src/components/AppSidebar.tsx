@@ -6,6 +6,7 @@ import { ProfileSheet } from "@/components/ProfileSheet";
 import { ReportsRemainingMeter } from "@/components/ReportsRemainingMeter";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { useCredits } from "@/hooks/useCredits";
+import { isQuotaExhausted } from "@/lib/quotaExhausted";
 import { useIsMobile } from "@/hooks/use-mobile";
 import orbisLogo from "@/assets/orbis-logo.png";
 import {
@@ -101,7 +102,12 @@ export function AppSidebar() {
           </button>
         </ProfileSheet>
       </div>
-      <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} />
+      <UpgradeModal
+        open={upgradeOpen}
+        onOpenChange={setUpgradeOpen}
+        mode={isQuotaExhausted({ remaining, loading, unavailable }) ? "quota_exhausted" : "general"}
+        source="meter"
+      />
     </Sidebar>
   );
 }
