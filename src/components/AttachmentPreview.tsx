@@ -20,24 +20,35 @@ export function AttachmentPreview({ attachments, onRemove, size = "sm" }: Attach
         {attachments.map((att) => (
           <div key={att.id} className="relative group">
             {att.type === "image" ? (
-              <img
-                src={att.preview}
-                alt={att.file.name}
-                className={`${dim} rounded-lg object-cover border border-border/50 cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all`}
+              <button
+                type="button"
                 onClick={() => setPreviewSrc(att.preview)}
-              />
+                className={`${dim} rounded-lg overflow-hidden border border-border/50 hover:ring-2 hover:ring-primary/30 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2`}
+                aria-label={`Preview attachment ${att.file.name}`}
+              >
+                <img
+                  src={att.preview}
+                  alt=""
+                  className="h-full w-full object-cover"
+                />
+              </button>
             ) : (
-              <div className={`${dim} rounded-lg border border-border/50 bg-secondary/50 flex flex-col items-center justify-center`}>
-                <span className="text-[8px] text-muted-foreground font-medium">
+              <div
+                className={`${dim} rounded-lg border border-border/50 bg-secondary/50 flex flex-col items-center justify-center`}
+                aria-label={`Attachment ${att.file.name}`}
+              >
+                <span className="text-[8px] text-muted-foreground font-medium" aria-hidden>
                   {att.file.name.split(".").pop()?.toUpperCase()}
                 </span>
               </div>
             )}
             <button
+              type="button"
               onClick={() => onRemove(att.id)}
-              className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[8px]"
+              aria-label={`Remove attachment ${att.file.name}`}
+              className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity text-[8px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
-              ✕
+              <span aria-hidden>✕</span>
             </button>
           </div>
         ))}

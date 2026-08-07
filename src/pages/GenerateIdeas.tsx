@@ -458,9 +458,30 @@ export default function GenerateIdeas() {
           )}
           <div className="flex gap-2">
             <FileUpload attachments={attachments} onAttachmentsChange={setAttachments} disabled={isTyping} />
-            <Input ref={inputRef} value={inputValue} onChange={e => setInputValue(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleUserInput()} placeholder={voice.isListening ? "Listening..." : generatingParams ? "Add more context or hit Start Research..." : "e.g. I want to build a SQL prompt buddy for devs..."} className="flex-1 rounded-xl" autoFocus disabled={isTyping} />
+            <Input
+              ref={inputRef}
+              id="generate-idea-input"
+              aria-label="Describe what you want to research"
+              value={inputValue}
+              onChange={e => setInputValue(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleUserInput()}
+              placeholder={voice.isListening ? "Listening..." : generatingParams ? "Add more context or hit Start Research..." : "e.g. I want to build a SQL prompt buddy for devs..."}
+              className="flex-1 rounded-xl"
+              autoFocus
+              disabled={isTyping}
+              aria-busy={isTyping || undefined}
+            />
             <VoiceButton isListening={voice.isListening} isSupported={voice.isSupported} onStart={() => voice.startListening()} onStop={() => voice.stopListening()} disabled={isTyping} />
-            <Button size="icon" className="rounded-xl" onClick={handleUserInput} disabled={!inputValue.trim() || isTyping}><Send className="h-4 w-4" /></Button>
+            <Button
+              size="icon"
+              className="rounded-xl"
+              onClick={handleUserInput}
+              disabled={!inputValue.trim() || isTyping}
+              aria-label={isTyping ? "Sending…" : "Send message"}
+              aria-busy={isTyping || undefined}
+            >
+              <Send className="h-4 w-4" aria-hidden />
+            </Button>
           </div>
         </div>
         <UpgradeModal
@@ -475,7 +496,7 @@ export default function GenerateIdeas() {
 
   if (phase === 'researching') {
     return (
-      <div className="max-w-lg mx-auto mt-20 animate-fade-in">
+      <div className="max-w-lg mx-auto mt-20 animate-fade-in" role="status" aria-live="polite" aria-busy="true">
         <Card className="rounded-[32px] shadow-lg"><CardContent className="p-8">
           <h2 className="text-xl font-semibold font-nunito mb-2">
             {deepStage === 'problems' ? 'Stage 1/3 — Mining Complaints...' : 'Researching...'}
@@ -583,7 +604,13 @@ export default function GenerateIdeas() {
           <h2 className="text-lg font-semibold font-nunito">Real Problems Found</h2>
           <Popover>
             <PopoverTrigger asChild>
-              <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+              <button
+                type="button"
+                className="rounded-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                aria-label="About problem themes"
+              >
+                <Info className="h-3.5 w-3.5" aria-hidden />
+              </button>
             </PopoverTrigger>
             <PopoverContent side="top" className="max-w-[260px] p-2">
               <p className="text-xs">These are real complaints and frustrations mined from Reddit, forums, and reviews — grouped by theme. Click to see the actual quotes.</p>
@@ -594,7 +621,10 @@ export default function GenerateIdeas() {
           {result?.problemClusters.map((cluster: any) => (
             <Collapsible key={cluster.id}>
               <Card className="rounded-2xl border-border/50">
-                <CollapsibleTrigger className="w-full">
+                <CollapsibleTrigger
+                  className="w-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-2xl"
+                  aria-label={`Problem theme: ${cluster.theme}`}
+                >
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="text-left flex-1 min-w-0">
@@ -691,9 +721,17 @@ export default function GenerateIdeas() {
                     </div>
                   </div>
                   <div className="flex gap-2 pt-1">
-                    <Button size="sm" variant="default" className="rounded-full text-xs h-7" onClick={() => handleValidate(idea)}><ClipboardCheck className="h-3 w-3 mr-1" /> Validate</Button>
-                    <Button size="sm" variant="outline" className="rounded-full text-xs h-7" onClick={() => handleAddToBacklog(idea)}><Bookmark className="h-3 w-3 mr-1" /> Save</Button>
-                    <Button size="sm" variant="ghost" className="rounded-full text-xs h-7" onClick={() => { navigator.clipboard.writeText(`Build a ${idea.name}: ${idea.description}\nMVP: ${idea.mvpScope}`); toast.success("Copied PRD prompt"); }}><Copy className="h-3 w-3" /></Button>
+                    <Button size="sm" variant="default" className="rounded-full text-xs h-7" onClick={() => handleValidate(idea)}><ClipboardCheck className="h-3 w-3 mr-1" aria-hidden /> Validate</Button>
+                    <Button size="sm" variant="outline" className="rounded-full text-xs h-7" onClick={() => handleAddToBacklog(idea)}><Bookmark className="h-3 w-3 mr-1" aria-hidden /> Save</Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="rounded-full text-xs h-7"
+                      aria-label={`Copy PRD prompt for ${idea.name}`}
+                      onClick={() => { navigator.clipboard.writeText(`Build a ${idea.name}: ${idea.description}\nMVP: ${idea.mvpScope}`); toast.success("Copied PRD prompt"); }}
+                    >
+                      <Copy className="h-3 w-3" aria-hidden />
+                    </Button>
                   </div>
                 </div>
               </CardContent>
@@ -704,8 +742,8 @@ export default function GenerateIdeas() {
 
       {/* ─── Intelligence loading indicator ─── */}
       {deepStage === 'intelligence' && (
-        <div className="flex items-center gap-3 p-4 rounded-2xl bg-secondary/40 border border-border/50 animate-pulse">
-          <Loader2 className="h-5 w-5 text-primary animate-spin shrink-0" />
+        <div className="flex items-center gap-3 p-4 rounded-2xl bg-secondary/40 border border-border/50 animate-pulse" role="status" aria-live="polite" aria-busy="true">
+          <Loader2 className="h-5 w-5 text-primary animate-spin shrink-0" aria-hidden />
           <div>
             <p className="text-sm font-medium">Analyzing market intelligence...</p>
             <p className="text-xs text-muted-foreground">Researching WTP signals, competition, timing, ICP, pricing, and defensibility.</p>

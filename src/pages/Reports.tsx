@@ -96,7 +96,7 @@ export default function Reports() {
     });
   }, []);
 
-  const backToAllReports = () => {
+  const backToAllReports = (returnFocusKey?: string) => {
     setSearchParams(
       (prev) => {
         const next = new URLSearchParams(prev);
@@ -107,6 +107,20 @@ export default function Reports() {
     );
     setOpenItemKeys(new Set());
     deepLinkHandledRef.current = null;
+    requestAnimationFrame(() => {
+      const trigger = returnFocusKey
+        ? itemRefs.current[returnFocusKey]?.querySelector<HTMLElement>(
+            "[data-history-focus-target]",
+          )
+        : null;
+      if (trigger) {
+        trigger.focus({ preventScroll: true });
+        return;
+      }
+      document
+        .getElementById("history-heading")
+        ?.focus({ preventScroll: true });
+    });
   };
 
   const itemQuery = searchParams.get("item");
@@ -228,35 +242,47 @@ export default function Reports() {
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight font-nunito">History</h1>
+        <h1
+          id="history-heading"
+          tabIndex={-1}
+          className="text-3xl font-bold tracking-tight font-nunito outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
+        >
+          History
+        </h1>
         <p className="text-muted-foreground mt-1">All your past sessions — revisit results anytime.</p>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 p-1 rounded-xl bg-secondary/60 w-fit">
+      <div className="flex gap-1 p-1 rounded-xl bg-secondary/60 w-fit" role="tablist" aria-label="History sections">
         <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "research"}
           onClick={() => setActiveTab("research")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
             activeTab === "research"
               ? "bg-background text-foreground shadow-sm"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
           <div className="flex items-center gap-2">
-            <FileText className="h-3.5 w-3.5" />
+            <FileText className="h-3.5 w-3.5" aria-hidden />
             Research
           </div>
         </button>
         <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "chats"}
           onClick={() => setActiveTab("chats")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
             activeTab === "chats"
               ? "bg-background text-foreground shadow-sm"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
           <div className="flex items-center gap-2">
-            <Sparkles className="h-3.5 w-3.5" />
+            <Sparkles className="h-3.5 w-3.5" aria-hidden />
             Orbis AI Chats
             {conversations.length > 0 && (
               <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-semibold">
@@ -366,7 +392,7 @@ export default function Reports() {
                               navigate={navigate}
                               backlogItems={backlogItems}
                               locallySavedNames={locallySavedNames}
-                              onBackToAllReports={backToAllReports}
+                              onBackToAllReports={() => backToAllReports(key)}
                             />
                           )}
                           {item.type === "report" && (
@@ -377,7 +403,7 @@ export default function Reports() {
                               navigate={navigate}
                               backlogItems={backlogItems}
                               locallySavedNames={locallySavedNames}
-                              onBackToAllReports={backToAllReports}
+                              onBackToAllReports={() => backToAllReports(key)}
                             />
                           )}
                         </div>
@@ -409,37 +435,41 @@ export default function Reports() {
           ) : (
             <div className="space-y-2">
               {conversations.map((c) => (
-                <Card
+                <div
                   key={c.id}
-                  className="rounded-2xl border-border/50 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 cursor-pointer group"
-                  onClick={() => navigate(`/chat?c=${c.id}`)}
+                  className="rounded-2xl border border-border/50 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 group"
                 >
                   <CardContent className="p-4 flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center shrink-0">
-                      <MessageSquare className="h-4 w-4 text-primary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold truncate">{c.title}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{formatDate(c.updated_at)}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteConversation(c.id);
-                        }}
-                      >
-                        Delete
-                      </Button>
-                      <div className="flex items-center gap-1 text-xs text-primary font-medium">
-                        Continue <ArrowRight className="h-3 w-3" />
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/chat?c=${c.id}`)}
+                      className="flex flex-1 min-w-0 items-center gap-3 text-left rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      aria-label={`Open chat: ${c.title}`}
+                    >
+                      <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center shrink-0" aria-hidden>
+                        <MessageSquare className="h-4 w-4 text-primary" />
                       </div>
-                    </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold truncate">{c.title}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{formatDate(c.updated_at)}</p>
+                      </div>
+                      <div className="flex items-center gap-1 text-xs text-primary font-medium shrink-0">
+                        Continue <ArrowRight className="h-3 w-3" aria-hidden />
+                      </div>
+                    </button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 transition-opacity"
+                      aria-label={`Delete chat ${c.title}`}
+                      onClick={() => {
+                        handleDeleteConversation(c.id);
+                      }}
+                    >
+                      Delete
+                    </Button>
                   </CardContent>
-                </Card>
+                </div>
               ))}
             </div>
           )}
@@ -556,7 +586,10 @@ function GeneratorRunDetails({
             {problemClusters.map((cluster: any, i: number) => (
               <Collapsible key={i}>
                 <Card className="rounded-xl border-border/50">
-                  <CollapsibleTrigger className="w-full">
+                  <CollapsibleTrigger
+                    className="w-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl"
+                    aria-label={`Problem theme: ${cluster.theme}`}
+                  >
                     <CardContent className="p-3 flex items-center justify-between">
                       <div className="text-left">
                         <p className="font-medium text-xs">{cluster.theme}</p>
@@ -607,8 +640,8 @@ function GeneratorRunDetails({
                 <CardContent className="p-4 space-y-2">
                   <div className="flex items-start justify-between gap-2">
                     <p className="text-sm font-semibold">{idea.name}</p>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={(e) => { e.stopPropagation(); void onSaveIdea(idea.name, "Generated", idea.demandScore, undefined, { description: idea.description, mvpScope: idea.mvpScope, monetization: idea.monetization, sourceId: generatorIdeaSourceId(runId, idea) }); }}>
-                      <Bookmark className="h-3.5 w-3.5" />
+                    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" aria-label={`Save idea ${idea.name}`} onClick={(e) => { e.stopPropagation(); void onSaveIdea(idea.name, "Generated", idea.demandScore, undefined, { description: idea.description, mvpScope: idea.mvpScope, monetization: idea.monetization, sourceId: generatorIdeaSourceId(runId, idea) }); }}>
+                      <Bookmark className="h-3.5 w-3.5" aria-hidden />
                     </Button>
                   </div>
                   {idea.description && <p className="text-xs text-muted-foreground leading-relaxed">{idea.description}</p>}

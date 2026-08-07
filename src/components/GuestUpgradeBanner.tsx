@@ -53,20 +53,25 @@ export function GuestUpgradeBanner() {
             </DialogHeader>
             <form onSubmit={handleUpgrade} className="space-y-3 pt-2">
               <div className="space-y-1.5">
-                <label className="text-sm font-medium">Email</label>
-                <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" className="rounded-xl" />
+                <label htmlFor="guest-upgrade-email" className="text-sm font-medium">Email</label>
+                <Input id="guest-upgrade-email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" className="rounded-xl" />
               </div>
               <div className="space-y-1.5">
-                <label className="text-sm font-medium">Password</label>
+                <label htmlFor="guest-upgrade-password" className="text-sm font-medium">Password</label>
                 <div className="relative">
-                  <Input type={showPw ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} placeholder="Min 6 characters" className="rounded-xl pr-10" />
-                  <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                    {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  <Input id="guest-upgrade-password" type={showPw ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} placeholder="Min 6 characters" className="rounded-xl pr-10" />
+                  <button
+                    type="button"
+                    onClick={() => setShowPw(!showPw)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
+                    aria-label={showPw ? "Hide password" : "Show password"}
+                  >
+                    {showPw ? <EyeOff className="h-4 w-4" aria-hidden /> : <Eye className="h-4 w-4" aria-hidden />}
                   </button>
                 </div>
               </div>
               <p className="text-xs text-muted-foreground">All your ideas, validations, and chat history will be preserved.</p>
-              <Button type="submit" className="w-full rounded-full" disabled={loading}>
+              <Button type="submit" className="w-full rounded-full" disabled={loading} aria-busy={loading || undefined}>
                 {loading ? "Upgrading..." : "Upgrade Account"}
               </Button>
             </form>

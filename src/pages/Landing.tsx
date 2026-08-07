@@ -65,7 +65,9 @@ function WaitlistForm() {
       <div className="relative flex-1">
         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
+          id="landing-waitlist-email"
           type="email"
+          aria-label="Email for waitlist"
           placeholder="you@email.com"
           value={email}
           onChange={(e) => { setEmail(e.target.value); setStatus("idle"); }}

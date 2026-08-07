@@ -535,9 +535,30 @@ export default function ValidateIdea() {
           )}
           <div className="flex gap-2">
             <FileUpload attachments={attachments} onAttachmentsChange={setAttachments} disabled={isTyping} />
-            <Input ref={inputRef} value={inputValue} onChange={e => setInputValue(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleUserInput()} placeholder={voice.isListening ? "Listening..." : validatingParams ? "Add more context or hit Start Validation..." : "e.g. AI tool that tracks subscriptions..."} className="flex-1 rounded-xl" autoFocus disabled={isTyping} />
+            <Input
+              ref={inputRef}
+              id="validate-idea-input"
+              aria-label="Describe the idea to validate"
+              value={inputValue}
+              onChange={e => setInputValue(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleUserInput()}
+              placeholder={voice.isListening ? "Listening..." : validatingParams ? "Add more context or hit Start Validation..." : "e.g. AI tool that tracks subscriptions..."}
+              className="flex-1 rounded-xl"
+              autoFocus
+              disabled={isTyping}
+              aria-busy={isTyping || undefined}
+            />
             <VoiceButton isListening={voice.isListening} isSupported={voice.isSupported} onStart={() => voice.startListening()} onStop={() => voice.stopListening()} disabled={isTyping} />
-            <Button size="icon" className="rounded-xl" onClick={() => handleUserInput()} disabled={!inputValue.trim() || isTyping}><Send className="h-4 w-4" /></Button>
+            <Button
+              size="icon"
+              className="rounded-xl"
+              onClick={() => handleUserInput()}
+              disabled={!inputValue.trim() || isTyping}
+              aria-label={isTyping ? "Sending…" : "Send message"}
+              aria-busy={isTyping || undefined}
+            >
+              <Send className="h-4 w-4" aria-hidden />
+            </Button>
           </div>
         </div>
         <UpgradeModal
@@ -552,7 +573,7 @@ export default function ValidateIdea() {
 
   if (phase === 'researching') {
     return (
-      <div className="max-w-lg mx-auto mt-20 animate-fade-in">
+      <div className="max-w-lg mx-auto mt-20 animate-fade-in" role="status" aria-live="polite" aria-busy="true">
         <Card className="rounded-[32px] shadow-lg"><CardContent className="p-8">
           <h2 className="text-xl font-semibold font-nunito mb-2">
             {deepStage === 'core' ? 'Stage 1/3 — Core Validation...' : 'Validating...'}
