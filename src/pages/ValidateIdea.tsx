@@ -11,7 +11,9 @@ import { ValidationScorecard } from "@/components/ValidationScorecard";
 import { AIHandoff } from "@/components/AIHandoff";
 import { FollowUpChat, type FollowUpPrefillRequest } from "@/components/FollowUpChat";
 import { ValidateNextStepCard } from "@/components/ReportNextStepCards";
+import { ValidationMarkdownExport } from "@/components/ValidationMarkdownExport";
 import { WtpSection, CompetitionDensitySection, MarketTimingSection, IcpSection, WorkaroundSection, FeatureGapSection, PlatformRiskSection, GtmStrategySection, PricingBenchmarkSection, DefensibilitySection } from "@/components/IntelligenceSections";
+import { normalizeFreshValidationReport } from "@/lib/validationMarkdown";
 import { useCredits } from "@/hooks/useCredits";
 import { useFocusComposerOnArrive } from "@/hooks/useFocusComposerOnArrive";
 import { StarterChips } from "@/components/StarterChips";
@@ -689,6 +691,12 @@ export default function ValidateIdea() {
               navigate("/ideas", { state: { focusSection: "my-ideas" } }),
           }}
         />
+      )}
+
+      {report && !deepStage && (
+        <div className="flex justify-start">
+          <ValidationMarkdownExport report={normalizeFreshValidationReport(report)} />
+        </div>
       )}
 
       {/* ─── "Should you build this?" Scorecard ─── */}
