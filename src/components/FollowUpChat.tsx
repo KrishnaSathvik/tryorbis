@@ -49,7 +49,7 @@ export function FollowUpChat({
   const lastPrefillIdRef = useRef<number | null>(null);
   const cancelFocusRef = useRef<(() => void) | null>(null);
   const pendingPrefillRef = useRef<string | null>(null);
-  const [, bumpPrefillApply] = useState(0);
+  const [prefillApplyVersion, setPrefillApplyVersion] = useState(0);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -64,12 +64,18 @@ export function FollowUpChat({
   }, [inputValue]);
 
   useEffect(() => {
+    return () => {
+      cancelFocusRef.current?.();
+    };
+  }, []);
+
+  useEffect(() => {
     if (!prefillRequest) return;
     if (lastPrefillIdRef.current === prefillRequest.requestId) return;
     lastPrefillIdRef.current = prefillRequest.requestId;
     pendingPrefillRef.current = prefillRequest.text;
     setIsOpen(true);
-    bumpPrefillApply((n) => n + 1);
+    setPrefillApplyVersion((version) => version + 1);
   }, [prefillRequest]);
 
   useEffect(() => {
@@ -105,7 +111,7 @@ export function FollowUpChat({
       );
       return text;
     });
-  }, [isOpen, bumpPrefillApply]);
+  }, [isOpen, prefillApplyVersion]);
 
   const sendMessage = async (overrideText?: string) => {
     const text = (overrideText || inputValue).trim();

@@ -736,7 +736,16 @@ export default function GenerateIdeas() {
       {result && (
         <FollowUpChat
           reportContext={`Generated ideas for ${result.persona} in ${result.category}:\n\nProblem Clusters:\n${result.problemClusters.map((c: any) => `- ${c.theme}: ${c.painSummary}`).join('\n')}\n\nIdeas:\n${result.ideaSuggestions.map((i: any) => `- ${i.name}: ${i.description} (Score: ${i.demandScore}/100, MVP: ${i.mvpScope})`).join('\n')}${result.wtpSignals ? `\n\nWillingness to Pay: ${result.wtpSignals.strength} — ${result.wtpSignals.summary}` : ''}${result.competitionDensity ? `\n\nCompetition: ${result.competitionDensity.level} — ${result.competitionDensity.summary}` : ''}${result.marketTiming ? `\n\nMarket Timing: ${result.marketTiming.phase} — ${result.marketTiming.summary}` : ''}${result.icp ? `\n\nICP: ${result.icp.summary}` : ''}${result.workaroundDetection ? `\n\nWorkarounds: ${result.workaroundDetection.severity} — ${result.workaroundDetection.summary}` : ''}${result.featureGapMap ? `\n\nFeature Gaps: ${result.featureGapMap.summary}\nTop Wedge: ${result.featureGapMap.topWedge}` : ''}${result.platformRisk ? `\n\nPlatform Risk: ${result.platformRisk.level} — ${result.platformRisk.summary}` : ''}${result.gtmStrategy ? `\n\nGTM Strategy: ${result.gtmStrategy.primaryChannel} — ${result.gtmStrategy.summary}` : ''}${result.pricingBenchmarks ? `\n\nPricing Benchmarks: ${result.pricingBenchmarks.summary}\nSuggested: ${result.pricingBenchmarks.suggestedRange?.low}-${result.pricingBenchmarks.suggestedRange?.high}` : ''}${result.defensibility ? `\n\nDefensibility: ${result.defensibility.overallStrength} — ${result.defensibility.summary}\nTime to moat: ${result.defensibility.timeToMoat}` : ''}`}
-          onRevalidate={(ideaText) => navigate(`/validate?idea=${encodeURIComponent(ideaText)}`)}
+          onRevalidate={(ideaText) =>
+            navigate("/validate", {
+              state: {
+                validatePrefill: {
+                  source: "generate_result",
+                  text: ideaText,
+                },
+              },
+            })
+          }
           prefillRequest={askPrefill}
         />
       )}

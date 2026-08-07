@@ -207,4 +207,42 @@ describe("NextStepCard", () => {
       action: "validate_idea",
     });
   });
+
+  it("gives each card a unique heading id tied to its section", () => {
+    render(
+      <>
+        <NextStepCard
+          rationale="One"
+          primaryAction={action({
+            id: "ask_orbis",
+            label: "Ask Orbis A",
+            onSelect: vi.fn(),
+          })}
+        />
+        <NextStepCard
+          rationale="Two"
+          primaryAction={action({
+            id: "view_history",
+            label: "View history B",
+            onSelect: vi.fn(),
+          })}
+        />
+      </>,
+    );
+    const headings = screen.getAllByRole("heading", {
+      name: /recommended next step/i,
+    });
+    expect(headings).toHaveLength(2);
+    const id0 = headings[0].id;
+    const id1 = headings[1].id;
+    expect(id0).toBeTruthy();
+    expect(id1).toBeTruthy();
+    expect(id0).not.toBe(id1);
+    expect(headings[0].closest("section")?.getAttribute("aria-labelledby")).toBe(
+      id0,
+    );
+    expect(headings[1].closest("section")?.getAttribute("aria-labelledby")).toBe(
+      id1,
+    );
+  });
 });

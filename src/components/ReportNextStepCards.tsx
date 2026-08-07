@@ -2,6 +2,7 @@ import { NextStepCard, type NextStepAction } from "@/components/NextStepCard";
 import {
   generateNextStepContent,
   validateNextStepContent,
+  type NextStepActionId,
   type ValidationVerdict,
 } from "@/lib/nextStepContent";
 
@@ -16,7 +17,7 @@ type SharedHandlers = {
 };
 
 function resolveHandler(
-  id: string,
+  id: NextStepActionId,
   handlers: SharedHandlers,
 ): (() => void | Promise<void>) | undefined {
   switch (id) {
@@ -32,25 +33,40 @@ function resolveHandler(
       return handlers.onViewSavedIdeas;
     case "back_to_all_reports":
       return handlers.onBackToAllReports;
-    default:
-      return undefined;
+    default: {
+      const _exhaustive: never = id;
+      return _exhaustive;
+    }
   }
 }
 
 function toActions(
   content: ReturnType<typeof generateNextStepContent>,
   handlers: SharedHandlers,
-): { primary: NextStepAction; secondary: NextStepAction[] } {
-  const mapOne = (item: { id: NextStepAction["id"]; label: string }): NextStepAction => ({
-    id: item.id,
-    label: item.label,
-    onSelect: resolveHandler(item.id, handlers) ?? (() => undefined),
-    loading: item.id === "save_idea" ? handlers.saveLoading : undefined,
-  });
-  return {
-    primary: mapOne(content.primary),
-    secondary: content.secondary.map(mapOne),
+): { primary: NextStepAction; secondary: NextStepAction[] } | null {
+  const primaryHandler = resolveHandler(content.primary.id, handlers);
+  if (!primaryHandler) return null;
+
+  const primary: NextStepAction = {
+    id: content.primary.id,
+    label: content.primary.label,
+    onSelect: primaryHandler,
+    loading: content.primary.id === "save_idea" ? handlers.saveLoading : undefined,
   };
+
+  const secondary: NextStepAction[] = [];
+  for (const item of content.secondary) {
+    const handler = resolveHandler(item.id, handlers);
+    if (!handler) continue;
+    secondary.push({
+      id: item.id,
+      label: item.label,
+      onSelect: handler,
+      loading: item.id === "save_idea" ? handlers.saveLoading : undefined,
+    });
+  }
+
+  return { primary, secondary };
 }
 
 export function GenerateNextStepCard({
@@ -72,12 +88,13 @@ export function GenerateNextStepCard({
     inHistory,
     ideaSaved,
   });
-  const { primary, secondary } = toActions(content, handlers);
+  const actions = toActions(content, handlers);
+  if (!actions) return null;
   return (
     <NextStepCard
       rationale={content.rationale}
-      primaryAction={primary}
-      secondaryActions={secondary}
+      primaryAction={actions.primary}
+      secondaryActions={actions.secondary}
     />
   );
 }
@@ -94,12 +111,13 @@ export function ValidateNextStepCard({
   handlers: SharedHandlers;
 }) {
   const content = validateNextStepContent({ verdict, inHistory, ideaSaved });
-  const { primary, secondary } = toActions(content, handlers);
+  const actions = toActions(content, handlers);
+  if (!actions) return null;
   return (
     <NextStepCard
       rationale={content.rationale}
-      primaryAction={primary}
-      secondaryActions={secondary}
+      primaryAction={actions.primary}
+      secondaryActions={actions.secondary}
     />
   );
 }

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { track } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
@@ -43,6 +43,7 @@ export function NextStepCard({
   secondaryActions = [],
   className,
 }: NextStepCardProps) {
+  const headingId = useId();
   const { primary, secondary } = dedupeActions(primaryAction, secondaryActions);
   const [pendingId, setPendingId] = useState<NextStepActionId | null>(null);
   const pendingLockRef = useRef(false);
@@ -67,7 +68,7 @@ export function NextStepCard({
 
   return (
     <section
-      aria-labelledby="next-step-card-heading"
+      aria-labelledby={headingId}
       className={cn(
         "rounded-2xl border border-border/60 bg-secondary/30 px-5 py-4 space-y-3",
         className,
@@ -75,7 +76,7 @@ export function NextStepCard({
     >
       <div className="space-y-1">
         <h2
-          id="next-step-card-heading"
+          id={headingId}
           className="text-sm font-semibold font-nunito tracking-tight"
         >
           {title}

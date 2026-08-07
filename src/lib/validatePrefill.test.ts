@@ -7,7 +7,7 @@ import {
 } from "./validatePrefill";
 
 describe("validatePrefill", () => {
-  it("parses landing, dashboard, and generate_result discriminated variants", () => {
+  it("parses landing, dashboard, generate_result, and history_follow_up variants", () => {
     expect(parseValidatePrefill({ source: "landing", text: "  idea  " })).toEqual({
       source: "landing",
       text: "idea",
@@ -36,6 +36,19 @@ describe("validatePrefill", () => {
       text: "Top idea: desc",
       sourceIdeaName: "Top idea",
     });
+    expect(
+      parseValidatePrefill({
+        source: "history_follow_up",
+        text: "  Follow up idea  ",
+        sourceItemId: "run-1",
+        sourceItemType: "generator",
+      }),
+    ).toEqual({
+      source: "history_follow_up",
+      text: "Follow up idea",
+      sourceItemId: "run-1",
+      sourceItemType: "generator",
+    });
   });
 
   it("rejects invalid combinations", () => {
@@ -47,6 +60,21 @@ describe("validatePrefill", () => {
     expect(
       parseValidatePrefill({ source: "generate_result", text: "   " }),
     ).toBeNull();
+    expect(
+      parseValidatePrefill({ source: "history_follow_up", text: "  " }),
+    ).toBeNull();
+    expect(
+      parseValidatePrefill({
+        source: "history_follow_up",
+        text: "ok",
+        sourceItemType: "nope",
+      }),
+    ).toEqual({
+      source: "history_follow_up",
+      text: "ok",
+      sourceItemId: undefined,
+      sourceItemType: undefined,
+    });
   });
 
   it("canonicalizes legacy dashboardValidatePrefill", () => {

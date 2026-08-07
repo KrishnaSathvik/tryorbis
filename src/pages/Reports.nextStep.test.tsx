@@ -39,7 +39,17 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
-vi.mock("@/components/FollowUpChat", () => ({ FollowUpChat: () => null }));
+vi.mock("@/components/FollowUpChat", () => ({
+  FollowUpChat: ({
+    onRevalidate,
+  }: {
+    onRevalidate: (ideaText: string) => void;
+  }) => (
+    <button type="button" onClick={() => onRevalidate("Secret follow-up idea")}>
+      Revalidate from chat
+    </button>
+  ),
+}));
 vi.mock("@/components/IntelligenceSections", () => ({
   WtpSection: () => null,
   CompetitionDensitySection: () => null,
@@ -162,5 +172,106 @@ describe("Reports NextStepCard", () => {
       expect(screen.getByTestId("search").textContent).not.toContain("item=");
     });
     expect(screen.queryByRole("button", { name: /save this idea/i })).not.toBeInTheDocument();
+  });
+
+  it("History FollowUpChat revalidate uses router state without idea text in the URL", async () => {
+    const user = userEvent.setup();
+    function ValidateProbe() {
+      const location = useLocation();
+      return (
+        <div>
+          <span data-testid="path">{location.pathname}</span>
+          <span data-testid="search">{location.search}</span>
+          <span data-testid="state">{JSON.stringify(location.state)}</span>
+        </div>
+      );
+    }
+
+    render(
+      <MemoryRouter initialEntries={["/history"]}>
+        <Routes>
+          <Route path="/history" element={<Reports />} />
+          <Route path="/validate" element={<ValidateProbe />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await user.click(
+      await screen.findByRole("button", { name: /generator: founders × saas/i }),
+    );
+    await user.click(screen.getByRole("button", { name: /revalidate from chat/i }));
+
+    expect(await screen.findByTestId("path")).toHaveTextContent("/validate");
+    expect(screen.getByTestId("search")).toHaveTextContent("");
+    const state = JSON.parse(screen.getByTestId("state").textContent || "{}");
+    expect(state.validatePrefill).toEqual({
+      source: "history_follow_up",
+      text: "Secret follow-up idea",
+      sourceItemId: "run-1",
+      sourceItemType: "generator",
+    });
+    expect(JSON.stringify(state)).not.toMatch(/Secret follow-up idea.*\?/);
+  });
+
+  it("History Validation FollowUpChat revalidate uses history_follow_up state", async () => {
+    const user = userEvent.setup();
+    function ValidateProbe() {
+      const location = useLocation();
+      return (
+        <div>
+          <span data-testid="search">{location.search}</span>
+          <span data-testid="state">{JSON.stringify(location.state)}</span>
+        </div>
+      );
+    }
+
+    render(
+      <MemoryRouter initialEntries={["/history"]}>
+        <Routes>
+          <Route path="/history" element={<Reports />} />
+          <Route path="/validate" element={<ValidateProbe />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await user.click(
+      await screen.findByRole("button", {
+        name: /validation: park trip planner/i,
+      }),
+    );
+    const revalidateButtons = screen.getAllByRole("button", {
+      name: /revalidate from chat/i,
+    });
+    await user.click(revalidateButtons[revalidateButtons.length - 1]);
+
+    expect(screen.getByTestId("search")).toHaveTextContent("");
+    const state = JSON.parse(screen.getByTestId("state").textContent || "{}");
+    expect(state.validatePrefill).toEqual({
+      source: "history_follow_up",
+      text: "Secret follow-up idea",
+      sourceItemId: "val-1",
+      sourceItemType: "validation",
+    });
+  });
+
+  it("passes runId/reportId into History saves as sourceId", async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter initialEntries={["/history"]}>
+        <Reports />
+      </MemoryRouter>,
+    );
+    await user.click(
+      await screen.findByRole("button", { name: /generator: founders × saas/i }),
+    );
+    await user.click(screen.getByRole("button", { name: /^save idea$/i }));
+    await waitFor(() => {
+      expect(addToBacklogDbMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          ideaName: "SQL Buddy",
+          sourceId: "run-1",
+        }),
+      );
+    });
   });
 });
