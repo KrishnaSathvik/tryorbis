@@ -37,6 +37,8 @@ import {
 } from "@/lib/savedIdeaMatch";
 import { pickTopIdea } from "@/lib/pickTopIdea";
 import { withHistoryInstance } from "@/lib/historyLandmarkLabel";
+import { ValidationMarkdownExport } from "@/components/ValidationMarkdownExport";
+import { normalizeHistoryValidationReport } from "@/lib/validationMarkdown";
 
 interface Conversation {
   id: string;
@@ -896,6 +898,12 @@ function ValidationReportDetails({
           }}
         />
       )}
+
+      <div className="flex justify-start">
+        <ValidationMarkdownExport
+          report={normalizeHistoryValidationReport(data)}
+        />
+      </div>
 
       {/* Pros / Cons */}
       {(pros.length > 0 || cons.length > 0) && (
