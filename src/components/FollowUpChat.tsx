@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useId } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -25,6 +25,8 @@ interface FollowUpChatProps {
   onRevalidate: (ideaText: string) => void;
   /** Optional Ask Orbis handoff: open, focus, prefill if composer empty. */
   prefillRequest?: FollowUpPrefillRequest | null;
+  /** Unique landmark name when multiple FollowUpChats can appear together. */
+  regionLabel?: string;
 }
 
 const SUGGESTIONS = [
@@ -38,11 +40,13 @@ export function FollowUpChat({
   reportContext,
   onRevalidate,
   prefillRequest = null,
+  regionLabel = "Follow-up chat with Orbis AI",
 }: FollowUpChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const inputId = useId();
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -192,7 +196,7 @@ export function FollowUpChat({
     <div
       ref={rootRef}
       role="region"
-      aria-label="Follow-up chat with Orbis AI"
+      aria-label={regionLabel}
       className="rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm overflow-hidden"
     >
       <div className="px-5 py-3.5 border-b border-border/40 flex items-center gap-3">
@@ -284,11 +288,11 @@ export function FollowUpChat({
 
       <div className="border-t border-border/40 p-3">
         <div className="flex items-end gap-2">
-          <label htmlFor="follow-up-chat-input" className="sr-only">
+          <label htmlFor={inputId} className="sr-only">
             Ask a follow-up question
           </label>
           <textarea
-            id="follow-up-chat-input"
+            id={inputId}
             ref={inputRef}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}

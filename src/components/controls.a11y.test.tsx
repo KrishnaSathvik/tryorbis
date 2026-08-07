@@ -58,6 +58,7 @@ describe("NextStepCard accessibility", () => {
   it("has no axe violations for a single card", async () => {
     const { container } = render(
       <NextStepCard
+        landmarkLabel="Recommended next step for generated idea Alpha"
         rationale="Validate the strongest idea before investing more time."
         primaryAction={{
           id: "validate_idea",
@@ -74,12 +75,11 @@ describe("NextStepCard accessibility", () => {
     expect(await axe(container)).toHaveNoViolations();
   });
 
-  it("preserves unique heading ids across multiple cards", () => {
-    // Exception: landmark-unique fires when multiple sections share the same
-    // visible title “Recommended next step”; aria-labelledby ids remain unique.
-    render(
+  it("passes axe landmark-unique with multiple cards and unique heading ids", async () => {
+    const { container } = render(
       <>
         <NextStepCard
+          landmarkLabel="Recommended next step for generated idea Alpha"
           rationale="Validate the strongest idea before investing more time."
           primaryAction={{
             id: "validate_idea",
@@ -88,6 +88,7 @@ describe("NextStepCard accessibility", () => {
           }}
         />
         <NextStepCard
+          landmarkLabel="Recommended next step for validation report Beta"
           rationale="The evidence is promising—save this idea and plan the first test."
           primaryAction={{
             id: "save_idea",
@@ -97,6 +98,8 @@ describe("NextStepCard accessibility", () => {
         />
       </>,
     );
+
+    expect(await axe(container)).toHaveNoViolations();
 
     const headings = screen.getAllByRole("heading", {
       name: /recommended next step/i,

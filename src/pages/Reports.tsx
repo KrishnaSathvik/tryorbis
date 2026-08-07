@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
@@ -58,12 +58,54 @@ export default function Reports() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"research" | "chats">("research");
+  const tabsId = useId();
+  const researchTabId = `${tabsId}-research-tab`;
+  const chatsTabId = `${tabsId}-chats-tab`;
+  const researchPanelId = `${tabsId}-research-panel`;
+  const chatsPanelId = `${tabsId}-chats-panel`;
   const [openItemKeys, setOpenItemKeys] = useState<Set<string>>(() => new Set());
   const [deepLinkMissing, setDeepLinkMissing] = useState(false);
   const deepLinkHandledRef = useRef<string | null>(null);
   const itemRefs = useRef<Record<string, HTMLElement | null>>({});
   const [backlogItems, setBacklogItems] = useState<BacklogMatchItem[]>([]);
   const [locallySavedNames, setLocallySavedNames] = useState<string[]>([]);
+
+  const activateHistoryTab = (nextTab: "research" | "chats") => {
+    setActiveTab(nextTab);
+    requestAnimationFrame(() => {
+      const id = nextTab === "research" ? researchTabId : chatsTabId;
+      document.getElementById(id)?.focus();
+    });
+  };
+
+  const onHistoryTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    const tabs: Array<"research" | "chats"> = ["research", "chats"];
+    const currentIndex = tabs.indexOf(activeTab);
+    let nextIndex = currentIndex;
+    switch (event.key) {
+      case "ArrowRight":
+      case "ArrowDown":
+        event.preventDefault();
+        nextIndex = (currentIndex + 1) % tabs.length;
+        break;
+      case "ArrowLeft":
+      case "ArrowUp":
+        event.preventDefault();
+        nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+        break;
+      case "Home":
+        event.preventDefault();
+        nextIndex = 0;
+        break;
+      case "End":
+        event.preventDefault();
+        nextIndex = tabs.length - 1;
+        break;
+      default:
+        return;
+    }
+    activateHistoryTab(tabs[nextIndex]);
+  };
 
   useEffect(() => {
     Promise.all([
@@ -253,12 +295,20 @@ export default function Reports() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 p-1 rounded-xl bg-secondary/60 w-fit" role="tablist" aria-label="History sections">
+      <div
+        className="flex gap-1 p-1 rounded-xl bg-secondary/60 w-fit"
+        role="tablist"
+        aria-label="History sections"
+      >
         <button
           type="button"
+          id={researchTabId}
           role="tab"
           aria-selected={activeTab === "research"}
+          aria-controls={researchPanelId}
+          tabIndex={activeTab === "research" ? 0 : -1}
           onClick={() => setActiveTab("research")}
+          onKeyDown={onHistoryTabKeyDown}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
             activeTab === "research"
               ? "bg-background text-foreground shadow-sm"
@@ -272,9 +322,13 @@ export default function Reports() {
         </button>
         <button
           type="button"
+          id={chatsTabId}
           role="tab"
           aria-selected={activeTab === "chats"}
+          aria-controls={chatsPanelId}
+          tabIndex={activeTab === "chats" ? 0 : -1}
           onClick={() => setActiveTab("chats")}
+          onKeyDown={onHistoryTabKeyDown}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
             activeTab === "chats"
               ? "bg-background text-foreground shadow-sm"
@@ -295,7 +349,11 @@ export default function Reports() {
 
       {/* Research tab */}
       {activeTab === "research" && (
-        <>
+        <div
+          id={researchPanelId}
+          role="tabpanel"
+          aria-labelledby={researchTabId}
+        >
           {deepLinkMissing && (
             <p className="text-sm text-muted-foreground" role="status">
               That research item wasn&apos;t found. Showing your full history.
@@ -414,12 +472,16 @@ export default function Reports() {
               })}
             </div>
           )}
-        </>
+        </div>
       )}
 
       {/* Chats tab */}
       {activeTab === "chats" && (
-        <>
+        <div
+          id={chatsPanelId}
+          role="tabpanel"
+          aria-labelledby={chatsTabId}
+        >
           {conversations.length === 0 ? (
             <Card className="rounded-2xl border-0 bg-secondary">
               <CardContent className="p-12 text-center space-y-3">
@@ -473,7 +535,7 @@ export default function Reports() {
               ))}
             </div>
           )}
-        </>
+        </div>
       )}
     </div>
   );
@@ -666,6 +728,7 @@ function GeneratorRunDetails({
       <IntelligenceLayers data={data} />
 
       <FollowUpChat
+        regionLabel={`Follow-up chat for generator report ${data.persona || "persona"} × ${data.category || "category"}`}
         reportContext={`Generated ideas for ${data.persona || "persona"} in ${data.category || "category"}:\n\nProblem Clusters:\n${problemClusters.map((c: any) => `- ${c.theme}: ${c.painSummary}`).join("\n")}\n\nIdeas:\n${ideaSuggestions.map((i: any) => `- ${i.name}: ${i.description} (Score: ${i.demandScore}/100)`).join("\n")}`}
         onRevalidate={(ideaText) =>
           navigate("/validate", {
@@ -766,6 +829,7 @@ function ValidationReportDetails({
           verdict={verdict}
           inHistory
           ideaSaved={ideaSaved}
+          landmarkLabel={`Recommended next step for validation report ${ideaName}`}
           handlers={{
             onSaveIdea: () =>
               onSaveIdea(
@@ -926,6 +990,7 @@ function ValidationReportDetails({
       </Button>
 
       <FollowUpChat
+        regionLabel={`Follow-up chat for validation report ${ideaName}`}
         reportContext={`Idea: "${data.idea_text || ideaName}"\nVerdict: ${data.verdict}\nDemand: ${scores.demand || 0}/100, Pain: ${scores.pain || 0}/100, Competition: ${scores.competition || 0}/100, Feasibility: ${scores.mvpFeasibility || 0}/100\nPros: ${pros.join(", ")}\nCons: ${cons.join(", ")}`}
         onRevalidate={(ideaText) =>
           navigate("/validate", {

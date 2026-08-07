@@ -75,12 +75,14 @@ export function GenerateNextStepCard({
   inHistory,
   ideaSaved,
   handlers,
+  landmarkLabel,
 }: {
   topIdeaName: string | null;
   ideaCount: number;
   inHistory: boolean;
   ideaSaved: boolean;
   handlers: SharedHandlers;
+  landmarkLabel?: string;
 }) {
   const content = generateNextStepContent({
     topIdeaName,
@@ -90,8 +92,20 @@ export function GenerateNextStepCard({
   });
   const actions = toActions(content, handlers);
   if (!actions) return null;
+
+  const resolvedLandmark =
+    landmarkLabel ??
+    (topIdeaName
+      ? inHistory
+        ? `Recommended next step for generator report ${topIdeaName}`
+        : `Recommended next step for generated idea ${topIdeaName}`
+      : inHistory
+        ? "Recommended next step for generator report"
+        : "Recommended next step for generated ideas");
+
   return (
     <NextStepCard
+      landmarkLabel={resolvedLandmark}
       rationale={content.rationale}
       primaryAction={actions.primary}
       secondaryActions={actions.secondary}
@@ -104,17 +118,27 @@ export function ValidateNextStepCard({
   inHistory,
   ideaSaved,
   handlers,
+  landmarkLabel,
 }: {
   verdict: ValidationVerdict;
   inHistory: boolean;
   ideaSaved: boolean;
   handlers: SharedHandlers;
+  landmarkLabel?: string;
 }) {
   const content = validateNextStepContent({ verdict, inHistory, ideaSaved });
   const actions = toActions(content, handlers);
   if (!actions) return null;
+
+  const resolvedLandmark =
+    landmarkLabel ??
+    (inHistory
+      ? "Recommended next step for validation report"
+      : "Recommended next step for validation result");
+
   return (
     <NextStepCard
+      landmarkLabel={resolvedLandmark}
       rationale={content.rationale}
       primaryAction={actions.primary}
       secondaryActions={actions.secondary}

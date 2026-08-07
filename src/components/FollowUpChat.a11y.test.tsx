@@ -75,4 +75,50 @@ describe("FollowUpChat accessibility", () => {
     await user.tab();
     expect(invokeMock).not.toHaveBeenCalled();
   });
+
+  it("gives each instance a unique textarea id and label association", async () => {
+    const { container } = render(
+      <>
+        <FollowUpChat
+          reportContext="ctx-a"
+          onRevalidate={vi.fn()}
+          regionLabel="Follow-up chat for generator report Alpha"
+          prefillRequest={{ requestId: 1, text: "Alpha question" }}
+        />
+        <FollowUpChat
+          reportContext="ctx-b"
+          onRevalidate={vi.fn()}
+          regionLabel="Follow-up chat for validation report Beta"
+          prefillRequest={{ requestId: 1, text: "Beta question" }}
+        />
+      </>,
+    );
+
+    const boxes = await screen.findAllByLabelText(/ask a follow-up question/i);
+    expect(boxes).toHaveLength(2);
+    const id0 = boxes[0].id;
+    const id1 = boxes[1].id;
+    expect(id0).toBeTruthy();
+    expect(id1).toBeTruthy();
+    expect(id0).not.toBe(id1);
+
+    const labels = container.querySelectorAll(
+      'label[for].sr-only, label.sr-only[for]',
+    );
+    const fors = Array.from(labels).map((label) => label.getAttribute("for"));
+    expect(fors).toEqual(expect.arrayContaining([id0, id1]));
+
+    expect(
+      screen.getByRole("region", {
+        name: /follow-up chat for generator report alpha/i,
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("region", {
+        name: /follow-up chat for validation report beta/i,
+      }),
+    ).toBeInTheDocument();
+
+    expect(await axe(container)).toHaveNoViolations();
+  });
 });
