@@ -254,8 +254,29 @@ describe("Reports NextStepCard", () => {
     });
   });
 
-  it("passes runId/reportId into History saves as sourceId", async () => {
+  it("passes idea-level sourceId for Generator History saves (not bare runId)", async () => {
     const user = userEvent.setup();
+    getMyGeneratorRunsMock.mockResolvedValue([
+      {
+        id: "run-1",
+        created_at: "2026-08-06T12:00:00.000Z",
+        persona: "Founders",
+        category: "SaaS",
+        idea_suggestions: [
+          {
+            id: "idea-sql",
+            name: "SQL Buddy",
+            description: "Helps write SQL",
+            demandScore: 80,
+            mvpScope: "mvp",
+            monetization: "sub",
+          },
+        ],
+        problem_clusters: [
+          { theme: "Pain", painSummary: "Hard SQL", complaintCount: 2 },
+        ],
+      },
+    ]);
     render(
       <MemoryRouter initialEntries={["/history"]}>
         <Reports />
@@ -269,7 +290,168 @@ describe("Reports NextStepCard", () => {
       expect(addToBacklogDbMock).toHaveBeenCalledWith(
         expect.objectContaining({
           ideaName: "SQL Buddy",
-          sourceId: "run-1",
+          sourceId: "run-1:idea:idea-sql",
+        }),
+      );
+    });
+  });
+
+  it("keeps top idea unsaved when a sibling idea from the same run is saved", async () => {
+    const user = userEvent.setup();
+    getMyGeneratorRunsMock.mockResolvedValue([
+      {
+        id: "run-1",
+        created_at: "2026-08-06T12:00:00.000Z",
+        persona: "Founders",
+        category: "SaaS",
+        idea_suggestions: [
+          {
+            id: "idea-a",
+            name: "Alpha",
+            description: "Top idea",
+            demandScore: 90,
+            mvpScope: "mvp",
+            monetization: "sub",
+          },
+          {
+            id: "idea-b",
+            name: "Beta",
+            description: "Sibling idea",
+            demandScore: 70,
+            mvpScope: "mvp",
+            monetization: "sub",
+          },
+        ],
+        problem_clusters: [
+          { theme: "Pain", painSummary: "Hard SQL", complaintCount: 2 },
+        ],
+      },
+    ]);
+    getMyBacklogMock.mockResolvedValue([
+      {
+        idea_name: "Beta",
+        source_id: "run-1:idea:idea-b",
+      },
+    ]);
+    render(
+      <MemoryRouter initialEntries={["/history"]}>
+        <Reports />
+      </MemoryRouter>,
+    );
+    await user.click(
+      await screen.findByRole("button", { name: /generator: founders × saas/i }),
+    );
+    expect(
+      await screen.findByRole("button", { name: /^save idea$/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /^view saved ideas$/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows View saved ideas when backlog has the top idea's generated source id", async () => {
+    const user = userEvent.setup();
+    getMyGeneratorRunsMock.mockResolvedValue([
+      {
+        id: "run-1",
+        created_at: "2026-08-06T12:00:00.000Z",
+        persona: "Founders",
+        category: "SaaS",
+        idea_suggestions: [
+          {
+            id: "idea-a",
+            name: "Alpha",
+            description: "Top idea",
+            demandScore: 90,
+            mvpScope: "mvp",
+            monetization: "sub",
+          },
+        ],
+        problem_clusters: [
+          { theme: "Pain", painSummary: "Hard SQL", complaintCount: 2 },
+        ],
+      },
+    ]);
+    getMyBacklogMock.mockResolvedValue([
+      {
+        idea_name: "Renamed Later",
+        source_id: "run-1:idea:idea-a",
+      },
+    ]);
+    render(
+      <MemoryRouter initialEntries={["/history"]}>
+        <Reports />
+      </MemoryRouter>,
+    );
+    await user.click(
+      await screen.findByRole("button", { name: /generator: founders × saas/i }),
+    );
+    expect(
+      await screen.findByRole("button", { name: /^view saved ideas$/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /^save idea$/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("uses deterministic name fallback sourceId when generator idea has no id", async () => {
+    const user = userEvent.setup();
+    getMyGeneratorRunsMock.mockResolvedValue([
+      {
+        id: "run-1",
+        created_at: "2026-08-06T12:00:00.000Z",
+        persona: "Founders",
+        category: "SaaS",
+        idea_suggestions: [
+          {
+            name: "  SQL Buddy  ",
+            description: "Helps write SQL",
+            demandScore: 80,
+            mvpScope: "mvp",
+            monetization: "sub",
+          },
+        ],
+        problem_clusters: [
+          { theme: "Pain", painSummary: "Hard SQL", complaintCount: 2 },
+        ],
+      },
+    ]);
+    render(
+      <MemoryRouter initialEntries={["/history"]}>
+        <Reports />
+      </MemoryRouter>,
+    );
+    await user.click(
+      await screen.findByRole("button", { name: /generator: founders × saas/i }),
+    );
+    await user.click(screen.getByRole("button", { name: /^save idea$/i }));
+    await waitFor(() => {
+      expect(addToBacklogDbMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          ideaName: "  SQL Buddy  ",
+          sourceId: "run-1:name:sql buddy",
+        }),
+      );
+    });
+  });
+
+  it("passes reportId into Validation History saves as sourceId", async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter initialEntries={["/history"]}>
+        <Reports />
+      </MemoryRouter>,
+    );
+    await user.click(
+      await screen.findByRole("button", {
+        name: /validation: park trip planner/i,
+      }),
+    );
+    await user.click(screen.getByRole("button", { name: /^save this idea$/i }));
+    await waitFor(() => {
+      expect(addToBacklogDbMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sourceId: "val-1",
         }),
       );
     });

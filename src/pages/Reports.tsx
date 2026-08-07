@@ -30,7 +30,11 @@ import {
   askOrbisPrefillForValidate,
   type ValidationVerdict,
 } from "@/lib/nextStepContent";
-import { isIdeaSavedInBacklog, type BacklogMatchItem } from "@/lib/savedIdeaMatch";
+import {
+  generatorIdeaSourceId,
+  isIdeaSavedInBacklog,
+  type BacklogMatchItem,
+} from "@/lib/savedIdeaMatch";
 import { pickTopIdea } from "@/lib/pickTopIdea";
 
 interface Conversation {
@@ -467,6 +471,7 @@ function GeneratorRunDetails({
   const ideaSuggestions = (
     Array.isArray(data.idea_suggestions) ? data.idea_suggestions : []
   ) as Array<{
+    id?: string;
     name: string;
     description?: string;
     demandScore?: number;
@@ -474,11 +479,14 @@ function GeneratorRunDetails({
     monetization?: string;
   }>;
   const topIdea = pickTopIdea(ideaSuggestions);
+  const topIdeaSourceId = topIdea
+    ? generatorIdeaSourceId(runId, topIdea)
+    : undefined;
   const ideaSaved = topIdea
     ? locallySavedNames.includes(topIdea.name) ||
       isIdeaSavedInBacklog(backlogItems, {
         ideaName: topIdea.name,
-        sourceId: runId,
+        sourceId: topIdeaSourceId,
       })
     : false;
   const [askPrefill, setAskPrefill] = useState<FollowUpPrefillRequest | null>(null);
@@ -530,7 +538,7 @@ function GeneratorRunDetails({
                   description: topIdea.description,
                   mvpScope: topIdea.mvpScope,
                   monetization: topIdea.monetization,
-                  sourceId: runId,
+                  sourceId: generatorIdeaSourceId(runId, topIdea),
                 })
             : undefined,
           onAskOrbis: requestAsk,
@@ -599,7 +607,7 @@ function GeneratorRunDetails({
                 <CardContent className="p-4 space-y-2">
                   <div className="flex items-start justify-between gap-2">
                     <p className="text-sm font-semibold">{idea.name}</p>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={(e) => { e.stopPropagation(); void onSaveIdea(idea.name, "Generated", idea.demandScore, undefined, { description: idea.description, mvpScope: idea.mvpScope, monetization: idea.monetization, sourceId: runId }); }}>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={(e) => { e.stopPropagation(); void onSaveIdea(idea.name, "Generated", idea.demandScore, undefined, { description: idea.description, mvpScope: idea.mvpScope, monetization: idea.monetization, sourceId: generatorIdeaSourceId(runId, idea) }); }}>
                       <Bookmark className="h-3.5 w-3.5" />
                     </Button>
                   </div>

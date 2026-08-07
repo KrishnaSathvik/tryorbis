@@ -4,6 +4,23 @@ export function normalizeIdeaName(value: string): string {
   return value.trim().toLowerCase().replace(/\s+/g, " ");
 }
 
+/**
+ * Idea-level source reference for Generator History backlog rows.
+ * A generator run contains multiple ideas, so bare runId is too broad.
+ */
+export function generatorIdeaSourceId(
+  runId: string,
+  idea: { id?: string; name: string },
+): string {
+  const ideaId = typeof idea.id === "string" ? idea.id.trim() : "";
+
+  if (ideaId) {
+    return `${runId}:idea:${ideaId}`;
+  }
+
+  return `${runId}:name:${normalizeIdeaName(idea.name)}`;
+}
+
 function normalizeSourceId(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
