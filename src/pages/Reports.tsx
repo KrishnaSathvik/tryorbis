@@ -371,7 +371,8 @@ export default function Reports() {
             </Card>
           ) : (
             <div className="space-y-3">
-              {allItems.map((item) => {
+              {allItems.map((item, index) => {
+                const historyOrdinal = index + 1;
                 const kind = item.type === "run" ? "generator" : "validation";
                 const key = `${kind}:${item.id}`;
                 const isOpen = openItemKeys.has(key);
@@ -448,6 +449,7 @@ export default function Reports() {
                               data={item.data}
                               runId={item.id}
                               occurredAt={item.date}
+                              historyOrdinal={historyOrdinal}
                               onSaveIdea={handleSaveIdea}
                               navigate={navigate}
                               backlogItems={backlogItems}
@@ -460,6 +462,7 @@ export default function Reports() {
                               data={item.data}
                               reportId={item.id}
                               occurredAt={item.date}
+                              historyOrdinal={historyOrdinal}
                               onSaveIdea={handleSaveIdea}
                               navigate={navigate}
                               backlogItems={backlogItems}
@@ -549,6 +552,7 @@ function GeneratorRunDetails({
   data,
   runId,
   occurredAt,
+  historyOrdinal,
   onSaveIdea,
   navigate,
   backlogItems,
@@ -558,6 +562,7 @@ function GeneratorRunDetails({
   data: any;
   runId: string;
   occurredAt: string;
+  historyOrdinal: number;
   onSaveIdea: (name: string, source: string, score?: number, overallScore?: number, extra?: { description?: string; mvpScope?: string; monetization?: string; sourceId?: string }) => void | Promise<void>;
   navigate: (path: string, options?: { state?: unknown }) => void;
   backlogItems: BacklogMatchItem[];
@@ -594,10 +599,12 @@ function GeneratorRunDetails({
   const nextStepLandmark = withHistoryInstance(
     `Recommended next step for generator report ${reportTitle}`,
     occurredAt,
+    historyOrdinal,
   );
   const followUpRegionLabel = withHistoryInstance(
     `Follow-up chat for generator report ${data.persona || "persona"} × ${data.category || "category"}`,
     occurredAt,
+    historyOrdinal,
   );
 
   const requestAsk = () => {
@@ -770,6 +777,7 @@ function ValidationReportDetails({
   data,
   reportId,
   occurredAt,
+  historyOrdinal,
   onSaveIdea,
   navigate,
   backlogItems,
@@ -779,6 +787,7 @@ function ValidationReportDetails({
   data: any;
   reportId: string;
   occurredAt: string;
+  historyOrdinal: number;
   onSaveIdea: (name: string, source: string, score?: number, overallScore?: number, extra?: { description?: string; mvpScope?: string; monetization?: string; sourceId?: string }) => void | Promise<void>;
   navigate: (path: string, options?: { state?: unknown }) => void;
   backlogItems: BacklogMatchItem[];
@@ -806,10 +815,12 @@ function ValidationReportDetails({
   const nextStepLandmark = withHistoryInstance(
     `Recommended next step for validation report ${ideaName}`,
     occurredAt,
+    historyOrdinal,
   );
   const followUpRegionLabel = withHistoryInstance(
     `Follow-up chat for validation report ${ideaName}`,
     occurredAt,
+    historyOrdinal,
   );
 
   return (
@@ -892,7 +903,7 @@ function ValidationReportDetails({
           {pros.length > 0 && (
             <Card className="rounded-xl border-border/50">
               <CardContent className="p-4 space-y-2">
-                <div className="flex items-center gap-2"><ThumbsUp className="h-3.5 w-3.5 text-green-600" /><h4 className="font-semibold text-xs">Pros</h4></div>
+                <div className="flex items-center gap-2"><ThumbsUp className="h-3.5 w-3.5 text-green-600" /><h3 className="font-semibold text-xs">Pros</h3></div>
                 <ul className="space-y-1">{pros.map((p: string, i: number) => <li key={i} className="text-xs text-muted-foreground">• {p}</li>)}</ul>
               </CardContent>
             </Card>
@@ -900,7 +911,7 @@ function ValidationReportDetails({
           {cons.length > 0 && (
             <Card className="rounded-xl border-border/50">
               <CardContent className="p-4 space-y-2">
-                <div className="flex items-center gap-2"><ThumbsDown className="h-3.5 w-3.5 text-red-600" /><h4 className="font-semibold text-xs">Cons</h4></div>
+                <div className="flex items-center gap-2"><ThumbsDown className="h-3.5 w-3.5 text-red-600" /><h3 className="font-semibold text-xs">Cons</h3></div>
                 <ul className="space-y-1">{cons.map((c: string, i: number) => <li key={i} className="text-xs text-muted-foreground">• {c}</li>)}</ul>
               </CardContent>
             </Card>
@@ -913,7 +924,7 @@ function ValidationReportDetails({
         {gapOpportunities.length > 0 && (
           <Card className="rounded-xl border-border/50">
             <CardContent className="p-4 space-y-2">
-              <div className="flex items-center gap-2"><Target className="h-3.5 w-3.5 text-primary" /><h4 className="font-semibold text-xs">Gap Opportunities</h4></div>
+              <div className="flex items-center gap-2"><Target className="h-3.5 w-3.5 text-primary" /><h3 className="font-semibold text-xs">Gap Opportunities</h3></div>
               <ul className="space-y-1">{gapOpportunities.map((g: string, i: number) => <li key={i} className="text-xs text-muted-foreground">• {g}</li>)}</ul>
             </CardContent>
           </Card>
@@ -921,7 +932,7 @@ function ValidationReportDetails({
         {data.kill_test && (
           <Card className="rounded-xl border-border/50">
             <CardContent className="p-4 space-y-2">
-              <div className="flex items-center gap-2"><AlertTriangle className="h-3.5 w-3.5 text-yellow-600" /><h4 className="font-semibold text-xs">Kill Test</h4></div>
+              <div className="flex items-center gap-2"><AlertTriangle className="h-3.5 w-3.5 text-yellow-600" /><h3 className="font-semibold text-xs">Kill Test</h3></div>
               <p className="text-xs text-muted-foreground">{data.kill_test}</p>
             </CardContent>
           </Card>
@@ -932,7 +943,7 @@ function ValidationReportDetails({
       {data.mvp_wedge && (
         <Card className="rounded-xl bg-secondary/60 border-0">
           <CardContent className="p-4 space-y-1">
-            <h4 className="font-semibold text-xs">Suggested MVP Wedge</h4>
+            <h3 className="font-semibold text-xs">Suggested MVP Wedge</h3>
             <p className="text-xs text-muted-foreground leading-relaxed">{data.mvp_wedge}</p>
           </CardContent>
         </Card>

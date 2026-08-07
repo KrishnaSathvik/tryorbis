@@ -56,10 +56,11 @@ import Reports from "./Reports";
 
 Element.prototype.scrollIntoView = vi.fn();
 
-const VAL_A = "2026-08-06T16:00:00.000Z";
-const VAL_B = "2026-08-06T19:00:00.000Z";
-const RUN_A = "2026-08-05T14:00:00.000Z";
-const RUN_B = "2026-08-05T18:30:00.000Z";
+/** Same calendar minute; seconds differ so sort order stays stable (newest first). */
+const VAL_NEWER = "2026-08-06T16:00:45.000Z";
+const VAL_OLDER = "2026-08-06T16:00:00.000Z";
+const RUN_NEWER = "2026-08-05T14:00:45.000Z";
+const RUN_OLDER = "2026-08-05T14:00:00.000Z";
 
 describe("Reports History landmark uniqueness", () => {
   beforeEach(() => {
@@ -72,13 +73,13 @@ describe("Reports History landmark uniqueness", () => {
     cleanup();
   });
 
-  it("keeps unique landmarks when two same-name validation reports are open", async () => {
+  it("keeps unique landmarks when two same-name validation reports share a minute", async () => {
     const user = userEvent.setup();
     getMyGeneratorRunsMock.mockResolvedValue([]);
     getMyValidationReportsMock.mockResolvedValue([
       {
-        id: "val-a",
-        created_at: VAL_A,
+        id: "val-older",
+        created_at: VAL_OLDER,
         idea_text: "Park Trip Planner",
         verdict: "Build",
         scores: { demand: 70, pain: 60, competition: 40, mvpFeasibility: 50 },
@@ -89,8 +90,8 @@ describe("Reports History landmark uniqueness", () => {
         evidence_links: [],
       },
       {
-        id: "val-b",
-        created_at: VAL_B,
+        id: "val-newer",
+        created_at: VAL_NEWER,
         idea_text: "Park Trip Planner",
         verdict: "Build",
         scores: { demand: 71, pain: 61, competition: 41, mvpFeasibility: 51 },
@@ -114,21 +115,27 @@ describe("Reports History landmark uniqueness", () => {
     expect(triggers).toHaveLength(2);
     await user.click(triggers[0]);
     await user.click(triggers[1]);
-    const expectedA = withHistoryInstance(
+
+    // History list is newest-first: newer → history item 1, older → item 2.
+    const expectedNewer = withHistoryInstance(
       "Recommended next step for validation report Park Trip Planner",
-      VAL_A,
+      VAL_NEWER,
+      1,
     );
-    const expectedB = withHistoryInstance(
+    const expectedOlder = withHistoryInstance(
       "Recommended next step for validation report Park Trip Planner",
-      VAL_B,
+      VAL_OLDER,
+      2,
     );
-    expect(expectedA).not.toBe(expectedB);
+    expect(expectedNewer).not.toBe(expectedOlder);
+    expect(expectedNewer).toContain("history item 1");
+    expect(expectedOlder).toContain("history item 2");
 
     expect(
-      screen.getByRole("region", { name: expectedA }),
+      screen.getByRole("region", { name: expectedNewer }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("region", { name: expectedB }),
+      screen.getByRole("region", { name: expectedOlder }),
     ).toBeInTheDocument();
 
     const followUpButtons = screen.getAllByRole("button", {
@@ -142,7 +149,8 @@ describe("Reports History landmark uniqueness", () => {
       screen.getByRole("region", {
         name: withHistoryInstance(
           "Follow-up chat for validation report Park Trip Planner",
-          VAL_A,
+          VAL_NEWER,
+          1,
         ),
       }),
     ).toBeInTheDocument();
@@ -150,33 +158,23 @@ describe("Reports History landmark uniqueness", () => {
       screen.getByRole("region", {
         name: withHistoryInstance(
           "Follow-up chat for validation report Park Trip Planner",
-          VAL_B,
+          VAL_OLDER,
+          2,
         ),
       }),
     ).toBeInTheDocument();
 
     const panel = screen.getByRole("tabpanel");
-    // Combined History content: prove landmark-unique with same idea names.
-    // Disable only pre-existing Validation History chrome issues unrelated to
-    // this labeling fix (h4 without intervening levels; Lucide Info as
-    // PopoverTrigger receiving aria-expanded from Radix).
-    expect(
-      await axe(panel, {
-        rules: {
-          "heading-order": { enabled: false },
-          "aria-allowed-attr": { enabled: false },
-        },
-      }),
-    ).toHaveNoViolations();
+    expect(await axe(panel)).toHaveNoViolations();
   });
 
-  it("keeps unique landmarks when two matching generator runs are open", async () => {
+  it("keeps unique landmarks when two matching generator runs share a minute", async () => {
     const user = userEvent.setup();
     getMyValidationReportsMock.mockResolvedValue([]);
     getMyGeneratorRunsMock.mockResolvedValue([
       {
-        id: "run-a",
-        created_at: RUN_A,
+        id: "run-older",
+        created_at: RUN_OLDER,
         persona: "Founders",
         category: "SaaS",
         idea_suggestions: [
@@ -190,8 +188,8 @@ describe("Reports History landmark uniqueness", () => {
         problem_clusters: [],
       },
       {
-        id: "run-b",
-        created_at: RUN_B,
+        id: "run-newer",
+        created_at: RUN_NEWER,
         persona: "Founders",
         category: "SaaS",
         idea_suggestions: [
@@ -219,17 +217,19 @@ describe("Reports History landmark uniqueness", () => {
     await user.click(triggers[0]);
     await user.click(triggers[1]);
 
-    const expectedA = withHistoryInstance(
+    const expectedNewer = withHistoryInstance(
       "Recommended next step for generator report SQL Buddy",
-      RUN_A,
+      RUN_NEWER,
+      1,
     );
-    const expectedB = withHistoryInstance(
+    const expectedOlder = withHistoryInstance(
       "Recommended next step for generator report SQL Buddy",
-      RUN_B,
+      RUN_OLDER,
+      2,
     );
-    expect(expectedA).not.toBe(expectedB);
-    expect(screen.getByRole("region", { name: expectedA })).toBeInTheDocument();
-    expect(screen.getByRole("region", { name: expectedB })).toBeInTheDocument();
+    expect(expectedNewer).not.toBe(expectedOlder);
+    expect(screen.getByRole("region", { name: expectedNewer })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: expectedOlder })).toBeInTheDocument();
 
     const followUpButtons = screen.getAllByRole("button", {
       name: /ask a follow-up question/i,
@@ -241,7 +241,8 @@ describe("Reports History landmark uniqueness", () => {
       screen.getByRole("region", {
         name: withHistoryInstance(
           "Follow-up chat for generator report Founders × SaaS",
-          RUN_A,
+          RUN_NEWER,
+          1,
         ),
       }),
     ).toBeInTheDocument();
@@ -249,7 +250,8 @@ describe("Reports History landmark uniqueness", () => {
       screen.getByRole("region", {
         name: withHistoryInstance(
           "Follow-up chat for generator report Founders × SaaS",
-          RUN_B,
+          RUN_OLDER,
+          2,
         ),
       }),
     ).toBeInTheDocument();

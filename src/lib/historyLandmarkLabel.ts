@@ -15,7 +15,14 @@ export function formatHistoryInstanceStamp(dateIso: string): string {
   });
 }
 
-/** Append an instance stamp so landmark names stay unique across History rows. */
-export function withHistoryInstance(baseLabel: string, dateIso: string): string {
-  return `${baseLabel} — ${formatHistoryInstanceStamp(dateIso)}`;
+/**
+ * Append date/time + History row ordinal so landmark names stay unique even
+ * when two reports share the same idea name and the same minute.
+ */
+export function withHistoryInstance(
+  baseLabel: string,
+  dateIso: string,
+  historyOrdinal: number,
+): string {
+  return `${baseLabel} — ${formatHistoryInstanceStamp(dateIso)} — history item ${historyOrdinal}`;
 }
