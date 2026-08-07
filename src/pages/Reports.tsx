@@ -36,6 +36,7 @@ import {
   type BacklogMatchItem,
 } from "@/lib/savedIdeaMatch";
 import { pickTopIdea } from "@/lib/pickTopIdea";
+import { withHistoryInstance } from "@/lib/historyLandmarkLabel";
 
 interface Conversation {
   id: string;
@@ -446,6 +447,7 @@ export default function Reports() {
                             <GeneratorRunDetails
                               data={item.data}
                               runId={item.id}
+                              occurredAt={item.date}
                               onSaveIdea={handleSaveIdea}
                               navigate={navigate}
                               backlogItems={backlogItems}
@@ -457,6 +459,7 @@ export default function Reports() {
                             <ValidationReportDetails
                               data={item.data}
                               reportId={item.id}
+                              occurredAt={item.date}
                               onSaveIdea={handleSaveIdea}
                               navigate={navigate}
                               backlogItems={backlogItems}
@@ -545,6 +548,7 @@ export default function Reports() {
 function GeneratorRunDetails({
   data,
   runId,
+  occurredAt,
   onSaveIdea,
   navigate,
   backlogItems,
@@ -553,6 +557,7 @@ function GeneratorRunDetails({
 }: {
   data: any;
   runId: string;
+  occurredAt: string;
   onSaveIdea: (name: string, source: string, score?: number, overallScore?: number, extra?: { description?: string; mvpScope?: string; monetization?: string; sourceId?: string }) => void | Promise<void>;
   navigate: (path: string, options?: { state?: unknown }) => void;
   backlogItems: BacklogMatchItem[];
@@ -583,6 +588,17 @@ function GeneratorRunDetails({
     : false;
   const [askPrefill, setAskPrefill] = useState<FollowUpPrefillRequest | null>(null);
   const askIdRef = useRef(0);
+  const reportTitle = topIdea?.name
+    ? topIdea.name
+    : `${data.persona || "persona"} × ${data.category || "category"}`;
+  const nextStepLandmark = withHistoryInstance(
+    `Recommended next step for generator report ${reportTitle}`,
+    occurredAt,
+  );
+  const followUpRegionLabel = withHistoryInstance(
+    `Follow-up chat for generator report ${data.persona || "persona"} × ${data.category || "category"}`,
+    occurredAt,
+  );
 
   const requestAsk = () => {
     askIdRef.current += 1;
@@ -610,6 +626,7 @@ function GeneratorRunDetails({
         ideaCount={ideaSuggestions.length}
         inHistory
         ideaSaved={ideaSaved}
+        landmarkLabel={nextStepLandmark}
         handlers={{
           onValidateIdea: topIdea
             ? () =>
@@ -728,7 +745,7 @@ function GeneratorRunDetails({
       <IntelligenceLayers data={data} />
 
       <FollowUpChat
-        regionLabel={`Follow-up chat for generator report ${data.persona || "persona"} × ${data.category || "category"}`}
+        regionLabel={followUpRegionLabel}
         reportContext={`Generated ideas for ${data.persona || "persona"} in ${data.category || "category"}:\n\nProblem Clusters:\n${problemClusters.map((c: any) => `- ${c.theme}: ${c.painSummary}`).join("\n")}\n\nIdeas:\n${ideaSuggestions.map((i: any) => `- ${i.name}: ${i.description} (Score: ${i.demandScore}/100)`).join("\n")}`}
         onRevalidate={(ideaText) =>
           navigate("/validate", {
@@ -752,6 +769,7 @@ function GeneratorRunDetails({
 function ValidationReportDetails({
   data,
   reportId,
+  occurredAt,
   onSaveIdea,
   navigate,
   backlogItems,
@@ -760,6 +778,7 @@ function ValidationReportDetails({
 }: {
   data: any;
   reportId: string;
+  occurredAt: string;
   onSaveIdea: (name: string, source: string, score?: number, overallScore?: number, extra?: { description?: string; mvpScope?: string; monetization?: string; sourceId?: string }) => void | Promise<void>;
   navigate: (path: string, options?: { state?: unknown }) => void;
   backlogItems: BacklogMatchItem[];
@@ -784,6 +803,14 @@ function ValidationReportDetails({
   const askIdRef = useRef(0);
   const validVerdict =
     verdict === "Build" || verdict === "Pivot" || verdict === "Skip";
+  const nextStepLandmark = withHistoryInstance(
+    `Recommended next step for validation report ${ideaName}`,
+    occurredAt,
+  );
+  const followUpRegionLabel = withHistoryInstance(
+    `Follow-up chat for validation report ${ideaName}`,
+    occurredAt,
+  );
 
   return (
     <>
@@ -829,7 +856,7 @@ function ValidationReportDetails({
           verdict={verdict}
           inHistory
           ideaSaved={ideaSaved}
-          landmarkLabel={`Recommended next step for validation report ${ideaName}`}
+          landmarkLabel={nextStepLandmark}
           handlers={{
             onSaveIdea: () =>
               onSaveIdea(
@@ -990,7 +1017,7 @@ function ValidationReportDetails({
       </Button>
 
       <FollowUpChat
-        regionLabel={`Follow-up chat for validation report ${ideaName}`}
+        regionLabel={followUpRegionLabel}
         reportContext={`Idea: "${data.idea_text || ideaName}"\nVerdict: ${data.verdict}\nDemand: ${scores.demand || 0}/100, Pain: ${scores.pain || 0}/100, Competition: ${scores.competition || 0}/100, Feasibility: ${scores.mvpFeasibility || 0}/100\nPros: ${pros.join(", ")}\nCons: ${cons.join(", ")}`}
         onRevalidate={(ideaText) =>
           navigate("/validate", {
