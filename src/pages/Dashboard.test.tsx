@@ -281,4 +281,45 @@ describe("Dashboard resume", () => {
     await user.click(screen.getByRole("button", { name: /validate this idea: sql prompt buddy/i }));
     expect(trackMock).not.toHaveBeenCalled();
   });
+
+  it("forwards focusSection my-ideas to /ideas once and preserves unrelated state", async () => {
+    getDashboardOverviewMock.mockResolvedValue(mixedOverview);
+    render(
+      <MemoryRouter
+        initialEntries={[
+          {
+            pathname: "/dashboard",
+            state: { focusSection: "my-ideas", keepMe: true },
+          },
+        ]}
+      >
+        <Dashboard />
+      </MemoryRouter>,
+    );
+    await waitFor(() =>
+      expect(navigateMock).toHaveBeenCalledWith("/ideas", {
+        replace: true,
+        state: { keepMe: true, focusSection: "my-ideas" },
+      }),
+    );
+  });
+
+  it("ignores malformed focusSection without navigating to ideas", async () => {
+    getDashboardOverviewMock.mockResolvedValue(mixedOverview);
+    navigateMock.mockClear();
+    render(
+      <MemoryRouter
+        initialEntries={[
+          { pathname: "/dashboard", state: { focusSection: "nope", keepMe: 1 } },
+        ]}
+      >
+        <Dashboard />
+      </MemoryRouter>,
+    );
+    await screen.findByText(/pick up where you left off/i);
+    expect(navigateMock).not.toHaveBeenCalledWith(
+      "/ideas",
+      expect.anything(),
+    );
+  });
 });

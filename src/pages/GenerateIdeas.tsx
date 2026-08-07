@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { ResearchTrace } from "@/components/ResearchTrace";
 import { ScoreBar } from "@/components/ScoreBar";
 import { AIHandoff } from "@/components/AIHandoff";
-import { FollowUpChat } from "@/components/FollowUpChat";
+import { FollowUpChat, type FollowUpPrefillRequest } from "@/components/FollowUpChat";
+import { GenerateNextStepCard } from "@/components/ReportNextStepCards";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { WtpSection, CompetitionDensitySection, MarketTimingSection, IcpSection, WorkaroundSection, FeatureGapSection, PlatformRiskSection, GtmStrategySection, PricingBenchmarkSection, DefensibilitySection } from "@/components/IntelligenceSections";
 import { useCredits } from "@/hooks/useCredits";
@@ -34,7 +35,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { ChevronDown, Bookmark, ClipboardCheck, Copy, Send, User, FolderOpen, Monitor, Globe, Rocket, Search, Loader2 } from "lucide-react";
 import { ResearchModeToggle } from "@/components/ResearchModeToggle";
 import { supabase } from "@/integrations/supabase/client";
-import { saveGeneratorRunDb, addToBacklogDb } from "@/lib/db";
+import { saveGeneratorRunDb, addToBacklogDb, getMyBacklog } from "@/lib/db";
 import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Info } from "lucide-react";
@@ -45,6 +46,10 @@ import { Attachment, validateFile, getAttachmentType, imageToBase64, readTextFil
 import { useDropZone } from "@/hooks/useDropZone";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
 import { VoiceButton } from "@/components/VoiceButton";
+import { buildValidatePrefillText } from "@/lib/validatePrefill";
+import { askOrbisPrefillForGenerate } from "@/lib/nextStepContent";
+import { isIdeaSavedInBacklog, type BacklogMatchItem } from "@/lib/savedIdeaMatch";
+import { pickTopIdea } from "@/lib/pickTopIdea";
 
 const researchSteps = [
   "Mining complaints from Reddit, forums & reviews...",
@@ -94,6 +99,25 @@ export default function GenerateIdeas() {
   const [generatingParams, setGeneratingParams] = useState<any>(null);
   const [researchMode, setResearchMode] = useState<'regular' | 'deep'>('regular');
   const [deepStage, setDeepStage] = useState<'problems' | 'ideas' | 'intelligence' | null>(null);
+  const [backlogItems, setBacklogItems] = useState<BacklogMatchItem[]>([]);
+  const [locallySavedNames, setLocallySavedNames] = useState<string[]>([]);
+  const [askPrefill, setAskPrefill] = useState<FollowUpPrefillRequest | null>(null);
+  const askPrefillIdRef = useRef(0);
+
+  useEffect(() => {
+    if (phase !== "results") return;
+    let cancelled = false;
+    void getMyBacklog()
+      .then((data) => {
+        if (!cancelled) setBacklogItems(data as BacklogMatchItem[]);
+      })
+      .catch(() => {
+        /* backlog load failure must not block the report */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [phase]);
 
   const processDroppedFiles = async (files: File[]) => {
     const remaining = 10 - attachments.length;
@@ -317,6 +341,9 @@ export default function GenerateIdeas() {
     try {
       await addToBacklogDb({ ideaName: idea.name, source: 'Generated', demandScore: idea.demandScore, status: 'New', description: idea.description, mvpScope: idea.mvpScope, monetization: idea.monetization });
       track("idea_saved", { from: "generator_result" });
+      setLocallySavedNames((prev) =>
+        prev.includes(idea.name) ? prev : [...prev, idea.name],
+      );
       toast.success(`"${idea.name}" saved to My Ideas`);
     } catch {
       toast.error("Failed to save");
@@ -325,9 +352,30 @@ export default function GenerateIdeas() {
 
   const handleValidate = (idea: any) => { navigate(`/validate?idea=${encodeURIComponent(idea.name + ': ' + idea.description)}`); };
 
+  const handleNextStepValidate = (idea: { name: string; description?: string }) => {
+    navigate("/validate", {
+      state: {
+        validatePrefill: {
+          source: "generate_result",
+          text: buildValidatePrefillText(idea),
+          sourceIdeaName: idea.name,
+        },
+      },
+    });
+  };
+
+  const requestAskOrbis = (hasIdeas: boolean) => {
+    askPrefillIdRef.current += 1;
+    setAskPrefill({
+      requestId: askPrefillIdRef.current,
+      text: askOrbisPrefillForGenerate({ hasIdeas }),
+    });
+  };
+
   const resetChat = () => {
     setMessages([{ id: '1', role: 'assistant', text: "What kind of product or problem are you thinking about? You can also attach screenshots or files for context." }]);
     setInputValue(""); setPhase('chat'); setResult(null); setGeneratingParams(null); setAttachments([]); setDeepStage(null);
+    setLocallySavedNames([]); setAskPrefill(null);
   };
 
   const hasUserMessage = messages.some((m) => m.role === "user");
@@ -501,6 +549,35 @@ export default function GenerateIdeas() {
         </CardContent>
       </Card>
 
+      {result && !deepStage && (() => {
+        const topIdea = pickTopIdea(result.ideaSuggestions);
+        const ideaCount = result.ideaSuggestions?.length ?? 0;
+        const ideaSaved = topIdea
+          ? locallySavedNames.includes(topIdea.name) ||
+            isIdeaSavedInBacklog(backlogItems, { ideaName: topIdea.name })
+          : false;
+        return (
+          <GenerateNextStepCard
+            topIdeaName={topIdea?.name ?? null}
+            ideaCount={ideaCount}
+            inHistory={false}
+            ideaSaved={ideaSaved}
+            handlers={{
+              onValidateIdea: topIdea
+                ? () => handleNextStepValidate(topIdea)
+                : undefined,
+              onSaveIdea: topIdea
+                ? () => handleAddToBacklog(topIdea)
+                : undefined,
+              onAskOrbis: () => requestAskOrbis(ideaCount > 0),
+              onViewSavedIdeas: () =>
+                navigate("/ideas", { state: { focusSection: "my-ideas" } }),
+              onViewHistory: () => navigate("/history"),
+            }}
+          />
+        );
+      })()}
+
       <div>
         <div className="flex items-center gap-2 mb-4">
           <h2 className="text-lg font-semibold font-nunito">Real Problems Found</h2>
@@ -660,6 +737,7 @@ export default function GenerateIdeas() {
         <FollowUpChat
           reportContext={`Generated ideas for ${result.persona} in ${result.category}:\n\nProblem Clusters:\n${result.problemClusters.map((c: any) => `- ${c.theme}: ${c.painSummary}`).join('\n')}\n\nIdeas:\n${result.ideaSuggestions.map((i: any) => `- ${i.name}: ${i.description} (Score: ${i.demandScore}/100, MVP: ${i.mvpScope})`).join('\n')}${result.wtpSignals ? `\n\nWillingness to Pay: ${result.wtpSignals.strength} — ${result.wtpSignals.summary}` : ''}${result.competitionDensity ? `\n\nCompetition: ${result.competitionDensity.level} — ${result.competitionDensity.summary}` : ''}${result.marketTiming ? `\n\nMarket Timing: ${result.marketTiming.phase} — ${result.marketTiming.summary}` : ''}${result.icp ? `\n\nICP: ${result.icp.summary}` : ''}${result.workaroundDetection ? `\n\nWorkarounds: ${result.workaroundDetection.severity} — ${result.workaroundDetection.summary}` : ''}${result.featureGapMap ? `\n\nFeature Gaps: ${result.featureGapMap.summary}\nTop Wedge: ${result.featureGapMap.topWedge}` : ''}${result.platformRisk ? `\n\nPlatform Risk: ${result.platformRisk.level} — ${result.platformRisk.summary}` : ''}${result.gtmStrategy ? `\n\nGTM Strategy: ${result.gtmStrategy.primaryChannel} — ${result.gtmStrategy.summary}` : ''}${result.pricingBenchmarks ? `\n\nPricing Benchmarks: ${result.pricingBenchmarks.summary}\nSuggested: ${result.pricingBenchmarks.suggestedRange?.low}-${result.pricingBenchmarks.suggestedRange?.high}` : ''}${result.defensibility ? `\n\nDefensibility: ${result.defensibility.overallStrength} — ${result.defensibility.summary}\nTime to moat: ${result.defensibility.timeToMoat}` : ''}`}
           onRevalidate={(ideaText) => navigate(`/validate?idea=${encodeURIComponent(ideaText)}`)}
+          prefillRequest={askPrefill}
         />
       )}
 

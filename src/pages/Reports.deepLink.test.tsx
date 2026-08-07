@@ -14,6 +14,7 @@ vi.mock("@/lib/db", () => ({
   getMyGeneratorRuns: () => getMyGeneratorRunsMock(),
   getMyValidationReports: () => getMyValidationReportsMock(),
   addToBacklogDb: vi.fn(),
+  getMyBacklog: vi.fn().mockResolvedValue([]),
 }));
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {

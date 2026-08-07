@@ -85,7 +85,9 @@ export interface AnalyticsEventProperties {
       | "save_idea"
       | "ask_orbis"
       | "view_history"
-      | "export";
+      | "export"
+      | "view_saved_ideas"
+      | "back_to_all_reports";
   };
 
   export_markdown: {

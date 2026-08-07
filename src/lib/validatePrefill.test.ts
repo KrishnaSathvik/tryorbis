@@ -7,7 +7,7 @@ import {
 } from "./validatePrefill";
 
 describe("validatePrefill", () => {
-  it("parses landing and dashboard discriminated variants", () => {
+  it("parses landing, dashboard, and generate_result discriminated variants", () => {
     expect(parseValidatePrefill({ source: "landing", text: "  idea  " })).toEqual({
       source: "landing",
       text: "idea",
@@ -25,6 +25,17 @@ describe("validatePrefill", () => {
       sourceRunId: "r1",
       sourceIdeaName: "Name",
     });
+    expect(
+      parseValidatePrefill({
+        source: "generate_result",
+        text: "  Top idea: desc  ",
+        sourceIdeaName: "Top idea",
+      }),
+    ).toEqual({
+      source: "generate_result",
+      text: "Top idea: desc",
+      sourceIdeaName: "Top idea",
+    });
   });
 
   it("rejects invalid combinations", () => {
@@ -33,6 +44,9 @@ describe("validatePrefill", () => {
       parseValidatePrefill({ source: "dashboard", text: "x" }),
     ).toBeNull();
     expect(parseValidatePrefill({ text: "x", sourceRunId: "r" })).toBeNull();
+    expect(
+      parseValidatePrefill({ source: "generate_result", text: "   " }),
+    ).toBeNull();
   });
 
   it("canonicalizes legacy dashboardValidatePrefill", () => {

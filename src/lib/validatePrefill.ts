@@ -13,6 +13,12 @@ export type ValidatePrefill =
       text: string;
       sourceRunId: string;
       sourceIdeaName?: string;
+    }
+  | {
+      /** Fresh Generate result without a stable persisted run id. */
+      source: "generate_result";
+      text: string;
+      sourceIdeaName?: string;
     };
 
 export type ValidatePrefillRouterState = {
@@ -47,6 +53,14 @@ export function parseValidatePrefill(value: unknown): ValidatePrefill | null {
         ? record.sourceIdeaName.trim()
         : undefined;
     return { source: "dashboard", text, sourceRunId, sourceIdeaName };
+  }
+
+  if (record.source === "generate_result") {
+    const sourceIdeaName =
+      typeof record.sourceIdeaName === "string" && record.sourceIdeaName.trim()
+        ? record.sourceIdeaName.trim()
+        : undefined;
+    return { source: "generate_result", text, sourceIdeaName };
   }
 
   return null;

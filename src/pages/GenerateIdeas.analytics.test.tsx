@@ -36,6 +36,7 @@ vi.mock("@/integrations/supabase/client", () => ({
 vi.mock("@/lib/db", () => ({
   saveGeneratorRunDb: (...args: unknown[]) => saveGeneratorRunDbMock(...args),
   addToBacklogDb: (...args: unknown[]) => addToBacklogDbMock(...args),
+  getMyBacklog: vi.fn().mockResolvedValue([]),
 }));
 vi.mock("@/lib/analytics", async () => {
   const actual = await vi.importActual<typeof import("@/lib/analytics")>(
@@ -483,7 +484,7 @@ describe("GenerateIdeas analytics", () => {
     await user.click(screen.getByRole("button", { name: /start research/i }));
     await screen.findByText("Idea A");
     trackMock.mockClear();
-    await user.click(screen.getByRole("button", { name: /save/i }));
+    await user.click(screen.getByRole("button", { name: /^save$/i }));
     await waitFor(() => {
       expect(trackMock).toHaveBeenCalledWith("idea_saved", {
         from: "generator_result",
@@ -503,7 +504,7 @@ describe("GenerateIdeas analytics", () => {
     await user.click(screen.getByRole("button", { name: /start research/i }));
     await screen.findByText("Idea A");
     trackMock.mockClear();
-    await user.click(screen.getByRole("button", { name: /save/i }));
+    await user.click(screen.getByRole("button", { name: /^save$/i }));
     await waitFor(() => {
       expect(addToBacklogDbMock).toHaveBeenCalled();
     });
