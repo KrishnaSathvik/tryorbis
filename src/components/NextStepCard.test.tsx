@@ -208,10 +208,11 @@ describe("NextStepCard", () => {
     });
   });
 
-  it("gives each card a unique heading id tied to its section", () => {
+  it("gives each card a unique heading id and unique landmark label", () => {
     render(
       <>
         <NextStepCard
+          landmarkLabel="Recommended next step for generated idea Alpha"
           rationale="One"
           primaryAction={action({
             id: "ask_orbis",
@@ -220,6 +221,7 @@ describe("NextStepCard", () => {
           })}
         />
         <NextStepCard
+          landmarkLabel="Recommended next step for validation result"
           rationale="Two"
           primaryAction={action({
             id: "view_history",
@@ -238,11 +240,13 @@ describe("NextStepCard", () => {
     expect(id0).toBeTruthy();
     expect(id1).toBeTruthy();
     expect(id0).not.toBe(id1);
-    expect(headings[0].closest("section")?.getAttribute("aria-labelledby")).toBe(
-      id0,
+    expect(headings[0].closest("section")).toHaveAttribute(
+      "aria-label",
+      "Recommended next step for generated idea Alpha",
     );
-    expect(headings[1].closest("section")?.getAttribute("aria-labelledby")).toBe(
-      id1,
+    expect(headings[1].closest("section")).toHaveAttribute(
+      "aria-label",
+      "Recommended next step for validation result",
     );
   });
 });

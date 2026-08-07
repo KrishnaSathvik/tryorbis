@@ -16,6 +16,11 @@ export type NextStepAction = {
 
 export type NextStepCardProps = {
   title?: string;
+  /**
+   * Unique accessible landmark name when multiple cards can appear together.
+   * Visible heading stays `title`; this only affects the section's accessible name.
+   */
+  landmarkLabel?: string;
   rationale: string;
   primaryAction: NextStepAction;
   secondaryActions?: NextStepAction[];
@@ -38,6 +43,7 @@ function dedupeActions(
 
 export function NextStepCard({
   title = "Recommended next step",
+  landmarkLabel,
   rationale,
   primaryAction,
   secondaryActions = [],
@@ -47,6 +53,7 @@ export function NextStepCard({
   const { primary, secondary } = dedupeActions(primaryAction, secondaryActions);
   const [pendingId, setPendingId] = useState<NextStepActionId | null>(null);
   const pendingLockRef = useRef(false);
+  const sectionLabel = landmarkLabel ?? title;
 
   const runAction = async (action: NextStepAction) => {
     if (action.disabled || action.loading || pendingLockRef.current) return;
@@ -68,7 +75,7 @@ export function NextStepCard({
 
   return (
     <section
-      aria-labelledby={headingId}
+      aria-label={sectionLabel}
       className={cn(
         "rounded-2xl border border-border/60 bg-secondary/30 px-5 py-4 space-y-3",
         className,

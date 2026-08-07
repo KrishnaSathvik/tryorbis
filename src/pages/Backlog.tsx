@@ -154,8 +154,24 @@ export default function Backlog() {
         <Card className="rounded-[32px] border border-primary/20 shadow-lg">
           <CardContent className="p-6 space-y-3">
             <p className="text-sm font-semibold font-nunito">New Idea</p>
-            <Input placeholder="What's your idea?" value={newIdeaName} onChange={e => setNewIdeaName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && newIdeaName.trim()) handleAddIdea(); }} className="rounded-xl" autoFocus />
-            <Textarea placeholder="Add initial notes (optional)..." value={newIdeaNote} onChange={e => setNewIdeaNote(e.target.value)} className="text-sm min-h-[60px] resize-y rounded-xl" />
+            <Input
+              id="backlog-new-idea-name"
+              aria-label="Idea name"
+              placeholder="What's your idea?"
+              value={newIdeaName}
+              onChange={e => setNewIdeaName(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && newIdeaName.trim()) handleAddIdea(); }}
+              className="rounded-xl"
+              autoFocus
+            />
+            <Textarea
+              id="backlog-new-idea-note"
+              aria-label="Initial notes"
+              placeholder="Add initial notes (optional)..."
+              value={newIdeaNote}
+              onChange={e => setNewIdeaNote(e.target.value)}
+              className="text-sm min-h-[60px] resize-y rounded-xl"
+            />
             <div className="flex justify-end gap-2">
               <Button size="sm" variant="ghost" className="rounded-full" onClick={() => { setShowAddIdea(false); setNewIdeaName(""); setNewIdeaNote(""); }}>Cancel</Button>
               <Button size="sm" className="rounded-full" onClick={handleAddIdea} disabled={!newIdeaName.trim()}>
@@ -188,14 +204,14 @@ export default function Backlog() {
                       {isEditing ? (
                         <div className="flex items-center gap-2">
                           <Input value={editName} onChange={e => setEditName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') saveRename(item.id); if (e.key === 'Escape') setEditingId(null); }} className="h-8 text-sm font-semibold rounded-lg" autoFocus />
-                          <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-primary" onClick={() => saveRename(item.id)}><Check className="h-3.5 w-3.5" /></Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => setEditingId(null)}><X className="h-3.5 w-3.5" /></Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-primary" aria-label="Save renamed idea" onClick={() => saveRename(item.id)}><Check className="h-3.5 w-3.5" aria-hidden /></Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" aria-label="Cancel rename" onClick={() => setEditingId(null)}><X className="h-3.5 w-3.5" aria-hidden /></Button>
                         </div>
                       ) : (
                         <div className="group/name flex items-center gap-1.5">
                          <p className="text-sm font-semibold leading-snug">{item.idea_name}</p>
-                          <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover/name:opacity-100 transition-opacity shrink-0" onClick={() => startRename(item.id, item.idea_name)}>
-                            <Pencil className="h-3 w-3 text-muted-foreground" />
+                          <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover/name:opacity-100 group-focus-within/name:opacity-100 focus-visible:opacity-100 transition-opacity shrink-0" aria-label={`Rename ${item.idea_name}`} onClick={() => startRename(item.id, item.idea_name)}>
+                            <Pencil className="h-3 w-3 text-muted-foreground" aria-hidden />
                           </Button>
                         </div>
                       )}
@@ -232,7 +248,7 @@ export default function Backlog() {
                       </Select>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 hover:text-destructive" aria-label={`Delete ${item.idea_name}`}><Trash2 className="h-3.5 w-3.5" aria-hidden /></Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent className="rounded-2xl">
                           <AlertDialogHeader>
@@ -262,8 +278,8 @@ export default function Backlog() {
                       </div>
                     </div>
                   ) : (
-                    <button className="flex items-center gap-1.5 mt-3 text-xs text-muted-foreground hover:text-foreground transition-colors" onClick={() => setAddingNoteFor(item.id)}>
-                      <Plus className="h-3 w-3" /><span>Add a note</span>
+                    <button type="button" className="flex items-center gap-1.5 mt-3 text-xs text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm" onClick={() => setAddingNoteFor(item.id)}>
+                      <Plus className="h-3 w-3" aria-hidden /><span>Add a note</span>
                     </button>
                   )}
 
@@ -284,8 +300,8 @@ export default function Backlog() {
                             ) : (
                               <div className="flex items-start justify-between gap-3">
                                 <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap flex-1">{note}</p>
-                                <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover/note:opacity-100 transition-opacity shrink-0" onClick={() => startEditNote(item.id, i, note)}>
-                                  <Pencil className="h-3 w-3 text-muted-foreground" />
+                                <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover/note:opacity-100 group-focus-within/note:opacity-100 focus-visible:opacity-100 transition-opacity shrink-0" aria-label={`Edit note ${i + 1}`} onClick={() => startEditNote(item.id, i, note)}>
+                                  <Pencil className="h-3 w-3 text-muted-foreground" aria-hidden />
                                 </Button>
                               </div>
                             )}

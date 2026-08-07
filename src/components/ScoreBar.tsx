@@ -28,7 +28,13 @@ export function ScoreBar({ label, value, className }: ScoreBarProps) {
           {description && (
             <Popover>
               <PopoverTrigger asChild>
-                <Info className="h-3 w-3 text-muted-foreground cursor-help" />
+                <button
+                  type="button"
+                  aria-label={`About ${label} score`}
+                  className="rounded-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  <Info className="h-3 w-3" aria-hidden />
+                </button>
               </PopoverTrigger>
               <PopoverContent side="top" className="max-w-[240px] p-2">
                 <p className="text-xs">{description}</p>

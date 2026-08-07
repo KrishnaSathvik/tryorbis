@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useId } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -25,6 +25,8 @@ interface FollowUpChatProps {
   onRevalidate: (ideaText: string) => void;
   /** Optional Ask Orbis handoff: open, focus, prefill if composer empty. */
   prefillRequest?: FollowUpPrefillRequest | null;
+  /** Unique landmark name when multiple FollowUpChats can appear together. */
+  regionLabel?: string;
 }
 
 const SUGGESTIONS = [
@@ -38,11 +40,13 @@ export function FollowUpChat({
   reportContext,
   onRevalidate,
   prefillRequest = null,
+  regionLabel = "Follow-up chat with Orbis AI",
 }: FollowUpChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const inputId = useId();
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -172,9 +176,9 @@ export function FollowUpChat({
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="group flex items-center gap-3 w-full px-5 py-4 rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm hover:border-primary/30 hover:bg-card transition-all duration-200"
+          className="group flex items-center gap-3 w-full px-5 py-4 rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm hover:border-primary/30 hover:bg-card transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
-          <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/15 transition-colors">
+          <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/15 transition-colors" aria-hidden>
             <MessageSquare className="h-4 w-4 text-primary" />
           </div>
           <div className="text-left">
@@ -191,10 +195,12 @@ export function FollowUpChat({
   return (
     <div
       ref={rootRef}
+      role="region"
+      aria-label={regionLabel}
       className="rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm overflow-hidden"
     >
       <div className="px-5 py-3.5 border-b border-border/40 flex items-center gap-3">
-        <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center">
+        <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center" aria-hidden>
           <Sparkles className="h-4 w-4 text-primary" />
         </div>
         <div>
@@ -215,7 +221,7 @@ export function FollowUpChat({
                   key={s}
                   type="button"
                   onClick={() => void sendMessage(s)}
-                  className="text-xs px-3 py-1.5 rounded-full border border-border/60 bg-secondary/50 text-muted-foreground hover:text-foreground hover:border-primary/30 hover:bg-primary/5 transition-all"
+                  className="text-xs px-3 py-1.5 rounded-full border border-border/60 bg-secondary/50 text-muted-foreground hover:text-foreground hover:border-primary/30 hover:bg-primary/5 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
                   {s}
                 </button>
@@ -234,7 +240,7 @@ export function FollowUpChat({
                   onClick={() => onRevalidate(idea)}
                   className="gap-1.5 rounded-xl text-xs"
                 >
-                  <RotateCcw className="h-3 w-3" /> Re-validate: &quot;{idea.slice(0, 40)}
+                  <RotateCcw className="h-3 w-3" aria-hidden /> Re-validate: &quot;{idea.slice(0, 40)}
                   ...&quot;
                 </Button>
               </div>
@@ -248,6 +254,7 @@ export function FollowUpChat({
             >
               <div
                 className={`h-7 w-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${isUser ? "bg-primary/10" : "bg-secondary"}`}
+                aria-hidden
               >
                 {isUser ? (
                   <User className="h-3.5 w-3.5 text-primary" />
@@ -264,14 +271,15 @@ export function FollowUpChat({
           );
         })}
         {isTyping && (
-          <div className="flex gap-2.5">
-            <div className="h-7 w-7 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+          <div className="flex gap-2.5" role="status" aria-live="polite">
+            <div className="h-7 w-7 rounded-lg bg-secondary flex items-center justify-center shrink-0" aria-hidden>
               <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />
             </div>
             <div className="bg-secondary/70 rounded-2xl rounded-tl-md px-4 py-3 flex gap-1.5 items-center">
-              <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:0ms]" />
-              <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:150ms]" />
-              <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:300ms]" />
+              <span className="sr-only">Orbis is replying</span>
+              <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:0ms]" aria-hidden />
+              <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:150ms]" aria-hidden />
+              <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:300ms]" aria-hidden />
             </div>
           </div>
         )}
@@ -280,23 +288,30 @@ export function FollowUpChat({
 
       <div className="border-t border-border/40 p-3">
         <div className="flex items-end gap-2">
+          <label htmlFor={inputId} className="sr-only">
+            Ask a follow-up question
+          </label>
           <textarea
+            id={inputId}
             ref={inputRef}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Ask anything about this research..."
             rows={1}
-            className="flex-1 resize-none rounded-xl border border-border/60 bg-background px-4 py-2.5 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-primary/30 transition-all disabled:opacity-50"
+            aria-busy={isTyping || undefined}
+            className="flex-1 resize-none rounded-xl border border-border/60 bg-background px-4 py-2.5 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus:border-primary/30 transition-all disabled:opacity-50"
             disabled={isTyping}
           />
           <Button
             size="icon"
             onClick={() => void sendMessage()}
             disabled={!inputValue.trim() || isTyping}
+            aria-label={isTyping ? "Sending…" : "Send follow-up message"}
+            aria-busy={isTyping || undefined}
             className="h-10 w-10 rounded-xl shrink-0"
           >
-            <Send className="h-4 w-4" />
+            <Send className="h-4 w-4" aria-hidden />
           </Button>
         </div>
       </div>

@@ -83,12 +83,8 @@ describe("Reports history idea_saved analytics", () => {
     await user.click(trigger.closest("button") ?? trigger);
     await screen.findByText("SQL Buddy");
     trackMock.mockClear();
-    const bookmark = screen.getByRole("button", { name: "" });
-    // Icon-only bookmark buttons; click the one next to the idea
-    const buttons = screen.getAllByRole("button");
-    const saveBtn = buttons.find((b) => b.querySelector("svg.lucide-bookmark"));
-    expect(saveBtn).toBeTruthy();
-    await user.click(saveBtn!);
+    const saveBtn = screen.getByRole("button", { name: /save idea sql buddy/i });
+    await user.click(saveBtn);
     await waitFor(() => {
       expect(addToBacklogDbMock).toHaveBeenCalled();
     });
@@ -116,9 +112,7 @@ describe("Reports history idea_saved analytics", () => {
     await user.click(trigger.closest("button") ?? trigger);
     await screen.findByText("SQL Buddy");
     trackMock.mockClear();
-    const buttons = screen.getAllByRole("button");
-    const saveBtn = buttons.find((b) => b.querySelector("svg.lucide-bookmark"));
-    await user.click(saveBtn!);
+    await user.click(screen.getByRole("button", { name: /save idea sql buddy/i }));
     await waitFor(() => {
       expect(addToBacklogDbMock).toHaveBeenCalled();
     });

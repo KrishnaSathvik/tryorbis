@@ -144,7 +144,7 @@ describe("Reports NextStepCard", () => {
     ).toBeInTheDocument();
   });
 
-  it("back to all reports clears item query", async () => {
+  it("back to all reports clears item query and restores focus to the report trigger", async () => {
     const user = userEvent.setup();
     render(
       <MemoryRouter initialEntries={["/history?item=validation%3Aval-1&tab=research"]}>
@@ -162,16 +162,19 @@ describe("Reports NextStepCard", () => {
       </MemoryRouter>,
     );
 
+    const valTrigger = await screen.findByRole("button", {
+      name: /validation: park trip planner/i,
+    });
     expect(
       await screen.findByRole("button", { name: /save this idea/i }),
     ).toBeInTheDocument();
-    expect(screen.getByTestId("search").textContent).toContain("item=");
-
     await user.click(screen.getByRole("button", { name: /back to all reports/i }));
     await waitFor(() => {
-      expect(screen.getByTestId("search").textContent).not.toContain("item=");
+      expect(screen.getByTestId("search").textContent).not.toMatch(/item=/);
     });
-    expect(screen.queryByRole("button", { name: /save this idea/i })).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(valTrigger).toHaveFocus();
+    });
   });
 
   it("History FollowUpChat revalidate uses router state without idea text in the URL", async () => {

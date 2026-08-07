@@ -461,12 +461,15 @@ export default function OrbisChat() {
             <FileUpload attachments={attachments} onAttachmentsChange={setAttachments} disabled={isStreaming} />
             <textarea
               ref={inputRef}
+              id="orbis-chat-input"
+              aria-label="Message Orbis AI"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={voice.isListening ? "Listening..." : "Ask Orbis anything..."}
               rows={1}
-              className="flex-1 resize-none bg-transparent px-3 py-2.5 text-sm placeholder:text-muted-foreground/40 focus:outline-none disabled:opacity-50"
+              aria-busy={isStreaming || undefined}
+              className="flex-1 resize-none bg-transparent px-3 py-2.5 text-sm placeholder:text-muted-foreground/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 rounded-xl"
               disabled={isStreaming}
             />
             <VoiceButton
@@ -480,9 +483,11 @@ export default function OrbisChat() {
               size="icon"
               onClick={() => sendMessage()}
               disabled={!input.trim() || isStreaming}
+              aria-label={isStreaming ? "Sending…" : "Send message"}
+              aria-busy={isStreaming || undefined}
               className="h-9 w-9 rounded-xl shrink-0 shadow-none"
             >
-              <Send className="h-3.5 w-3.5" />
+              <Send className="h-3.5 w-3.5" aria-hidden />
             </Button>
           </div>
         </div>

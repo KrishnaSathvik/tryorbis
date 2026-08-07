@@ -62,16 +62,19 @@ export function FileUpload({ attachments, onAttachmentsChange, disabled, maxFile
         className="hidden"
         accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,text/plain,text/csv"
         multiple
+        aria-hidden
+        tabIndex={-1}
         onChange={(e) => { if (e.target.files) handleFiles(e.target.files); e.target.value = ""; }}
       />
       <button
         type="button"
         onClick={() => fileInputRef.current?.click()}
         disabled={disabled || attachments.length >= maxFiles}
-        className="h-9 w-9 rounded-xl flex items-center justify-center text-muted-foreground/60 hover:text-primary hover:bg-primary/5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
+        className="h-9 w-9 rounded-xl flex items-center justify-center text-muted-foreground/60 hover:text-primary hover:bg-primary/5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        aria-label="Attach files"
         title="Attach images or files"
       >
-        <Paperclip className="h-4 w-4" />
+        <Paperclip className="h-4 w-4" aria-hidden />
       </button>
     </>
   );

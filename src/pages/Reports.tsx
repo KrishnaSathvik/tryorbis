@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
@@ -36,6 +36,7 @@ import {
   type BacklogMatchItem,
 } from "@/lib/savedIdeaMatch";
 import { pickTopIdea } from "@/lib/pickTopIdea";
+import { withHistoryInstance } from "@/lib/historyLandmarkLabel";
 
 interface Conversation {
   id: string;
@@ -58,12 +59,54 @@ export default function Reports() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"research" | "chats">("research");
+  const tabsId = useId();
+  const researchTabId = `${tabsId}-research-tab`;
+  const chatsTabId = `${tabsId}-chats-tab`;
+  const researchPanelId = `${tabsId}-research-panel`;
+  const chatsPanelId = `${tabsId}-chats-panel`;
   const [openItemKeys, setOpenItemKeys] = useState<Set<string>>(() => new Set());
   const [deepLinkMissing, setDeepLinkMissing] = useState(false);
   const deepLinkHandledRef = useRef<string | null>(null);
   const itemRefs = useRef<Record<string, HTMLElement | null>>({});
   const [backlogItems, setBacklogItems] = useState<BacklogMatchItem[]>([]);
   const [locallySavedNames, setLocallySavedNames] = useState<string[]>([]);
+
+  const activateHistoryTab = (nextTab: "research" | "chats") => {
+    setActiveTab(nextTab);
+    requestAnimationFrame(() => {
+      const id = nextTab === "research" ? researchTabId : chatsTabId;
+      document.getElementById(id)?.focus();
+    });
+  };
+
+  const onHistoryTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    const tabs: Array<"research" | "chats"> = ["research", "chats"];
+    const currentIndex = tabs.indexOf(activeTab);
+    let nextIndex = currentIndex;
+    switch (event.key) {
+      case "ArrowRight":
+      case "ArrowDown":
+        event.preventDefault();
+        nextIndex = (currentIndex + 1) % tabs.length;
+        break;
+      case "ArrowLeft":
+      case "ArrowUp":
+        event.preventDefault();
+        nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+        break;
+      case "Home":
+        event.preventDefault();
+        nextIndex = 0;
+        break;
+      case "End":
+        event.preventDefault();
+        nextIndex = tabs.length - 1;
+        break;
+      default:
+        return;
+    }
+    activateHistoryTab(tabs[nextIndex]);
+  };
 
   useEffect(() => {
     Promise.all([
@@ -96,7 +139,7 @@ export default function Reports() {
     });
   }, []);
 
-  const backToAllReports = () => {
+  const backToAllReports = (returnFocusKey?: string) => {
     setSearchParams(
       (prev) => {
         const next = new URLSearchParams(prev);
@@ -107,6 +150,20 @@ export default function Reports() {
     );
     setOpenItemKeys(new Set());
     deepLinkHandledRef.current = null;
+    requestAnimationFrame(() => {
+      const trigger = returnFocusKey
+        ? itemRefs.current[returnFocusKey]?.querySelector<HTMLElement>(
+            "[data-history-focus-target]",
+          )
+        : null;
+      if (trigger) {
+        trigger.focus({ preventScroll: true });
+        return;
+      }
+      document
+        .getElementById("history-heading")
+        ?.focus({ preventScroll: true });
+    });
   };
 
   const itemQuery = searchParams.get("item");
@@ -228,35 +285,59 @@ export default function Reports() {
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight font-nunito">History</h1>
+        <h1
+          id="history-heading"
+          tabIndex={-1}
+          className="text-3xl font-bold tracking-tight font-nunito outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
+        >
+          History
+        </h1>
         <p className="text-muted-foreground mt-1">All your past sessions — revisit results anytime.</p>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 p-1 rounded-xl bg-secondary/60 w-fit">
+      <div
+        className="flex gap-1 p-1 rounded-xl bg-secondary/60 w-fit"
+        role="tablist"
+        aria-label="History sections"
+      >
         <button
+          type="button"
+          id={researchTabId}
+          role="tab"
+          aria-selected={activeTab === "research"}
+          aria-controls={researchPanelId}
+          tabIndex={activeTab === "research" ? 0 : -1}
           onClick={() => setActiveTab("research")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+          onKeyDown={onHistoryTabKeyDown}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
             activeTab === "research"
               ? "bg-background text-foreground shadow-sm"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
           <div className="flex items-center gap-2">
-            <FileText className="h-3.5 w-3.5" />
+            <FileText className="h-3.5 w-3.5" aria-hidden />
             Research
           </div>
         </button>
         <button
+          type="button"
+          id={chatsTabId}
+          role="tab"
+          aria-selected={activeTab === "chats"}
+          aria-controls={chatsPanelId}
+          tabIndex={activeTab === "chats" ? 0 : -1}
           onClick={() => setActiveTab("chats")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+          onKeyDown={onHistoryTabKeyDown}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
             activeTab === "chats"
               ? "bg-background text-foreground shadow-sm"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
           <div className="flex items-center gap-2">
-            <Sparkles className="h-3.5 w-3.5" />
+            <Sparkles className="h-3.5 w-3.5" aria-hidden />
             Orbis AI Chats
             {conversations.length > 0 && (
               <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-semibold">
@@ -269,7 +350,11 @@ export default function Reports() {
 
       {/* Research tab */}
       {activeTab === "research" && (
-        <>
+        <div
+          id={researchPanelId}
+          role="tabpanel"
+          aria-labelledby={researchTabId}
+        >
           {deepLinkMissing && (
             <p className="text-sm text-muted-foreground" role="status">
               That research item wasn&apos;t found. Showing your full history.
@@ -286,7 +371,8 @@ export default function Reports() {
             </Card>
           ) : (
             <div className="space-y-3">
-              {allItems.map((item) => {
+              {allItems.map((item, index) => {
+                const historyOrdinal = index + 1;
                 const kind = item.type === "run" ? "generator" : "validation";
                 const key = `${kind}:${item.id}`;
                 const isOpen = openItemKeys.has(key);
@@ -362,22 +448,26 @@ export default function Reports() {
                             <GeneratorRunDetails
                               data={item.data}
                               runId={item.id}
+                              occurredAt={item.date}
+                              historyOrdinal={historyOrdinal}
                               onSaveIdea={handleSaveIdea}
                               navigate={navigate}
                               backlogItems={backlogItems}
                               locallySavedNames={locallySavedNames}
-                              onBackToAllReports={backToAllReports}
+                              onBackToAllReports={() => backToAllReports(key)}
                             />
                           )}
                           {item.type === "report" && (
                             <ValidationReportDetails
                               data={item.data}
                               reportId={item.id}
+                              occurredAt={item.date}
+                              historyOrdinal={historyOrdinal}
                               onSaveIdea={handleSaveIdea}
                               navigate={navigate}
                               backlogItems={backlogItems}
                               locallySavedNames={locallySavedNames}
-                              onBackToAllReports={backToAllReports}
+                              onBackToAllReports={() => backToAllReports(key)}
                             />
                           )}
                         </div>
@@ -388,12 +478,16 @@ export default function Reports() {
               })}
             </div>
           )}
-        </>
+        </div>
       )}
 
       {/* Chats tab */}
       {activeTab === "chats" && (
-        <>
+        <div
+          id={chatsPanelId}
+          role="tabpanel"
+          aria-labelledby={chatsTabId}
+        >
           {conversations.length === 0 ? (
             <Card className="rounded-2xl border-0 bg-secondary">
               <CardContent className="p-12 text-center space-y-3">
@@ -409,41 +503,45 @@ export default function Reports() {
           ) : (
             <div className="space-y-2">
               {conversations.map((c) => (
-                <Card
+                <div
                   key={c.id}
-                  className="rounded-2xl border-border/50 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 cursor-pointer group"
-                  onClick={() => navigate(`/chat?c=${c.id}`)}
+                  className="rounded-2xl border border-border/50 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 group"
                 >
                   <CardContent className="p-4 flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center shrink-0">
-                      <MessageSquare className="h-4 w-4 text-primary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold truncate">{c.title}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{formatDate(c.updated_at)}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteConversation(c.id);
-                        }}
-                      >
-                        Delete
-                      </Button>
-                      <div className="flex items-center gap-1 text-xs text-primary font-medium">
-                        Continue <ArrowRight className="h-3 w-3" />
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/chat?c=${c.id}`)}
+                      className="flex flex-1 min-w-0 items-center gap-3 text-left rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      aria-label={`Open chat: ${c.title}`}
+                    >
+                      <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center shrink-0" aria-hidden>
+                        <MessageSquare className="h-4 w-4 text-primary" />
                       </div>
-                    </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold truncate">{c.title}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{formatDate(c.updated_at)}</p>
+                      </div>
+                      <div className="flex items-center gap-1 text-xs text-primary font-medium shrink-0">
+                        Continue <ArrowRight className="h-3 w-3" aria-hidden />
+                      </div>
+                    </button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 transition-opacity"
+                      aria-label={`Delete chat ${c.title}`}
+                      onClick={() => {
+                        handleDeleteConversation(c.id);
+                      }}
+                    >
+                      Delete
+                    </Button>
                   </CardContent>
-                </Card>
+                </div>
               ))}
             </div>
           )}
-        </>
+        </div>
       )}
     </div>
   );
@@ -453,6 +551,8 @@ export default function Reports() {
 function GeneratorRunDetails({
   data,
   runId,
+  occurredAt,
+  historyOrdinal,
   onSaveIdea,
   navigate,
   backlogItems,
@@ -461,6 +561,8 @@ function GeneratorRunDetails({
 }: {
   data: any;
   runId: string;
+  occurredAt: string;
+  historyOrdinal: number;
   onSaveIdea: (name: string, source: string, score?: number, overallScore?: number, extra?: { description?: string; mvpScope?: string; monetization?: string; sourceId?: string }) => void | Promise<void>;
   navigate: (path: string, options?: { state?: unknown }) => void;
   backlogItems: BacklogMatchItem[];
@@ -491,6 +593,19 @@ function GeneratorRunDetails({
     : false;
   const [askPrefill, setAskPrefill] = useState<FollowUpPrefillRequest | null>(null);
   const askIdRef = useRef(0);
+  const reportTitle = topIdea?.name
+    ? topIdea.name
+    : `${data.persona || "persona"} × ${data.category || "category"}`;
+  const nextStepLandmark = withHistoryInstance(
+    `Recommended next step for generator report ${reportTitle}`,
+    occurredAt,
+    historyOrdinal,
+  );
+  const followUpRegionLabel = withHistoryInstance(
+    `Follow-up chat for generator report ${data.persona || "persona"} × ${data.category || "category"}`,
+    occurredAt,
+    historyOrdinal,
+  );
 
   const requestAsk = () => {
     askIdRef.current += 1;
@@ -518,6 +633,7 @@ function GeneratorRunDetails({
         ideaCount={ideaSuggestions.length}
         inHistory
         ideaSaved={ideaSaved}
+        landmarkLabel={nextStepLandmark}
         handlers={{
           onValidateIdea: topIdea
             ? () =>
@@ -556,7 +672,10 @@ function GeneratorRunDetails({
             {problemClusters.map((cluster: any, i: number) => (
               <Collapsible key={i}>
                 <Card className="rounded-xl border-border/50">
-                  <CollapsibleTrigger className="w-full">
+                  <CollapsibleTrigger
+                    className="w-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl"
+                    aria-label={`Problem theme: ${cluster.theme}`}
+                  >
                     <CardContent className="p-3 flex items-center justify-between">
                       <div className="text-left">
                         <p className="font-medium text-xs">{cluster.theme}</p>
@@ -607,8 +726,8 @@ function GeneratorRunDetails({
                 <CardContent className="p-4 space-y-2">
                   <div className="flex items-start justify-between gap-2">
                     <p className="text-sm font-semibold">{idea.name}</p>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={(e) => { e.stopPropagation(); void onSaveIdea(idea.name, "Generated", idea.demandScore, undefined, { description: idea.description, mvpScope: idea.mvpScope, monetization: idea.monetization, sourceId: generatorIdeaSourceId(runId, idea) }); }}>
-                      <Bookmark className="h-3.5 w-3.5" />
+                    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" aria-label={`Save idea ${idea.name}`} onClick={(e) => { e.stopPropagation(); void onSaveIdea(idea.name, "Generated", idea.demandScore, undefined, { description: idea.description, mvpScope: idea.mvpScope, monetization: idea.monetization, sourceId: generatorIdeaSourceId(runId, idea) }); }}>
+                      <Bookmark className="h-3.5 w-3.5" aria-hidden />
                     </Button>
                   </div>
                   {idea.description && <p className="text-xs text-muted-foreground leading-relaxed">{idea.description}</p>}
@@ -633,6 +752,7 @@ function GeneratorRunDetails({
       <IntelligenceLayers data={data} />
 
       <FollowUpChat
+        regionLabel={followUpRegionLabel}
         reportContext={`Generated ideas for ${data.persona || "persona"} in ${data.category || "category"}:\n\nProblem Clusters:\n${problemClusters.map((c: any) => `- ${c.theme}: ${c.painSummary}`).join("\n")}\n\nIdeas:\n${ideaSuggestions.map((i: any) => `- ${i.name}: ${i.description} (Score: ${i.demandScore}/100)`).join("\n")}`}
         onRevalidate={(ideaText) =>
           navigate("/validate", {
@@ -656,6 +776,8 @@ function GeneratorRunDetails({
 function ValidationReportDetails({
   data,
   reportId,
+  occurredAt,
+  historyOrdinal,
   onSaveIdea,
   navigate,
   backlogItems,
@@ -664,6 +786,8 @@ function ValidationReportDetails({
 }: {
   data: any;
   reportId: string;
+  occurredAt: string;
+  historyOrdinal: number;
   onSaveIdea: (name: string, source: string, score?: number, overallScore?: number, extra?: { description?: string; mvpScope?: string; monetization?: string; sourceId?: string }) => void | Promise<void>;
   navigate: (path: string, options?: { state?: unknown }) => void;
   backlogItems: BacklogMatchItem[];
@@ -688,6 +812,16 @@ function ValidationReportDetails({
   const askIdRef = useRef(0);
   const validVerdict =
     verdict === "Build" || verdict === "Pivot" || verdict === "Skip";
+  const nextStepLandmark = withHistoryInstance(
+    `Recommended next step for validation report ${ideaName}`,
+    occurredAt,
+    historyOrdinal,
+  );
+  const followUpRegionLabel = withHistoryInstance(
+    `Follow-up chat for validation report ${ideaName}`,
+    occurredAt,
+    historyOrdinal,
+  );
 
   return (
     <>
@@ -733,6 +867,7 @@ function ValidationReportDetails({
           verdict={verdict}
           inHistory
           ideaSaved={ideaSaved}
+          landmarkLabel={nextStepLandmark}
           handlers={{
             onSaveIdea: () =>
               onSaveIdea(
@@ -768,7 +903,7 @@ function ValidationReportDetails({
           {pros.length > 0 && (
             <Card className="rounded-xl border-border/50">
               <CardContent className="p-4 space-y-2">
-                <div className="flex items-center gap-2"><ThumbsUp className="h-3.5 w-3.5 text-green-600" /><h4 className="font-semibold text-xs">Pros</h4></div>
+                <div className="flex items-center gap-2"><ThumbsUp className="h-3.5 w-3.5 text-green-600" /><h3 className="font-semibold text-xs">Pros</h3></div>
                 <ul className="space-y-1">{pros.map((p: string, i: number) => <li key={i} className="text-xs text-muted-foreground">• {p}</li>)}</ul>
               </CardContent>
             </Card>
@@ -776,7 +911,7 @@ function ValidationReportDetails({
           {cons.length > 0 && (
             <Card className="rounded-xl border-border/50">
               <CardContent className="p-4 space-y-2">
-                <div className="flex items-center gap-2"><ThumbsDown className="h-3.5 w-3.5 text-red-600" /><h4 className="font-semibold text-xs">Cons</h4></div>
+                <div className="flex items-center gap-2"><ThumbsDown className="h-3.5 w-3.5 text-red-600" /><h3 className="font-semibold text-xs">Cons</h3></div>
                 <ul className="space-y-1">{cons.map((c: string, i: number) => <li key={i} className="text-xs text-muted-foreground">• {c}</li>)}</ul>
               </CardContent>
             </Card>
@@ -789,7 +924,7 @@ function ValidationReportDetails({
         {gapOpportunities.length > 0 && (
           <Card className="rounded-xl border-border/50">
             <CardContent className="p-4 space-y-2">
-              <div className="flex items-center gap-2"><Target className="h-3.5 w-3.5 text-primary" /><h4 className="font-semibold text-xs">Gap Opportunities</h4></div>
+              <div className="flex items-center gap-2"><Target className="h-3.5 w-3.5 text-primary" /><h3 className="font-semibold text-xs">Gap Opportunities</h3></div>
               <ul className="space-y-1">{gapOpportunities.map((g: string, i: number) => <li key={i} className="text-xs text-muted-foreground">• {g}</li>)}</ul>
             </CardContent>
           </Card>
@@ -797,7 +932,7 @@ function ValidationReportDetails({
         {data.kill_test && (
           <Card className="rounded-xl border-border/50">
             <CardContent className="p-4 space-y-2">
-              <div className="flex items-center gap-2"><AlertTriangle className="h-3.5 w-3.5 text-yellow-600" /><h4 className="font-semibold text-xs">Kill Test</h4></div>
+              <div className="flex items-center gap-2"><AlertTriangle className="h-3.5 w-3.5 text-yellow-600" /><h3 className="font-semibold text-xs">Kill Test</h3></div>
               <p className="text-xs text-muted-foreground">{data.kill_test}</p>
             </CardContent>
           </Card>
@@ -808,7 +943,7 @@ function ValidationReportDetails({
       {data.mvp_wedge && (
         <Card className="rounded-xl bg-secondary/60 border-0">
           <CardContent className="p-4 space-y-1">
-            <h4 className="font-semibold text-xs">Suggested MVP Wedge</h4>
+            <h3 className="font-semibold text-xs">Suggested MVP Wedge</h3>
             <p className="text-xs text-muted-foreground leading-relaxed">{data.mvp_wedge}</p>
           </CardContent>
         </Card>
@@ -893,6 +1028,7 @@ function ValidationReportDetails({
       </Button>
 
       <FollowUpChat
+        regionLabel={followUpRegionLabel}
         reportContext={`Idea: "${data.idea_text || ideaName}"\nVerdict: ${data.verdict}\nDemand: ${scores.demand || 0}/100, Pain: ${scores.pain || 0}/100, Competition: ${scores.competition || 0}/100, Feasibility: ${scores.mvpFeasibility || 0}/100\nPros: ${pros.join(", ")}\nCons: ${cons.join(", ")}`}
         onRevalidate={(ideaText) =>
           navigate("/validate", {

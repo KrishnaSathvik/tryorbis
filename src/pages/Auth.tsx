@@ -158,27 +158,32 @@ export default function Auth() {
             <TabsContent value="signup" className="mt-4">
               <form onSubmit={handleSignUp} className="space-y-3">
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium">Name</label>
-                  <Input value={signUpName} onChange={e => setSignUpName(e.target.value)} placeholder="Your name" className="rounded-xl" autoFocus />
+                  <label htmlFor="auth-signup-name" className="text-sm font-medium">Name</label>
+                  <Input id="auth-signup-name" value={signUpName} onChange={e => setSignUpName(e.target.value)} placeholder="Your name" className="rounded-xl" autoFocus />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium">Email</label>
-                  <Input type="email" value={signUpEmail} onChange={e => setSignUpEmail(e.target.value)} placeholder="you@example.com" className="rounded-xl" />
+                  <label htmlFor="auth-signup-email" className="text-sm font-medium">Email</label>
+                  <Input id="auth-signup-email" type="email" value={signUpEmail} onChange={e => setSignUpEmail(e.target.value)} placeholder="you@example.com" className="rounded-xl" />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium">Password</label>
+                  <label htmlFor="auth-signup-password" className="text-sm font-medium">Password</label>
                   <div className="relative">
-                    <Input type={showSignUpPw ? "text" : "password"} value={signUpPassword} onChange={e => setSignUpPassword(e.target.value)} placeholder="Min 6 characters" className="rounded-xl pr-10" />
-                    <button type="button" onClick={() => setShowSignUpPw(!showSignUpPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                      {showSignUpPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    <Input id="auth-signup-password" type={showSignUpPw ? "text" : "password"} value={signUpPassword} onChange={e => setSignUpPassword(e.target.value)} placeholder="Min 6 characters" className="rounded-xl pr-10" />
+                    <button
+                      type="button"
+                      onClick={() => setShowSignUpPw(!showSignUpPw)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
+                      aria-label={showSignUpPw ? "Hide password" : "Show password"}
+                    >
+                      {showSignUpPw ? <EyeOff className="h-4 w-4" aria-hidden /> : <Eye className="h-4 w-4" aria-hidden />}
                     </button>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground bg-primary/5 rounded-xl p-3">
-                  <Zap className="h-3.5 w-3.5 text-primary shrink-0" />
+                  <Zap className="h-3.5 w-3.5 text-primary shrink-0" aria-hidden />
                   <span>You'll get <strong className="text-foreground">2 free reports</strong> to explore Orbis</span>
                 </div>
-                <Button type="submit" className="w-full rounded-full bg-foreground text-background hover:bg-foreground/90" disabled={loading}>
+                <Button type="submit" className="w-full rounded-full bg-foreground text-background hover:bg-foreground/90" disabled={loading} aria-busy={loading || undefined}>
                   {loading ? "Creating account..." : "Create Account →"}
                 </Button>
               </form>
@@ -187,19 +192,24 @@ export default function Auth() {
             <TabsContent value="signin" className="mt-4">
               <form onSubmit={handleSignIn} className="space-y-3">
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium">Email</label>
-                  <Input type="email" value={signInEmail} onChange={e => setSignInEmail(e.target.value)} placeholder="you@example.com" className="rounded-xl" />
+                  <label htmlFor="auth-signin-email" className="text-sm font-medium">Email</label>
+                  <Input id="auth-signin-email" type="email" value={signInEmail} onChange={e => setSignInEmail(e.target.value)} placeholder="you@example.com" className="rounded-xl" />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium">Password</label>
+                  <label htmlFor="auth-signin-password" className="text-sm font-medium">Password</label>
                   <div className="relative">
-                    <Input type={showSignInPw ? "text" : "password"} value={signInPassword} onChange={e => setSignInPassword(e.target.value)} placeholder="Your password" className="rounded-xl pr-10" />
-                    <button type="button" onClick={() => setShowSignInPw(!showSignInPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                      {showSignInPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    <Input id="auth-signin-password" type={showSignInPw ? "text" : "password"} value={signInPassword} onChange={e => setSignInPassword(e.target.value)} placeholder="Your password" className="rounded-xl pr-10" />
+                    <button
+                      type="button"
+                      onClick={() => setShowSignInPw(!showSignInPw)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
+                      aria-label={showSignInPw ? "Hide password" : "Show password"}
+                    >
+                      {showSignInPw ? <EyeOff className="h-4 w-4" aria-hidden /> : <Eye className="h-4 w-4" aria-hidden />}
                     </button>
                   </div>
                 </div>
-                <Button type="submit" className="w-full rounded-full bg-foreground text-background hover:bg-foreground/90" disabled={loading}>
+                <Button type="submit" className="w-full rounded-full bg-foreground text-background hover:bg-foreground/90" disabled={loading} aria-busy={loading || undefined}>
                   {loading ? "Signing in..." : "Log In →"}
                 </Button>
               </form>
@@ -208,14 +218,14 @@ export default function Auth() {
             <TabsContent value="guest" className="mt-4">
               <form onSubmit={handleGuest} className="space-y-3">
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium">Nickname <span className="text-muted-foreground font-normal">(optional)</span></label>
-                  <Input value={guestName} onChange={e => setGuestName(e.target.value)} placeholder="e.g. Explorer" className="rounded-xl" />
+                  <label htmlFor="auth-guest-name" className="text-sm font-medium">Nickname <span className="text-muted-foreground font-normal">(optional)</span></label>
+                  <Input id="auth-guest-name" value={guestName} onChange={e => setGuestName(e.target.value)} placeholder="e.g. Explorer" className="rounded-xl" />
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground bg-warning/10 rounded-xl p-3">
-                  <Zap className="h-3.5 w-3.5 text-warning shrink-0" />
+                  <Zap className="h-3.5 w-3.5 text-warning shrink-0" aria-hidden />
                   <span>Guest accounts get <strong className="text-foreground">2 free reports</strong>. Sign up later to keep your data.</span>
                 </div>
-                <Button type="submit" variant="outline" className="w-full rounded-full" disabled={loading}>
+                <Button type="submit" variant="outline" className="w-full rounded-full" disabled={loading} aria-busy={loading || undefined}>
                   {loading ? "Starting..." : "Try as Guest →"}
                 </Button>
               </form>
