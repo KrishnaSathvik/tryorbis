@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Lightbulb, ClipboardCheck, TrendingUp, CheckCircle, Archive, Hand } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,6 +14,8 @@ import {
 } from "@/lib/dashboardOverview";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { cn } from "@/lib/utils";
+import { consumeFocusSectionState } from "@/lib/focusSection";
+import { isRouterStateRecord } from "@/lib/validatePrefill";
 
 type LoadState =
   | { status: "loading" }
@@ -171,11 +173,37 @@ function RecentSkeleton() {
 export default function Dashboard() {
   usePageTitle("Dashboard");
   const navigate = useNavigate();
+  const location = useLocation();
   const { profile, user } = useAuth();
   const [loadState, setLoadState] = useState<LoadState>({ status: "loading" });
   const requestIdRef = useRef(0);
   const inFlightRef = useRef(false);
   const userId = user?.id ?? null;
+  const focusHandledRef = useRef(false);
+
+  useEffect(() => {
+    if (focusHandledRef.current) return;
+    if (!isRouterStateRecord(location.state)) return;
+    if (!Object.prototype.hasOwnProperty.call(location.state, "focusSection")) {
+      return;
+    }
+    const { focusSection, nextState } = consumeFocusSectionState(location.state);
+    focusHandledRef.current = true;
+    if (focusSection === "my-ideas") {
+      navigate("/ideas", {
+        replace: true,
+        state: {
+          ...(nextState ?? {}),
+          focusSection: "my-ideas",
+        },
+      });
+      return;
+    }
+    navigate(
+      { pathname: location.pathname, search: location.search, hash: location.hash },
+      { replace: true, state: nextState },
+    );
+  }, [location.state, location.pathname, location.search, location.hash, navigate]);
 
   const loadOverview = useCallback(async () => {
     if (inFlightRef.current) return;

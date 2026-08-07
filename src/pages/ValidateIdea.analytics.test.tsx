@@ -36,6 +36,7 @@ vi.mock("@/integrations/supabase/client", () => ({
 vi.mock("@/lib/db", () => ({
   saveValidationReportDb: (...args: unknown[]) => saveValidationReportDbMock(...args),
   addToBacklogDb: (...args: unknown[]) => addToBacklogDbMock(...args),
+  getMyBacklog: vi.fn().mockResolvedValue([]),
 }));
 vi.mock("@/lib/analytics", async () => {
   const actual = await vi.importActual<typeof import("@/lib/analytics")>(

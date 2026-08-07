@@ -68,15 +68,26 @@ describe("analytics", () => {
     expect(envelope.properties).toEqual({});
   });
 
-  it("delivers events to a configured sink", () => {
-    const received: AnalyticsEnvelope[] = [];
-    setAnalyticsSink((envelope) => {
-      received.push(envelope);
-    });
-    track("idea_saved", { from: "generator_result" });
-    expect(received).toHaveLength(1);
-    expect(received[0].event).toBe("idea_saved");
-    expect(received[0].properties).toEqual({ from: "generator_result" });
+  it("accepts extended next_step_click actions with action-only properties", () => {
+    const actions: AnalyticsEventProperties["next_step_click"]["action"][] = [
+      "validate_idea",
+      "save_idea",
+      "ask_orbis",
+      "view_history",
+      "export",
+      "view_saved_ideas",
+      "back_to_all_reports",
+    ];
+    for (const action of actions) {
+      track("next_step_click", { action });
+    }
+    expect(infoSpy).toHaveBeenCalledTimes(actions.length);
+    for (let i = 0; i < actions.length; i++) {
+      const envelope = infoSpy.mock.calls[i][1] as AnalyticsEnvelopeFor<"next_step_click">;
+      expect(envelope.event).toBe("next_step_click");
+      expect(envelope.properties).toEqual({ action: actions[i] });
+      expect(Object.keys(envelope.properties)).toEqual(["action"]);
+    }
   });
 
   it("replaces the sink", () => {

@@ -13,6 +13,19 @@ export type ValidatePrefill =
       text: string;
       sourceRunId: string;
       sourceIdeaName?: string;
+    }
+  | {
+      /** Fresh Generate result without a stable persisted run id. */
+      source: "generate_result";
+      text: string;
+      sourceIdeaName?: string;
+    }
+  | {
+      /** Follow-up chat revalidate from History (or Generate follow-up). */
+      source: "history_follow_up";
+      text: string;
+      sourceItemId?: string;
+      sourceItemType?: "generator" | "validation";
     };
 
 export type ValidatePrefillRouterState = {
@@ -47,6 +60,27 @@ export function parseValidatePrefill(value: unknown): ValidatePrefill | null {
         ? record.sourceIdeaName.trim()
         : undefined;
     return { source: "dashboard", text, sourceRunId, sourceIdeaName };
+  }
+
+  if (record.source === "generate_result") {
+    const sourceIdeaName =
+      typeof record.sourceIdeaName === "string" && record.sourceIdeaName.trim()
+        ? record.sourceIdeaName.trim()
+        : undefined;
+    return { source: "generate_result", text, sourceIdeaName };
+  }
+
+  if (record.source === "history_follow_up") {
+    const sourceItemId =
+      typeof record.sourceItemId === "string" && record.sourceItemId.trim()
+        ? record.sourceItemId.trim()
+        : undefined;
+    const sourceItemType =
+      record.sourceItemType === "generator" ||
+      record.sourceItemType === "validation"
+        ? record.sourceItemType
+        : undefined;
+    return { source: "history_follow_up", text, sourceItemId, sourceItemType };
   }
 
   return null;

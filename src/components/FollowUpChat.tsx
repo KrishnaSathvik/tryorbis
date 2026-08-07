@@ -3,16 +3,28 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Send, MessageSquare, RotateCcw, Sparkles, User } from "lucide-react";
+import {
+  focusComposerAndPlaceCaret,
+  scheduleFocusComposerAtEnd,
+} from "@/lib/focusComposer";
 
 interface ChatMessage {
   id: string;
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   text: string;
 }
+
+export type FollowUpPrefillRequest = {
+  /** Bump to re-apply the same text. */
+  requestId: number;
+  text: string;
+};
 
 interface FollowUpChatProps {
   reportContext: string;
   onRevalidate: (ideaText: string) => void;
+  /** Optional Ask Orbis handoff: open, focus, prefill if composer empty. */
+  prefillRequest?: FollowUpPrefillRequest | null;
 }
 
 const SUGGESTIONS = [
@@ -22,106 +34,177 @@ const SUGGESTIONS = [
   "Who's my ideal first user?",
 ];
 
-export function FollowUpChat({ reportContext, onRevalidate }: FollowUpChatProps) {
+export function FollowUpChat({
+  reportContext,
+  onRevalidate,
+  prefillRequest = null,
+}: FollowUpChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const lastPrefillIdRef = useRef<number | null>(null);
+  const cancelFocusRef = useRef<(() => void) | null>(null);
+  const pendingPrefillRef = useRef<string | null>(null);
+  const [prefillApplyVersion, setPrefillApplyVersion] = useState(0);
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
 
-  // Auto-resize textarea
   useEffect(() => {
     if (inputRef.current) {
       inputRef.current.style.height = "auto";
-      inputRef.current.style.height = Math.min(inputRef.current.scrollHeight, 120) + "px";
+      inputRef.current.style.height =
+        Math.min(inputRef.current.scrollHeight, 120) + "px";
     }
   }, [inputValue]);
+
+  useEffect(() => {
+    return () => {
+      cancelFocusRef.current?.();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!prefillRequest) return;
+    if (lastPrefillIdRef.current === prefillRequest.requestId) return;
+    lastPrefillIdRef.current = prefillRequest.requestId;
+    pendingPrefillRef.current = prefillRequest.text;
+    setIsOpen(true);
+    setPrefillApplyVersion((version) => version + 1);
+  }, [prefillRequest]);
+
+  useEffect(() => {
+    if (!isOpen || pendingPrefillRef.current === null) return;
+    const text = pendingPrefillRef.current;
+    pendingPrefillRef.current = null;
+
+    const preferReducedMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+    requestAnimationFrame(() => {
+      const el = rootRef.current;
+      if (el && typeof el.scrollIntoView === "function") {
+        el.scrollIntoView({
+          behavior: preferReducedMotion ? "auto" : "smooth",
+          block: "nearest",
+        });
+      }
+    });
+
+    setInputValue((current) => {
+      if (current.trim()) {
+        requestAnimationFrame(() => {
+          focusComposerAndPlaceCaret(inputRef.current);
+        });
+        return current;
+      }
+      cancelFocusRef.current?.();
+      cancelFocusRef.current = scheduleFocusComposerAtEnd(
+        () => inputRef.current,
+        text,
+      );
+      return text;
+    });
+  }, [isOpen, prefillApplyVersion]);
 
   const sendMessage = async (overrideText?: string) => {
     const text = (overrideText || inputValue).trim();
     if (!text || isTyping) return;
     setInputValue("");
 
-    const userMsg: ChatMessage = { id: crypto.randomUUID(), role: 'user', text };
+    const userMsg: ChatMessage = { id: crypto.randomUUID(), role: "user", text };
     const updated = [...messages, userMsg];
     setMessages(updated);
     setIsTyping(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('chat-followup', {
+      const { data, error } = await supabase.functions.invoke("chat-followup", {
         body: {
           reportContext,
-          messages: updated.map(m => ({ role: m.role, content: m.text })),
+          messages: updated.map((m) => ({ role: m.role, content: m.text })),
         },
       });
       if (error) throw error;
 
       const aiMsg: ChatMessage = {
         id: crypto.randomUUID(),
-        role: 'assistant',
+        role: "assistant",
         text: data.reply || "Let me think about that...",
       };
       setIsTyping(false);
-      setMessages(prev => [...prev, aiMsg]);
+      setMessages((prev) => [...prev, aiMsg]);
 
       if (data.revalidate && data.params?.ideaText) {
         setTimeout(() => {
-          setMessages(prev => [...prev, {
-            id: crypto.randomUUID(),
-            role: 'assistant',
-            text: `__REVALIDATE__${data.params.ideaText}`,
-          }]);
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: crypto.randomUUID(),
+              role: "assistant",
+              text: `__REVALIDATE__${data.params.ideaText}`,
+            },
+          ]);
         }, 500);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setIsTyping(false);
-      toast.error("Error: " + (err.message || "Unknown error"));
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast.error("Error: " + message);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      sendMessage();
+      void sendMessage();
     }
   };
 
   if (!isOpen) {
     return (
-      <button
-        onClick={() => setIsOpen(true)}
-        className="group flex items-center gap-3 w-full px-5 py-4 rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm hover:border-primary/30 hover:bg-card transition-all duration-200"
-      >
-        <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/15 transition-colors">
-          <MessageSquare className="h-4 w-4 text-primary" />
-        </div>
-        <div className="text-left">
-          <p className="text-sm font-medium text-foreground">Ask a follow-up question</p>
-          <p className="text-xs text-muted-foreground">Pivots, positioning, go-to-market, and more</p>
-        </div>
-      </button>
+      <div ref={rootRef}>
+        <button
+          type="button"
+          onClick={() => setIsOpen(true)}
+          className="group flex items-center gap-3 w-full px-5 py-4 rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm hover:border-primary/30 hover:bg-card transition-all duration-200"
+        >
+          <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/15 transition-colors">
+            <MessageSquare className="h-4 w-4 text-primary" />
+          </div>
+          <div className="text-left">
+            <p className="text-sm font-medium text-foreground">Ask a follow-up question</p>
+            <p className="text-xs text-muted-foreground">
+              Pivots, positioning, go-to-market, and more
+            </p>
+          </div>
+        </button>
+      </div>
     );
   }
 
   return (
-    <div className="rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm overflow-hidden">
-      {/* Header */}
+    <div
+      ref={rootRef}
+      className="rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm overflow-hidden"
+    >
       <div className="px-5 py-3.5 border-b border-border/40 flex items-center gap-3">
         <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center">
           <Sparkles className="h-4 w-4 text-primary" />
         </div>
         <div>
           <p className="text-sm font-semibold font-nunito">Orbis AI</p>
-          <p className="text-[11px] text-muted-foreground">Ask about pivots, positioning, or refine your idea</p>
+          <p className="text-[11px] text-muted-foreground">
+            Ask about pivots, positioning, or refine your idea
+          </p>
         </div>
       </div>
 
-      {/* Messages */}
       <div className="max-h-96 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 && (
           <div className="space-y-3 py-2">
@@ -130,7 +213,8 @@ export function FollowUpChat({ reportContext, onRevalidate }: FollowUpChatProps)
               {SUGGESTIONS.map((s) => (
                 <button
                   key={s}
-                  onClick={() => sendMessage(s)}
+                  type="button"
+                  onClick={() => void sendMessage(s)}
                   className="text-xs px-3 py-1.5 rounded-full border border-border/60 bg-secondary/50 text-muted-foreground hover:text-foreground hover:border-primary/30 hover:bg-primary/5 transition-all"
                 >
                   {s}
@@ -140,27 +224,40 @@ export function FollowUpChat({ reportContext, onRevalidate }: FollowUpChatProps)
           </div>
         )}
         {messages.map((msg) => {
-          if (msg.text.startsWith('__REVALIDATE__')) {
-            const idea = msg.text.replace('__REVALIDATE__', '');
+          if (msg.text.startsWith("__REVALIDATE__")) {
+            const idea = msg.text.replace("__REVALIDATE__", "");
             return (
               <div key={msg.id} className="flex justify-start pl-10">
-                <Button size="sm" variant="outline" onClick={() => onRevalidate(idea)} className="gap-1.5 rounded-xl text-xs">
-                  <RotateCcw className="h-3 w-3" /> Re-validate: "{idea.slice(0, 40)}..."
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onRevalidate(idea)}
+                  className="gap-1.5 rounded-xl text-xs"
+                >
+                  <RotateCcw className="h-3 w-3" /> Re-validate: &quot;{idea.slice(0, 40)}
+                  ...&quot;
                 </Button>
               </div>
             );
           }
-          const isUser = msg.role === 'user';
+          const isUser = msg.role === "user";
           return (
-            <div key={msg.id} className={`flex gap-2.5 ${isUser ? 'flex-row-reverse' : ''}`}>
-              <div className={`h-7 w-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${isUser ? 'bg-primary/10' : 'bg-secondary'}`}>
+            <div
+              key={msg.id}
+              className={`flex gap-2.5 ${isUser ? "flex-row-reverse" : ""}`}
+            >
+              <div
+                className={`h-7 w-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${isUser ? "bg-primary/10" : "bg-secondary"}`}
+              >
                 {isUser ? (
                   <User className="h-3.5 w-3.5 text-primary" />
                 ) : (
                   <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />
                 )}
               </div>
-              <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${isUser ? 'bg-primary text-primary-foreground rounded-tr-md' : 'bg-secondary/70 text-foreground rounded-tl-md'}`}>
+              <div
+                className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${isUser ? "bg-primary text-primary-foreground rounded-tr-md" : "bg-secondary/70 text-foreground rounded-tl-md"}`}
+              >
                 <p className="whitespace-pre-wrap">{msg.text}</p>
               </div>
             </div>
@@ -181,13 +278,12 @@ export function FollowUpChat({ reportContext, onRevalidate }: FollowUpChatProps)
         <div ref={chatEndRef} />
       </div>
 
-      {/* Input */}
       <div className="border-t border-border/40 p-3">
         <div className="flex items-end gap-2">
           <textarea
             ref={inputRef}
             value={inputValue}
-            onChange={e => setInputValue(e.target.value)}
+            onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Ask anything about this research..."
             rows={1}
@@ -196,7 +292,7 @@ export function FollowUpChat({ reportContext, onRevalidate }: FollowUpChatProps)
           />
           <Button
             size="icon"
-            onClick={() => sendMessage()}
+            onClick={() => void sendMessage()}
             disabled={!inputValue.trim() || isTyping}
             className="h-10 w-10 rounded-xl shrink-0"
           >

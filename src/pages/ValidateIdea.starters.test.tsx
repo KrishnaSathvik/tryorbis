@@ -35,6 +35,7 @@ vi.mock("@/integrations/supabase/client", () => ({
 vi.mock("@/lib/db", () => ({
   saveValidationReportDb: vi.fn(),
   addToBacklogDb: vi.fn(),
+  getMyBacklog: vi.fn().mockResolvedValue([]),
 }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 vi.mock("@/components/FileUpload", () => ({

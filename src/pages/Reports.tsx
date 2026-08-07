@@ -3,7 +3,7 @@ import { usePageTitle } from "@/hooks/usePageTitle";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { getMyGeneratorRuns, getMyValidationReports } from "@/lib/db";
+import { getMyGeneratorRuns, getMyValidationReports, getMyBacklog } from "@/lib/db";
 import { VerdictBadge } from "@/components/VerdictBadge";
 import { ScoreBar } from "@/components/ScoreBar";
 import { WtpSection, CompetitionDensitySection, MarketTimingSection, IcpSection, WorkaroundSection, FeatureGapSection, PlatformRiskSection, GtmStrategySection, PricingBenchmarkSection, DefensibilitySection } from "@/components/IntelligenceSections";
@@ -15,8 +15,27 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { parseHistoryItemQuery } from "@/lib/validatePrefill";
+import {
+  buildValidatePrefillText,
+  parseHistoryItemQuery,
+} from "@/lib/validatePrefill";
 import { track } from "@/lib/analytics";
+import { FollowUpChat, type FollowUpPrefillRequest } from "@/components/FollowUpChat";
+import {
+  GenerateNextStepCard,
+  ValidateNextStepCard,
+} from "@/components/ReportNextStepCards";
+import {
+  askOrbisPrefillForGenerate,
+  askOrbisPrefillForValidate,
+  type ValidationVerdict,
+} from "@/lib/nextStepContent";
+import {
+  generatorIdeaSourceId,
+  isIdeaSavedInBacklog,
+  type BacklogMatchItem,
+} from "@/lib/savedIdeaMatch";
+import { pickTopIdea } from "@/lib/pickTopIdea";
 
 interface Conversation {
   id: string;
@@ -34,7 +53,7 @@ type HistoryResearchItem = {
 export default function Reports() {
   usePageTitle("History");
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [allItems, setAllItems] = useState<HistoryResearchItem[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,16 +62,19 @@ export default function Reports() {
   const [deepLinkMissing, setDeepLinkMissing] = useState(false);
   const deepLinkHandledRef = useRef<string | null>(null);
   const itemRefs = useRef<Record<string, HTMLElement | null>>({});
+  const [backlogItems, setBacklogItems] = useState<BacklogMatchItem[]>([]);
+  const [locallySavedNames, setLocallySavedNames] = useState<string[]>([]);
 
   useEffect(() => {
     Promise.all([
       getMyGeneratorRuns(),
       getMyValidationReports(),
+      getMyBacklog().catch(() => []),
       supabase
         .from("conversations")
         .select("id, title, updated_at")
         .order("updated_at", { ascending: false }),
-    ]).then(([runs, reports, { data: convos }]) => {
+    ]).then(([runs, reports, backlog, { data: convos }]) => {
       const items: HistoryResearchItem[] = [
         ...runs.map((r) => ({
           type: "run" as const,
@@ -68,10 +90,24 @@ export default function Reports() {
         })),
       ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       setAllItems(items);
+      setBacklogItems(backlog as BacklogMatchItem[]);
       setConversations((convos as Conversation[]) || []);
       setLoading(false);
     });
   }, []);
+
+  const backToAllReports = () => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete("item");
+        return next;
+      },
+      { replace: true },
+    );
+    setOpenItemKeys(new Set());
+    deepLinkHandledRef.current = null;
+  };
 
   const itemQuery = searchParams.get("item");
 
@@ -117,12 +153,34 @@ export default function Reports() {
     });
   }, [loading, itemQuery, allItems]);
 
-  const handleSaveIdea = async (name: string, source: string, score?: number, overallScore?: number, extra?: { description?: string; mvpScope?: string; monetization?: string }) => {
+  const handleSaveIdea = async (
+    name: string,
+    source: string,
+    score?: number,
+    overallScore?: number,
+    extra?: {
+      description?: string;
+      mvpScope?: string;
+      monetization?: string;
+      sourceId?: string;
+    },
+  ) => {
     try {
-      await addToBacklogDb({ ideaName: name, source, demandScore: score, overallScore, status: "New", description: extra?.description, mvpScope: extra?.mvpScope, monetization: extra?.monetization });
+      await addToBacklogDb({
+        ideaName: name,
+        source,
+        sourceId: extra?.sourceId,
+        demandScore: score,
+        overallScore,
+        status: "New",
+        description: extra?.description,
+        mvpScope: extra?.mvpScope,
+        monetization: extra?.monetization,
+      });
       track("idea_saved", {
         from: source === "Validated" ? "history_validation" : "history_generator",
       });
+      setLocallySavedNames((prev) => (prev.includes(name) ? prev : [...prev, name]));
       toast.success(`"${name}" saved to My Ideas`);
     } catch {
       toast.error("Failed to save");
@@ -300,8 +358,28 @@ export default function Reports() {
                       </CollapsibleTrigger>
                       <CollapsibleContent>
                         <div className="px-5 pb-5 border-t border-border/50 pt-4 space-y-6">
-                          {item.type === "run" && <GeneratorRunDetails data={item.data} onSaveIdea={handleSaveIdea} navigate={navigate} />}
-                          {item.type === "report" && <ValidationReportDetails data={item.data} onSaveIdea={handleSaveIdea} />}
+                          {item.type === "run" && (
+                            <GeneratorRunDetails
+                              data={item.data}
+                              runId={item.id}
+                              onSaveIdea={handleSaveIdea}
+                              navigate={navigate}
+                              backlogItems={backlogItems}
+                              locallySavedNames={locallySavedNames}
+                              onBackToAllReports={backToAllReports}
+                            />
+                          )}
+                          {item.type === "report" && (
+                            <ValidationReportDetails
+                              data={item.data}
+                              reportId={item.id}
+                              onSaveIdea={handleSaveIdea}
+                              navigate={navigate}
+                              backlogItems={backlogItems}
+                              locallySavedNames={locallySavedNames}
+                              onBackToAllReports={backToAllReports}
+                            />
+                          )}
                         </div>
                       </CollapsibleContent>
                     </Card>
@@ -372,12 +450,104 @@ export default function Reports() {
 }
 
 // ─── Full Generator Run Details ───
-function GeneratorRunDetails({ data, onSaveIdea, navigate }: { data: any; onSaveIdea: (name: string, source: string, score?: number, overallScore?: number, extra?: { description?: string; mvpScope?: string; monetization?: string }) => void; navigate: (path: string) => void }) {
+function GeneratorRunDetails({
+  data,
+  runId,
+  onSaveIdea,
+  navigate,
+  backlogItems,
+  locallySavedNames,
+  onBackToAllReports,
+}: {
+  data: any;
+  runId: string;
+  onSaveIdea: (name: string, source: string, score?: number, overallScore?: number, extra?: { description?: string; mvpScope?: string; monetization?: string; sourceId?: string }) => void | Promise<void>;
+  navigate: (path: string, options?: { state?: unknown }) => void;
+  backlogItems: BacklogMatchItem[];
+  locallySavedNames: string[];
+  onBackToAllReports: () => void;
+}) {
   const problemClusters = Array.isArray(data.problem_clusters) ? data.problem_clusters : [];
-  const ideaSuggestions = Array.isArray(data.idea_suggestions) ? data.idea_suggestions : [];
+  const ideaSuggestions = (
+    Array.isArray(data.idea_suggestions) ? data.idea_suggestions : []
+  ) as Array<{
+    id?: string;
+    name: string;
+    description?: string;
+    demandScore?: number;
+    mvpScope?: string;
+    monetization?: string;
+  }>;
+  const topIdea = pickTopIdea(ideaSuggestions);
+  const topIdeaSourceId = topIdea
+    ? generatorIdeaSourceId(runId, topIdea)
+    : undefined;
+  const ideaSaved = topIdea
+    ? locallySavedNames.includes(topIdea.name) ||
+      isIdeaSavedInBacklog(backlogItems, {
+        ideaName: topIdea.name,
+        sourceId: topIdeaSourceId,
+      })
+    : false;
+  const [askPrefill, setAskPrefill] = useState<FollowUpPrefillRequest | null>(null);
+  const askIdRef = useRef(0);
+
+  const requestAsk = () => {
+    askIdRef.current += 1;
+    setAskPrefill({
+      requestId: askIdRef.current,
+      text: askOrbisPrefillForGenerate({ hasIdeas: ideaSuggestions.length > 0 }),
+    });
+  };
 
   return (
     <>
+      <div className="rounded-xl bg-secondary/40 border border-border/40 px-4 py-3">
+        <p className="text-sm font-medium">
+          {data.persona || "Persona"} × {data.category || "Category"}
+        </p>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          {problemClusters.length} problem theme
+          {problemClusters.length !== 1 ? "s" : ""} · {ideaSuggestions.length} idea
+          {ideaSuggestions.length !== 1 ? "s" : ""}
+        </p>
+      </div>
+
+      <GenerateNextStepCard
+        topIdeaName={topIdea?.name ?? null}
+        ideaCount={ideaSuggestions.length}
+        inHistory
+        ideaSaved={ideaSaved}
+        handlers={{
+          onValidateIdea: topIdea
+            ? () =>
+                navigate("/validate", {
+                  state: {
+                    validatePrefill: {
+                      source: "dashboard",
+                      text: buildValidatePrefillText(topIdea),
+                      sourceRunId: runId,
+                      sourceIdeaName: topIdea.name,
+                    },
+                  },
+                })
+            : undefined,
+          onSaveIdea: topIdea
+            ? () =>
+                onSaveIdea(topIdea.name, "Generated", topIdea.demandScore, undefined, {
+                  description: topIdea.description,
+                  mvpScope: topIdea.mvpScope,
+                  monetization: topIdea.monetization,
+                  sourceId: generatorIdeaSourceId(runId, topIdea),
+                })
+            : undefined,
+          onAskOrbis: requestAsk,
+          onViewSavedIdeas: () =>
+            navigate("/ideas", { state: { focusSection: "my-ideas" } }),
+          onBackToAllReports,
+        }}
+      />
+
       {/* Problem Themes */}
       {problemClusters.length > 0 && (
         <div>
@@ -437,7 +607,7 @@ function GeneratorRunDetails({ data, onSaveIdea, navigate }: { data: any; onSave
                 <CardContent className="p-4 space-y-2">
                   <div className="flex items-start justify-between gap-2">
                     <p className="text-sm font-semibold">{idea.name}</p>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={(e) => { e.stopPropagation(); onSaveIdea(idea.name, "Generated", idea.demandScore, undefined, { description: idea.description, mvpScope: idea.mvpScope, monetization: idea.monetization }); }}>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={(e) => { e.stopPropagation(); void onSaveIdea(idea.name, "Generated", idea.demandScore, undefined, { description: idea.description, mvpScope: idea.mvpScope, monetization: idea.monetization, sourceId: generatorIdeaSourceId(runId, idea) }); }}>
                       <Bookmark className="h-3.5 w-3.5" />
                     </Button>
                   </div>
@@ -461,18 +631,63 @@ function GeneratorRunDetails({ data, onSaveIdea, navigate }: { data: any; onSave
 
       {/* Intelligence Layers */}
       <IntelligenceLayers data={data} />
+
+      <FollowUpChat
+        reportContext={`Generated ideas for ${data.persona || "persona"} in ${data.category || "category"}:\n\nProblem Clusters:\n${problemClusters.map((c: any) => `- ${c.theme}: ${c.painSummary}`).join("\n")}\n\nIdeas:\n${ideaSuggestions.map((i: any) => `- ${i.name}: ${i.description} (Score: ${i.demandScore}/100)`).join("\n")}`}
+        onRevalidate={(ideaText) =>
+          navigate("/validate", {
+            state: {
+              validatePrefill: {
+                source: "history_follow_up",
+                text: ideaText,
+                sourceItemId: runId,
+                sourceItemType: "generator",
+              },
+            },
+          })
+        }
+        prefillRequest={askPrefill}
+      />
     </>
   );
 }
 
 // ─── Full Validation Report Details ───
-function ValidationReportDetails({ data, onSaveIdea }: { data: any; onSaveIdea: (name: string, source: string, score?: number, overallScore?: number, extra?: { description?: string; mvpScope?: string; monetization?: string }) => void }) {
+function ValidationReportDetails({
+  data,
+  reportId,
+  onSaveIdea,
+  navigate,
+  backlogItems,
+  locallySavedNames,
+  onBackToAllReports,
+}: {
+  data: any;
+  reportId: string;
+  onSaveIdea: (name: string, source: string, score?: number, overallScore?: number, extra?: { description?: string; mvpScope?: string; monetization?: string; sourceId?: string }) => void | Promise<void>;
+  navigate: (path: string, options?: { state?: unknown }) => void;
+  backlogItems: BacklogMatchItem[];
+  locallySavedNames: string[];
+  onBackToAllReports: () => void;
+}) {
   const scores = data.scores as any || {};
   const pros = Array.isArray(data.pros) ? data.pros : [];
   const cons = Array.isArray(data.cons) ? data.cons : [];
   const gapOpportunities = Array.isArray(data.gap_opportunities) ? data.gap_opportunities : [];
   const competitors = Array.isArray(data.competitors) ? data.competitors : [];
   const evidenceLinks = Array.isArray(data.evidence_links) ? data.evidence_links : [];
+  const ideaName = typeof data.idea_text === "string" ? data.idea_text.slice(0, 80) : "Idea";
+  const verdict = data.verdict as ValidationVerdict;
+  const ideaSaved =
+    locallySavedNames.includes(ideaName) ||
+    isIdeaSavedInBacklog(backlogItems, {
+      ideaName,
+      sourceId: reportId,
+    });
+  const [askPrefill, setAskPrefill] = useState<FollowUpPrefillRequest | null>(null);
+  const askIdRef = useRef(0);
+  const validVerdict =
+    verdict === "Build" || verdict === "Pivot" || verdict === "Skip";
 
   return (
     <>
@@ -512,6 +727,40 @@ function ValidationReportDetails({ data, onSaveIdea }: { data: any; onSaveIdea: 
           </CardContent>
         </Card>
       </div>
+
+      {validVerdict && (
+        <ValidateNextStepCard
+          verdict={verdict}
+          inHistory
+          ideaSaved={ideaSaved}
+          handlers={{
+            onSaveIdea: () =>
+              onSaveIdea(
+                ideaName,
+                "Validated",
+                undefined,
+                Math.round(
+                  ((scores.demand || 0) +
+                    (scores.pain || 0) +
+                    (scores.mvpFeasibility || 0) -
+                    (scores.competition || 0)) /
+                    3,
+                ),
+                { sourceId: reportId },
+              ),
+            onAskOrbis: () => {
+              askIdRef.current += 1;
+              setAskPrefill({
+                requestId: askIdRef.current,
+                text: askOrbisPrefillForValidate(verdict),
+              });
+            },
+            onViewSavedIdeas: () =>
+              navigate("/ideas", { state: { focusSection: "my-ideas" } }),
+            onBackToAllReports,
+          }}
+        />
+      )}
 
       {/* Pros / Cons */}
       {(pros.length > 0 || cons.length > 0) && (
@@ -635,17 +884,32 @@ function ValidationReportDetails({ data, onSaveIdea }: { data: any; onSaveIdea: 
         onClick={(e) => {
           e.stopPropagation();
           const overall = Math.round(((scores.demand || 0) + (scores.pain || 0) + (scores.mvpFeasibility || 0) - (scores.competition || 0)) / 3);
-          handleSaveValidation(data.idea_text, overall);
+          void onSaveIdea(ideaName, "Validated", undefined, overall, {
+            sourceId: reportId,
+          });
         }}
       >
         <Bookmark className="h-3 w-3 mr-1" /> Save to My Ideas
       </Button>
+
+      <FollowUpChat
+        reportContext={`Idea: "${data.idea_text || ideaName}"\nVerdict: ${data.verdict}\nDemand: ${scores.demand || 0}/100, Pain: ${scores.pain || 0}/100, Competition: ${scores.competition || 0}/100, Feasibility: ${scores.mvpFeasibility || 0}/100\nPros: ${pros.join(", ")}\nCons: ${cons.join(", ")}`}
+        onRevalidate={(ideaText) =>
+          navigate("/validate", {
+            state: {
+              validatePrefill: {
+                source: "history_follow_up",
+                text: ideaText,
+                sourceItemId: reportId,
+                sourceItemType: "validation",
+              },
+            },
+          })
+        }
+        prefillRequest={askPrefill}
+      />
     </>
   );
-
-  function handleSaveValidation(ideaText: string, overallScore: number) {
-    onSaveIdea(ideaText?.slice(0, 80) || "Validated Idea", "Validated", undefined, overallScore);
-  }
 }
 
 // ─── Shared Intelligence Layers Component ───

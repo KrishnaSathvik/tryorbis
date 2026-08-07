@@ -9,7 +9,8 @@ import { ScoreBar } from "@/components/ScoreBar";
 import { VerdictBadge } from "@/components/VerdictBadge";
 import { ValidationScorecard } from "@/components/ValidationScorecard";
 import { AIHandoff } from "@/components/AIHandoff";
-import { FollowUpChat } from "@/components/FollowUpChat";
+import { FollowUpChat, type FollowUpPrefillRequest } from "@/components/FollowUpChat";
+import { ValidateNextStepCard } from "@/components/ReportNextStepCards";
 import { WtpSection, CompetitionDensitySection, MarketTimingSection, IcpSection, WorkaroundSection, FeatureGapSection, PlatformRiskSection, GtmStrategySection, PricingBenchmarkSection, DefensibilitySection } from "@/components/IntelligenceSections";
 import { useCredits } from "@/hooks/useCredits";
 import { useFocusComposerOnArrive } from "@/hooks/useFocusComposerOnArrive";
@@ -37,7 +38,7 @@ import {
   assertValidateRegularResponse,
 } from "@/lib/researchResponseValidation";
 import { supabase } from "@/integrations/supabase/client";
-import { saveValidationReportDb, addToBacklogDb } from "@/lib/db";
+import { saveValidationReportDb, addToBacklogDb, getMyBacklog } from "@/lib/db";
 import { toast } from "sonner";
 import { Bookmark, Lightbulb, ThumbsUp, ThumbsDown, Target, AlertTriangle, Send, Search, Globe, Rocket, RefreshCw, XOctagon, Info, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -48,6 +49,8 @@ import { Attachment, imageToBase64, validateFile, getAttachmentType, readTextFil
 import { useDropZone } from "@/hooks/useDropZone";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
 import { VoiceButton } from "@/components/VoiceButton";
+import { askOrbisPrefillForValidate, type ValidationVerdict } from "@/lib/nextStepContent";
+import { isIdeaSavedInBacklog, type BacklogMatchItem } from "@/lib/savedIdeaMatch";
 import { UpgradeModal } from "@/components/UpgradeModal";
 
 const sectionTooltips: Record<string, string> = {
@@ -137,6 +140,23 @@ export default function ValidateIdea() {
   const [validatingParams, setValidatingParams] = useState<{ ideaText: string } | null>(null);
   const [researchMode, setResearchMode] = useState<'regular' | 'deep'>('regular');
   const [deepStage, setDeepStage] = useState<'core' | 'competitors' | 'intelligence' | null>(null);
+  const [backlogItems, setBacklogItems] = useState<BacklogMatchItem[]>([]);
+  const [ideaSavedLocally, setIdeaSavedLocally] = useState(false);
+  const [askPrefill, setAskPrefill] = useState<FollowUpPrefillRequest | null>(null);
+  const askPrefillIdRef = useRef(0);
+
+  useEffect(() => {
+    if (phase !== "results") return;
+    let cancelled = false;
+    void getMyBacklog()
+      .then((data) => {
+        if (!cancelled) setBacklogItems(data as BacklogMatchItem[]);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [phase]);
 
   // One-time Validate prefill (route state only; never auto-submit)
   useEffect(() => {
@@ -419,13 +439,23 @@ export default function ValidateIdea() {
     try {
       await addToBacklogDb({ ideaName: report.ideaText.slice(0, 80), source: 'Validated', overallScore: Math.round((report.scores.demand + report.scores.pain + report.scores.mvpFeasibility - report.scores.competition) / 3), status: report.verdict === 'Build' ? 'Validated' : 'Exploring' });
       track("idea_saved", { from: "validation_result" });
+      setIdeaSavedLocally(true);
       toast.success("Saved to My Ideas");
     } catch { toast.error("Failed to save"); }
+  };
+
+  const requestAskOrbis = (verdict: ValidationVerdict) => {
+    askPrefillIdRef.current += 1;
+    setAskPrefill({
+      requestId: askPrefillIdRef.current,
+      text: askOrbisPrefillForValidate(verdict),
+    });
   };
 
   const resetChat = () => {
     setMessages([{ id: '1', role: 'assistant', text: "Describe your idea and I'll validate it — checking demand, competition, and feasibility. You can also attach competitor screenshots or market data." }]);
     setInputValue(""); setPhase('chat'); setReport(null); setIsTyping(false); setValidatingParams(null); setAttachments([]); setDeepStage(null);
+    setIdeaSavedLocally(false); setAskPrefill(null);
   };
 
   const hasUserMessage = messages.some((m) => m.role === "user");
@@ -620,6 +650,26 @@ export default function ValidateIdea() {
         </Card>
       </div>
 
+      {report && !deepStage && (report.verdict === "Build" || report.verdict === "Pivot" || report.verdict === "Skip") && (
+        <ValidateNextStepCard
+          verdict={report.verdict}
+          inHistory={false}
+          ideaSaved={
+            ideaSavedLocally ||
+            isIdeaSavedInBacklog(backlogItems, {
+              ideaName: report.ideaText.slice(0, 80),
+            })
+          }
+          handlers={{
+            onSaveIdea: () => handleAddToBacklog(),
+            onAskOrbis: () => requestAskOrbis(report.verdict),
+            onViewHistory: () => navigate("/history"),
+            onViewSavedIdeas: () =>
+              navigate("/ideas", { state: { focusSection: "my-ideas" } }),
+          }}
+        />
+      )}
+
       {/* ─── "Should you build this?" Scorecard ─── */}
       <ValidationScorecard report={report!} />
 
@@ -768,6 +818,7 @@ export default function ValidateIdea() {
         <FollowUpChat
           reportContext={`Idea: "${report.ideaText}"\nVerdict: ${report.verdict}\nDemand: ${report.scores.demand}/100, Pain: ${report.scores.pain}/100, Competition: ${report.scores.competition}/100, Feasibility: ${report.scores.mvpFeasibility}/100\nPros: ${report.pros.join(', ')}\nCons: ${report.cons.join(', ')}\nGap Opportunities: ${report.gapOpportunities.join(', ')}\nMVP Wedge: ${report.mvpWedge}\nKill Test: ${report.killTest}\nCompetitors: ${report.competitors.map(c => c.name).join(', ')}${report.wtpSignals ? `\n\nWTP: ${report.wtpSignals.strength} — ${report.wtpSignals.summary}` : ''}${report.competitionDensity ? `\nCompetition: ${report.competitionDensity.level} — ${report.competitionDensity.summary}` : ''}${report.marketTiming ? `\nTiming: ${report.marketTiming.phase} — ${report.marketTiming.summary}` : ''}${report.icp ? `\nICP: ${report.icp.summary}` : ''}${report.workaroundDetection ? `\nWorkarounds: ${report.workaroundDetection.severity} — ${report.workaroundDetection.summary}` : ''}${report.featureGapMap ? `\nFeature Gaps: ${report.featureGapMap.summary}` : ''}${report.platformRisk ? `\nPlatform Risk: ${report.platformRisk.level} — ${report.platformRisk.summary}` : ''}${report.gtmStrategy ? `\n\nGTM: ${report.gtmStrategy.primaryChannel} — ${report.gtmStrategy.summary}` : ''}${report.pricingBenchmarks ? `\nPricing: ${report.pricingBenchmarks.summary}` : ''}${report.defensibility ? `\nDefensibility: ${report.defensibility.overallStrength} — ${report.defensibility.summary} (Time to moat: ${report.defensibility.timeToMoat})` : ''}`}
           onRevalidate={(ideaText) => triggerValidation(ideaText)}
+          prefillRequest={askPrefill}
         />
       )}
 

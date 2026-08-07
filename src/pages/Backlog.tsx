@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { usePageTitle } from "@/hooks/usePageTitle";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScoreBar } from "@/components/ScoreBar";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,6 +12,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { getMyBacklog, updateBacklogStatusDb, removeFromBacklogDb, addNoteToBacklogDb, renameBacklogItemDb, updateNoteInBacklogDb, addToBacklogDb } from "@/lib/db";
 import { Lightbulb, Trash2, MessageSquarePlus, Archive, Filter, Pencil, Check, X, StickyNote, Plus } from "lucide-react";
 import { toast } from "sonner";
+import { consumeFocusSectionState } from "@/lib/focusSection";
+import { isRouterStateRecord } from "@/lib/validatePrefill";
 
 type BacklogStatus = 'New' | 'Exploring' | 'Validated' | 'Building' | 'Archived';
 
@@ -34,6 +37,10 @@ const allStatuses: BacklogStatus[] = ['New', 'Exploring', 'Validated', 'Building
 
 export default function Backlog() {
   usePageTitle("Idea Backlog");
+  const location = useLocation();
+  const navigate = useNavigate();
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const focusHandledRef = useRef(false);
   const [filter, setFilter] = useState<string>("All");
   const [backlog, setBacklog] = useState<any[]>([]);
   const [noteInputs, setNoteInputs] = useState<Record<string, string>>({});
@@ -49,6 +56,29 @@ export default function Backlog() {
 
   const fetchBacklog = async () => { const data = await getMyBacklog(); setBacklog(data); setLoading(false); };
   useEffect(() => { fetchBacklog(); }, []);
+
+  useEffect(() => {
+    if (focusHandledRef.current) return;
+    if (!isRouterStateRecord(location.state)) return;
+    if (!Object.prototype.hasOwnProperty.call(location.state, "focusSection")) {
+      return;
+    }
+    const { focusSection, nextState } = consumeFocusSectionState(location.state);
+    focusHandledRef.current = true;
+    navigate(
+      { pathname: location.pathname, search: location.search, hash: location.hash },
+      { replace: true, state: nextState },
+    );
+    if (focusSection !== "my-ideas") return;
+    requestAnimationFrame(() => {
+      const el = headingRef.current;
+      if (!el) return;
+      if (typeof el.scrollIntoView === "function") {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      el.focus({ preventScroll: true });
+    });
+  }, [location.state, location.pathname, location.search, location.hash, navigate]);
 
   const filtered = filter === "All" ? backlog : backlog.filter(i => i.status === filter);
 
@@ -94,7 +124,14 @@ export default function Backlog() {
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
       <div className="space-y-3">
-        <h1 className="text-3xl font-bold tracking-tight font-nunito">My Ideas</h1>
+        <h1
+          ref={headingRef}
+          id="my-ideas-heading"
+          tabIndex={-1}
+          className="text-3xl font-bold tracking-tight font-nunito outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
+        >
+          My Ideas
+        </h1>
         <div className="flex flex-wrap items-center gap-2">
           <p className="text-muted-foreground text-sm">{backlog.length} idea{backlog.length !== 1 ? 's' : ''} saved</p>
           <div className="flex items-center gap-2 ml-auto">

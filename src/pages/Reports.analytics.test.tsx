@@ -14,6 +14,7 @@ vi.mock("@/lib/db", () => ({
   getMyValidationReports: (...args: unknown[]) =>
     getMyValidationReportsMock(...args),
   addToBacklogDb: (...args: unknown[]) => addToBacklogDbMock(...args),
+  getMyBacklog: vi.fn().mockResolvedValue([]),
 }));
 vi.mock("@/lib/analytics", async () => {
   const actual = await vi.importActual<typeof import("@/lib/analytics")>(
